@@ -9,7 +9,7 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
@@ -51,10 +51,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
              ->name('permissions.update');
     });
 
-    // Delete
-    Route::middleware(['permission:users.delete'])->group(function () {
+    // Delete (with MFA protection for sensitive actions)
+    Route::middleware(['permission:users.delete', 'mfa:delete_role'])->group(function () {
         Route::delete('roles/{role}', [RoleController::class, 'destroy'])
              ->name('roles.destroy');
+    });
+    
+    Route::middleware(['permission:users.delete', 'mfa:delete_permission'])->group(function () {
         Route::delete('permissions/{permission}', [PermissionController::class, 'destroy'])
              ->name('permissions.destroy');
     });
@@ -63,3 +66,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
+require __DIR__.'/mfa.php';

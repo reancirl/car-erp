@@ -18,6 +18,11 @@ const mainNavItems: NavItem[] = [
         href: '/roles',
         icon: Shield,
     },
+    {
+        title: 'MFA Settings',
+        href: '/settings/mfa',
+        icon: Shield,
+    },
 ];
 
 const footerNavItems: NavItem[] = [

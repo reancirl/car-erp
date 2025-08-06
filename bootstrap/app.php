@@ -17,16 +17,17 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [
-            HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        // Register Spatie Permission middleware
+        // Register Spatie Permission middleware aliases
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'mfa' => \App\Http\Middleware\RequiresMfa::class,
+            'mfa.login' => \App\Http\Middleware\RequiresLoginMfa::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
