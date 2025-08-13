@@ -5,8 +5,9 @@ use Inertia\Inertia;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 
+// redirect to login
 Route::get('/', function () {
-    return Inertia::render('welcome');
+    return redirect()->route('login');
 })->name('home');
 
 Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
@@ -62,6 +63,32 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
              ->name('permissions.destroy');
     });
 
+});
+
+// Activity & Audit Routes
+Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
+    Route::get('audit/activity-logs', function () {
+        return Inertia::render('audit/activity-logs');
+    })->name('audit.activity-logs');
+    
+    Route::get('audit/time-tracking', function () {
+        return Inertia::render('audit/time-tracking');
+    })->name('audit.time-tracking');
+    
+    Route::get('audit/supervisor-approvals', function () {
+        return Inertia::render('audit/supervisor-approvals');
+    })->name('audit.supervisor-approvals');
+});
+
+// Compliance Routes
+Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
+    Route::get('compliance/checklists', function () {
+        return Inertia::render('compliance/checklists');
+    })->name('compliance.checklists');
+    
+    Route::get('compliance/reminders', function () {
+        return Inertia::render('compliance/reminders');
+    })->name('compliance.reminders');
 });
 
 require __DIR__.'/settings.php';

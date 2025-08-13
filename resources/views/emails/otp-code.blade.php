@@ -91,9 +91,6 @@
         <div class="otp-code">
             <div style="font-size: 14px; color: #64748b; margin-bottom: 10px;">Your verification code:</div>
             <div class="otp-number">{{ $otpCode->code }}</div>
-            <div style="font-size: 12px; color: #64748b; margin-top: 10px;">
-                This code expires in {{ $expiresInMinutes }} minutes
-            </div>
         </div>
 
         @if($actionText)
@@ -110,7 +107,6 @@
             <ul style="margin: 10px 0; padding-left: 20px;">
                 <li>Never share this code with anyone</li>
                 <li>We will never ask for this code via phone or email</li>
-                <li>This code expires in {{ $expiresInMinutes }} minutes</li>
                 <li>If you didn't request this, please secure your account immediately</li>
             </ul>
         </div>

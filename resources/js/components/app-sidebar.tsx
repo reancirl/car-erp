@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Shield } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Shield, Activity, ClipboardCheck, Clock, UserCheck } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -22,6 +22,37 @@ const mainNavItems: NavItem[] = [
         title: 'MFA Settings',
         href: '/settings/mfa',
         icon: Shield,
+    },
+];
+
+const auditNavItems: NavItem[] = [
+    {
+        title: 'Activity Logs',
+        href: '/audit/activity-logs',
+        icon: Activity,
+    },
+    {
+        title: 'Time Tracking',
+        href: '/audit/time-tracking',
+        icon: Clock,
+    },
+    {
+        title: 'Supervisor Approvals',
+        href: '/audit/supervisor-approvals',
+        icon: UserCheck,
+    },
+];
+
+const complianceNavItems: NavItem[] = [
+    {
+        title: 'Checklists',
+        href: '/compliance/checklists',
+        icon: ClipboardCheck,
+    },
+    {
+        title: 'Reminders',
+        href: '/compliance/reminders',
+        icon: Clock,
     },
 ];
 
@@ -55,6 +86,8 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
+                <NavMain items={auditNavItems} title="Activity & Audit" />
+                <NavMain items={complianceNavItems} title="Compliance" />
             </SidebarContent>
 
             <SidebarFooter>
