@@ -24,12 +24,17 @@ import {
 } from "lucide-react";
 import AppLogo from './app-logo';
 
-const mainNavItems: NavItem[] = [
+// Core Navigation
+const coreNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
         icon: LayoutGrid,
     },
+];
+
+// Administration
+const adminNavItems: NavItem[] = [
     {
         title: 'Roles & Permissions',
         href: '/roles',
@@ -38,42 +43,12 @@ const mainNavItems: NavItem[] = [
     {
         title: 'MFA Settings',
         href: '/settings/mfa',
-        icon: Shield,
+        icon: Settings,
     },
 ];
 
-const auditNavItems: NavItem[] = [
-    {
-        title: 'Activity Logs',
-        href: '/audit/activity-logs',
-        icon: Activity,
-    },
-    {
-        title: 'Time Tracking',
-        href: '/audit/time-tracking',
-        icon: Clock,
-    },
-    {
-        title: 'Supervisor Approvals',
-        href: '/audit/supervisor-approvals',
-        icon: UserCheck,
-    },
-];
-
-const complianceNavItems: NavItem[] = [
-    {
-        title: 'Checklists',
-        href: '/compliance/checklists',
-        icon: ClipboardCheck,
-    },
-    {
-        title: 'Reminders',
-        href: '/compliance/reminders',
-        icon: Clock,
-    },
-];
-
-const serviceNavItems: NavItem[] = [
+// Operations Management
+const operationsNavItems: NavItem[] = [
     {
         title: 'PMS Work Orders',
         href: '/service/pms-work-orders',
@@ -91,6 +66,7 @@ const serviceNavItems: NavItem[] = [
     },
 ];
 
+// Sales & Customer Management
 const salesNavItems: NavItem[] = [
     {
         title: 'Lead Management',
@@ -98,12 +74,12 @@ const salesNavItems: NavItem[] = [
         icon: UserPlus,
     },
     {
-        title: 'Test Drives & Reservations',
+        title: 'Test Drives',
         href: '/sales/test-drives',
         icon: Car,
     },
     {
-        title: 'Pipeline Auto-Logging',
+        title: 'Sales Pipeline',
         href: '/sales/pipeline',
         icon: TrendingUp,
     },
@@ -112,10 +88,43 @@ const salesNavItems: NavItem[] = [
         href: '/sales/customer-experience',
         icon: MessageSquare,
     },
+];
+
+// Analytics & Reporting
+const analyticsNavItems: NavItem[] = [
     {
         title: 'Performance Metrics',
         href: '/sales/performance-metrics',
         icon: BarChart3,
+    },
+    {
+        title: 'Activity Logs',
+        href: '/audit/activity-logs',
+        icon: Activity,
+    },
+    {
+        title: 'Time Tracking',
+        href: '/audit/time-tracking',
+        icon: Clock,
+    },
+];
+
+// Compliance & Quality
+const complianceNavItems: NavItem[] = [
+    {
+        title: 'Checklists',
+        href: '/compliance/checklists',
+        icon: ClipboardCheck,
+    },
+    {
+        title: 'Reminders',
+        href: '/compliance/reminders',
+        icon: Clock,
+    },
+    {
+        title: 'Supervisor Approvals',
+        href: '/audit/supervisor-approvals',
+        icon: UserCheck,
     },
 ];
 
@@ -137,11 +146,12 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
-                <NavMain items={serviceNavItems} title="Service & Parts" />
+                <NavMain items={coreNavItems} />
                 <NavMain items={salesNavItems} title="Sales & Customer" />
-                <NavMain items={auditNavItems} title="Activity & Audit" />
-                <NavMain items={complianceNavItems} title="Compliance" />
+                <NavMain items={operationsNavItems} title="Operations" />
+                <NavMain items={analyticsNavItems} title="Analytics & Reports" />
+                <NavMain items={complianceNavItems} title="Compliance & Quality" />
+                <NavMain items={adminNavItems} title="Administration" />
             </SidebarContent>
 
             <SidebarFooter>
