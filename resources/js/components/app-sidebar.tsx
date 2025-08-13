@@ -4,7 +4,24 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Shield, Activity, ClipboardCheck, Clock, UserCheck } from 'lucide-react';
+import { 
+  Users,
+  Settings,
+  Activity,
+  Shield,
+  Wrench,
+  FileText,
+  Package,
+  TrendingUp,
+  UserPlus,
+  Car,
+  BarChart3,
+  MessageSquare,
+  LayoutGrid,
+  Clock,
+  UserCheck,
+  ClipboardCheck,
+} from "lucide-react";
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -56,18 +73,53 @@ const complianceNavItems: NavItem[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
+const serviceNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
+        title: 'PMS Work Orders',
+        href: '/service/pms-work-orders',
+        icon: Wrench,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
+        title: 'Warranty Claims',
+        href: '/service/warranty-claims',
+        icon: FileText,
+    },
+    {
+        title: 'Parts & Inventory',
+        href: '/service/parts-inventory',
+        icon: Package,
     },
 ];
+
+const salesNavItems: NavItem[] = [
+    {
+        title: 'Lead Management',
+        href: '/sales/lead-management',
+        icon: UserPlus,
+    },
+    {
+        title: 'Test Drives & Reservations',
+        href: '/sales/test-drives',
+        icon: Car,
+    },
+    {
+        title: 'Pipeline Auto-Logging',
+        href: '/sales/pipeline',
+        icon: TrendingUp,
+    },
+    {
+        title: 'Customer Experience',
+        href: '/sales/customer-experience',
+        icon: MessageSquare,
+    },
+    {
+        title: 'Performance Metrics',
+        href: '/sales/performance-metrics',
+        icon: BarChart3,
+    },
+];
+
+const footerNavItems: NavItem[] = [];
 
 export function AppSidebar() {
     return (
@@ -86,6 +138,8 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
+                <NavMain items={serviceNavItems} title="Service & Parts" />
+                <NavMain items={salesNavItems} title="Sales & Customer" />
                 <NavMain items={auditNavItems} title="Activity & Audit" />
                 <NavMain items={complianceNavItems} title="Compliance" />
             </SidebarContent>

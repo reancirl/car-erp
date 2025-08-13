@@ -91,6 +91,44 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
     })->name('compliance.reminders');
 });
 
+// Service & Parts Management Routes
+Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('service')->name('service.')->group(function () {
+    Route::get('/pms-work-orders', function () {
+        return Inertia::render('service/pms-work-orders');
+    })->name('pms-work-orders');
+    
+    Route::get('/warranty-claims', function () {
+        return Inertia::render('service/warranty-claims');
+    })->name('warranty-claims');
+    
+    Route::get('/parts-inventory', function () {
+        return Inertia::render('service/parts-inventory');
+    })->name('parts-inventory');
+});
+
+// Sales & Customer Lifecycle Routes
+Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('sales')->name('sales.')->group(function () {
+    Route::get('/lead-management', function () {
+        return Inertia::render('sales/lead-management');
+    })->name('lead-management');
+    
+    Route::get('/test-drives', function () {
+        return Inertia::render('sales/test-drives');
+    })->name('test-drives');
+    
+    Route::get('/pipeline', function () {
+        return Inertia::render('sales/pipeline');
+    })->name('pipeline');
+    
+    Route::get('/customer-experience', function () {
+        return Inertia::render('sales/customer-experience');
+    })->name('customer-experience');
+    
+    Route::get('/performance-metrics', function () {
+        return Inertia::render('sales/performance-metrics');
+    })->name('performance-metrics');
+});
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/mfa.php';
