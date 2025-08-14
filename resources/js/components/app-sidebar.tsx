@@ -36,6 +36,11 @@ const coreNavItems: NavItem[] = [
 // Administration
 const adminNavItems: NavItem[] = [
     {
+        title: 'User Management',
+        href: '/admin/user-management',
+        icon: Users,
+    },
+    {
         title: 'Roles & Permissions',
         href: '/roles',
         icon: Shield,

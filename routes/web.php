@@ -129,6 +129,13 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('sales')->name('sal
     })->name('performance-metrics');
 });
 
+// Administration Routes
+Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/user-management', function () {
+        return Inertia::render('admin/user-management');
+    })->name('user-management');
+});
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/mfa.php';
