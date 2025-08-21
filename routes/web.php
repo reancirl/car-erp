@@ -134,6 +134,34 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('admin')->name('adm
     Route::get('/user-management', function () {
         return Inertia::render('admin/user-management');
     })->name('user-management');
+    
+    Route::get('/user-management/create', function () {
+        return Inertia::render('admin/user-create');
+    })->name('user-management.create');
+    
+    Route::get('/user-management/{id}/edit', function ($id) {
+        return Inertia::render('admin/user-edit', ['userId' => $id]);
+    })->name('user-management.edit');
+    
+    Route::get('/user-management/{id}', function ($id) {
+        return Inertia::render('admin/user-view', ['userId' => $id]);
+    })->name('user-management.view');
+    
+    Route::get('/branch-management', function () {
+        return Inertia::render('admin/branch-management');
+    })->name('branch-management');
+    
+    Route::get('/branch-management/create', function () {
+        return Inertia::render('admin/branch-create');
+    })->name('branch-management.create');
+    
+    Route::get('/branch-management/{id}/edit', function ($id) {
+        return Inertia::render('admin/branch-edit', ['branchId' => $id]);
+    })->name('branch-management.edit');
+    
+    Route::get('/branch-management/{id}', function ($id) {
+        return Inertia::render('admin/branch-view', ['branchId' => $id]);
+    })->name('branch-management.view');
 });
 
 require __DIR__.'/settings.php';

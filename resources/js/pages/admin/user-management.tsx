@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -197,103 +197,12 @@ export default function UserManagement() {
                             <Download className="h-4 w-4 mr-2" />
                             Export Users
                         </Button>
-                        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button size="sm">
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Create User
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                                <DialogHeader>
-                                    <DialogTitle>Create New User</DialogTitle>
-                                    <DialogDescription>
-                                        Create a new user with Spatie role-based permissions
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="name">Full Name</Label>
-                                            <Input id="name" placeholder="John Doe" />
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="email">Email</Label>
-                                            <Input id="email" type="email" placeholder="john@dealership.com" />
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="phone">Phone</Label>
-                                            <Input id="phone" placeholder="+1-555-0123" />
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="department">Department</Label>
-                                            <Select>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select department" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="administration">Administration</SelectItem>
-                                                    <SelectItem value="sales">Sales</SelectItem>
-                                                    <SelectItem value="service">Service</SelectItem>
-                                                    <SelectItem value="parts">Parts</SelectItem>
-                                                    <SelectItem value="audit">Audit</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="role">Spatie Role</Label>
-                                        <Select value={selectedRole} onValueChange={setSelectedRole}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select role" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {spatieRoles.map((role) => (
-                                                    <SelectItem key={role.name} value={role.name}>
-                                                        <div className="flex items-center justify-between w-full">
-                                                            <span>{role.display_name}</span>
-                                                            <Badge variant="outline" className="ml-2">
-                                                                {role.permissions_count} perms
-                                                            </Badge>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {selectedRole && (
-                                            <p className="text-sm text-muted-foreground">
-                                                {spatieRoles.find(r => r.name === selectedRole)?.description}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label>Additional Settings</Label>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="mfa" />
-                                            <Label htmlFor="mfa">Require MFA</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="email_verified" defaultChecked />
-                                            <Label htmlFor="email_verified">Email Verified</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="active" defaultChecked />
-                                            <Label htmlFor="active">Active Status</Label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <DialogFooter>
-                                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                                        Cancel
-                                    </Button>
-                                    <Button onClick={() => setIsCreateDialogOpen(false)}>
-                                        Create User
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                        <Link href="/admin/user-management/create">
+                            <Button size="sm">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Create User
+                            </Button>
+                        </Link>
                     </div>
                 </div>
 
@@ -481,12 +390,16 @@ export default function UserManagement() {
                                         <TableCell>{getStatusBadge(user.status)}</TableCell>
                                         <TableCell>
                                             <div className="flex space-x-1">
-                                                <Button variant="ghost" size="sm">
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm">
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
+                                                <Link href={`/admin/user-management/${user.id}`}>
+                                                    <Button variant="ghost" size="sm">
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
+                                                <Link href={`/admin/user-management/${user.id}/edit`}>
+                                                    <Button variant="ghost" size="sm">
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
                                                 <Button variant="ghost" size="sm">
                                                     <UserCheck className="h-4 w-4" />
                                                 </Button>

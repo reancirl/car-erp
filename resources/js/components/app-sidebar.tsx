@@ -41,6 +41,11 @@ const adminNavItems: NavItem[] = [
         icon: Users,
     },
     {
+        title: 'Branch Management',
+        href: '/admin/branch-management',
+        icon: LayoutGrid,
+    },
+    {
         title: 'Roles & Permissions',
         href: '/roles',
         icon: Shield,
