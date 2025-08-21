@@ -1,0 +1,651 @@
+import { Head, Link } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { Car, Save, X, Upload, Plus, Minus, AlertCircle, CheckCircle, Camera, FileText, DollarSign, MapPin, Calendar, Fuel, Gauge, Palette, Settings, History, Eye } from 'lucide-react';
+import { type BreadcrumbItem } from '@/types';
+import { useState } from 'react';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Inventory Management',
+        href: '/inventory',
+    },
+    {
+        title: 'Vehicle Inventory',
+        href: '/inventory/vehicles',
+    },
+    {
+        title: '2024 Honda Civic Sport',
+        href: '/inventory/vehicles/1',
+    },
+    {
+        title: 'Edit',
+        href: '/inventory/vehicles/1/edit',
+    },
+];
+
+export default function VehicleEdit() {
+    // Mock vehicle data for editing
+    const mockVehicle = {
+        id: 1,
+        vin: 'JH4KA8260MC123456',
+        stock_number: 'NEW-2024-001',
+        year: 2024,
+        make: 'Honda',
+        model: 'Civic',
+        trim: 'Sport',
+        body_type: 'Sedan',
+        exterior_color: 'Crystal Black Pearl',
+        interior_color: 'Black Cloth',
+        engine: '2.0L 4-Cylinder',
+        transmission: 'CVT Automatic',
+        fuel_type: 'Gasoline',
+        mileage: 12,
+        msrp: 1250000,
+        dealer_cost: 1100000,
+        current_price: 1200000,
+        status: 'available',
+        location: 'Showroom A-1',
+        date_received: '2024-01-10',
+        assigned_sales_rep: 'Maria Santos',
+        priority: 'high',
+        vehicle_type: 'new',
+        featured: true,
+        allow_test_drive: true,
+        online_listing: true,
+        notes: 'Popular model with high demand. Consider for featured listing.',
+        features: ['Apple CarPlay', 'Honda Sensing', 'Sunroof', 'Alloy Wheels'],
+        photos: ['front.jpg', 'rear.jpg', 'interior.jpg'],
+        documents: ['title.pdf', 'inspection.pdf']
+    };
+
+    const [features, setFeatures] = useState<string[]>(mockVehicle.features);
+    const [currentPrice, setCurrentPrice] = useState(mockVehicle.current_price);
+    const [dealerCost, setDealerCost] = useState(mockVehicle.dealer_cost);
+
+    const addFeature = () => {
+        setFeatures([...features, '']);
+    };
+
+    const removeFeature = (index: number) => {
+        setFeatures(features.filter((_, i) => i !== index));
+    };
+
+    const updateFeature = (index: number, value: string) => {
+        const updated = [...features];
+        updated[index] = value;
+        setFeatures(updated);
+    };
+
+    const calculateMargin = () => {
+        return currentPrice - dealerCost;
+    };
+
+    const calculateMarginPercentage = () => {
+        return ((calculateMargin() / currentPrice) * 100).toFixed(1);
+    };
+
+    return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Edit Vehicle - 2024 Honda Civic Sport" />
+            
+            <div className="space-y-6 p-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                        <Car className="h-6 w-6" />
+                        <div>
+                            <h1 className="text-2xl font-bold">Edit Vehicle</h1>
+                            <p className="text-muted-foreground">{mockVehicle.year} {mockVehicle.make} {mockVehicle.model} {mockVehicle.trim}</p>
+                        </div>
+                    </div>
+                    <div className="flex space-x-2">
+                        <Link href={`/inventory/vehicles/${mockVehicle.id}`}>
+                            <Button variant="outline" size="sm">
+                                <Eye className="h-4 w-4 mr-2" />
+                                View
+                            </Button>
+                        </Link>
+                        <Link href="/inventory/vehicles">
+                            <Button variant="outline" size="sm">
+                                <X className="h-4 w-4 mr-2" />
+                                Cancel
+                            </Button>
+                        </Link>
+                        <Button size="sm">
+                            <Save className="h-4 w-4 mr-2" />
+                            Update Vehicle
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Status Alert */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2">
+                        <AlertCircle className="h-5 w-5 text-blue-600" />
+                        <div>
+                            <div className="font-medium text-blue-900">Vehicle Status: Available</div>
+                            <div className="text-sm text-blue-700">This vehicle is currently available for sale and visible online.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Main Form */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Basic Information */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <Car className="h-5 w-5" />
+                                    <span>Basic Information</span>
+                                </CardTitle>
+                                <CardDescription>Update the basic vehicle details and identification</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="vin">VIN Number *</Label>
+                                        <Input id="vin" defaultValue={mockVehicle.vin} maxLength={17} />
+                                        <p className="text-xs text-muted-foreground">Vehicle Identification Number</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="stock_number">Stock Number *</Label>
+                                        <Input id="stock_number" defaultValue={mockVehicle.stock_number} />
+                                        <p className="text-xs text-muted-foreground">Internal inventory reference</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="year">Year *</Label>
+                                        <Select defaultValue={mockVehicle.year.toString()}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="2024">2024</SelectItem>
+                                                <SelectItem value="2023">2023</SelectItem>
+                                                <SelectItem value="2022">2022</SelectItem>
+                                                <SelectItem value="2021">2021</SelectItem>
+                                                <SelectItem value="2020">2020</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="make">Make *</Label>
+                                        <Select defaultValue={mockVehicle.make.toLowerCase()}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="honda">Honda</SelectItem>
+                                                <SelectItem value="toyota">Toyota</SelectItem>
+                                                <SelectItem value="volkswagen">Volkswagen</SelectItem>
+                                                <SelectItem value="hyundai">Hyundai</SelectItem>
+                                                <SelectItem value="subaru">Subaru</SelectItem>
+                                                <SelectItem value="mazda">Mazda</SelectItem>
+                                                <SelectItem value="nissan">Nissan</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="model">Model *</Label>
+                                        <Input id="model" defaultValue={mockVehicle.model} />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="trim">Trim Level</Label>
+                                        <Input id="trim" defaultValue={mockVehicle.trim} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="body_type">Body Type</Label>
+                                        <Select defaultValue={mockVehicle.body_type.toLowerCase()}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="sedan">Sedan</SelectItem>
+                                                <SelectItem value="suv">SUV</SelectItem>
+                                                <SelectItem value="hatchback">Hatchback</SelectItem>
+                                                <SelectItem value="coupe">Coupe</SelectItem>
+                                                <SelectItem value="convertible">Convertible</SelectItem>
+                                                <SelectItem value="pickup">Pickup Truck</SelectItem>
+                                                <SelectItem value="wagon">Wagon</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="vehicle_type">Vehicle Type *</Label>
+                                    <Select defaultValue={mockVehicle.vehicle_type}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="new">New</SelectItem>
+                                            <SelectItem value="used">Used</SelectItem>
+                                            <SelectItem value="demo">Demo</SelectItem>
+                                            <SelectItem value="certified">Certified Pre-Owned</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Specifications */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <Settings className="h-5 w-5" />
+                                    <span>Specifications</span>
+                                </CardTitle>
+                                <CardDescription>Update technical specifications and features</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="engine" className="flex items-center space-x-1">
+                                            <Fuel className="h-4 w-4" />
+                                            <span>Engine</span>
+                                        </Label>
+                                        <Input id="engine" defaultValue={mockVehicle.engine} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="transmission">Transmission</Label>
+                                        <Select defaultValue="cvt">
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="manual">Manual</SelectItem>
+                                                <SelectItem value="automatic">Automatic</SelectItem>
+                                                <SelectItem value="cvt">CVT</SelectItem>
+                                                <SelectItem value="dual_clutch">Dual Clutch</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="fuel_type">Fuel Type</Label>
+                                        <Select defaultValue={mockVehicle.fuel_type.toLowerCase()}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="gasoline">Gasoline</SelectItem>
+                                                <SelectItem value="diesel">Diesel</SelectItem>
+                                                <SelectItem value="hybrid">Hybrid</SelectItem>
+                                                <SelectItem value="electric">Electric</SelectItem>
+                                                <SelectItem value="plug_in_hybrid">Plug-in Hybrid</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="mileage" className="flex items-center space-x-1">
+                                            <Gauge className="h-4 w-4" />
+                                            <span>Mileage (km)</span>
+                                        </Label>
+                                        <Input id="mileage" type="number" defaultValue={mockVehicle.mileage} />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="exterior_color" className="flex items-center space-x-1">
+                                            <Palette className="h-4 w-4" />
+                                            <span>Exterior Color</span>
+                                        </Label>
+                                        <Input id="exterior_color" defaultValue={mockVehicle.exterior_color} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="interior_color">Interior Color</Label>
+                                        <Input id="interior_color" defaultValue={mockVehicle.interior_color} />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Features & Options */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Features & Options</CardTitle>
+                                <CardDescription>Update vehicle features and optional equipment</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Vehicle Features</Label>
+                                    {features.map((feature, index) => (
+                                        <div key={index} className="flex items-center space-x-2">
+                                            <Input
+                                                value={feature}
+                                                onChange={(e) => updateFeature(index, e.target.value)}
+                                                placeholder="e.g., Apple CarPlay, Sunroof, Heated Seats"
+                                                className="flex-1"
+                                            />
+                                            {features.length > 1 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => removeFeature(index)}
+                                                >
+                                                    <Minus className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={addFeature}
+                                        className="w-full"
+                                    >
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Feature
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Photos & Documents */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <Camera className="h-5 w-5" />
+                                    <span>Photos & Documents</span>
+                                </CardTitle>
+                                <CardDescription>Manage vehicle photos and documentation</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Current Photos ({mockVehicle.photos.length})</Label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {mockVehicle.photos.map((photo, index) => (
+                                            <div key={index} className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                                                <Camera className="h-8 w-8 text-gray-400" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <Button variant="outline" size="sm" className="w-full">
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        Add More Photos
+                                    </Button>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Documents ({mockVehicle.documents.length})</Label>
+                                    <div className="space-y-2">
+                                        {mockVehicle.documents.map((doc, index) => (
+                                            <div key={index} className="flex items-center justify-between p-2 border rounded">
+                                                <div className="flex items-center space-x-2">
+                                                    <FileText className="h-4 w-4" />
+                                                    <span className="text-sm">{doc}</span>
+                                                </div>
+                                                <Button variant="ghost" size="sm">
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <Button variant="outline" size="sm" className="w-full">
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        Add Documents
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Sidebar */}
+                    <div className="space-y-6">
+                        {/* Pricing Information */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <DollarSign className="h-5 w-5" />
+                                    <span>Pricing</span>
+                                </CardTitle>
+                                <CardDescription>Update vehicle pricing and costs</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="msrp">MSRP (₱)</Label>
+                                    <Input id="msrp" type="number" defaultValue={mockVehicle.msrp} />
+                                    <p className="text-xs text-muted-foreground">Manufacturer's suggested retail price</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="dealer_cost">Dealer Cost (₱)</Label>
+                                    <Input 
+                                        id="dealer_cost" 
+                                        type="number" 
+                                        defaultValue={mockVehicle.dealer_cost}
+                                        onChange={(e) => setDealerCost(Number(e.target.value))}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Your acquisition cost</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="current_price">Current Price (₱) *</Label>
+                                    <Input 
+                                        id="current_price" 
+                                        type="number" 
+                                        defaultValue={mockVehicle.current_price}
+                                        onChange={(e) => setCurrentPrice(Number(e.target.value))}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Current selling price</p>
+                                </div>
+
+                                <Separator />
+
+                                <div className="bg-green-50 p-3 rounded-lg">
+                                    <div className="text-sm font-medium text-green-800">Current Margin</div>
+                                    <div className="text-lg font-bold text-green-600">₱{calculateMargin().toLocaleString()}</div>
+                                    <div className="text-xs text-green-600">{calculateMarginPercentage()}% margin</div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Location & Status */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <MapPin className="h-5 w-5" />
+                                    <span>Location & Status</span>
+                                </CardTitle>
+                                <CardDescription>Update vehicle location and availability</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="location">Location *</Label>
+                                    <Select defaultValue="showroom_a1">
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="showroom_a1">Showroom A-1</SelectItem>
+                                            <SelectItem value="showroom_a2">Showroom A-2</SelectItem>
+                                            <SelectItem value="showroom_a3">Showroom A-3</SelectItem>
+                                            <SelectItem value="lot_b1">Lot B-1</SelectItem>
+                                            <SelectItem value="lot_b2">Lot B-2</SelectItem>
+                                            <SelectItem value="service_area">Service Area</SelectItem>
+                                            <SelectItem value="demo_fleet">Demo Fleet</SelectItem>
+                                            <SelectItem value="in_transit">In Transit</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="status">Status</Label>
+                                    <Select defaultValue={mockVehicle.status}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="available">Available</SelectItem>
+                                            <SelectItem value="reserved">Reserved</SelectItem>
+                                            <SelectItem value="sold">Sold</SelectItem>
+                                            <SelectItem value="demo">Demo</SelectItem>
+                                            <SelectItem value="in_transit">In Transit</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="assigned_sales_rep">Assigned Sales Rep</Label>
+                                    <Select defaultValue="maria_santos">
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="maria_santos">Maria Santos</SelectItem>
+                                            <SelectItem value="carlos_rodriguez">Carlos Rodriguez</SelectItem>
+                                            <SelectItem value="lisa_brown">Lisa Brown</SelectItem>
+                                            <SelectItem value="pedro_martinez">Pedro Martinez</SelectItem>
+                                            <SelectItem value="ana_garcia">Ana Garcia</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="priority">Priority Level</Label>
+                                    <Select defaultValue={mockVehicle.priority}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="low">Low</SelectItem>
+                                            <SelectItem value="medium">Medium</SelectItem>
+                                            <SelectItem value="high">High</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="date_received" className="flex items-center space-x-1">
+                                        <Calendar className="h-4 w-4" />
+                                        <span>Date Received</span>
+                                    </Label>
+                                    <Input id="date_received" type="date" defaultValue={mockVehicle.date_received} />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Quick Actions */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Settings & Options</CardTitle>
+                                <CardDescription>Update additional options and settings</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Label htmlFor="featured">Featured Vehicle</Label>
+                                        <p className="text-xs text-muted-foreground">Highlight on website</p>
+                                    </div>
+                                    <Switch id="featured" defaultChecked={mockVehicle.featured} />
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Label htmlFor="allow_test_drive">Allow Test Drives</Label>
+                                        <p className="text-xs text-muted-foreground">Enable test drive booking</p>
+                                    </div>
+                                    <Switch id="allow_test_drive" defaultChecked={mockVehicle.allow_test_drive} />
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Label htmlFor="online_listing">Online Listing</Label>
+                                        <p className="text-xs text-muted-foreground">Show on website</p>
+                                    </div>
+                                    <Switch id="online_listing" defaultChecked={mockVehicle.online_listing} />
+                                </div>
+
+                                <Separator />
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="notes">Internal Notes</Label>
+                                    <Textarea 
+                                        id="notes" 
+                                        defaultValue={mockVehicle.notes}
+                                        className="min-h-[80px]"
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Activity History */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <History className="h-5 w-5" />
+                                    <span>Recent Activity</span>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-3">
+                                    <div className="flex items-start space-x-2">
+                                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                                        <div>
+                                            <div className="text-sm font-medium">Price updated</div>
+                                            <div className="text-xs text-muted-foreground">Maria Santos • 2 hours ago</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start space-x-2">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                                        <div>
+                                            <div className="text-sm font-medium">Photos uploaded</div>
+                                            <div className="text-xs text-muted-foreground">System • 1 day ago</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start space-x-2">
+                                        <div className="w-2 h-2 bg-gray-500 rounded-full mt-2"></div>
+                                        <div>
+                                            <div className="text-sm font-medium">Vehicle added</div>
+                                            <div className="text-xs text-muted-foreground">Admin • 15 days ago</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Save Actions */}
+                        <Card>
+                            <CardContent className="pt-6">
+                                <div className="space-y-2">
+                                    <Button className="w-full">
+                                        <Save className="h-4 w-4 mr-2" />
+                                        Update Vehicle
+                                    </Button>
+                                    <Button variant="outline" className="w-full">
+                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                        Update & Continue Editing
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground text-center mt-2">
+                                    Changes will be saved immediately
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        </AppLayout>
+    );
+}

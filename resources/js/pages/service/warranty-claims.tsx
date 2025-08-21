@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -219,10 +219,12 @@ export default function WarrantyClaims() {
                             <Download className="h-4 w-4 mr-2" />
                             Export Report
                         </Button>
-                        <Button size="sm">
-                            <Plus className="h-4 w-4 mr-2" />
-                            New Claim
-                        </Button>
+                        <Link href="/service/warranty-claims/create">
+                            <Button size="sm">
+                                <Plus className="h-4 w-4 mr-2" />
+                                New Claim
+                            </Button>
+                        </Link>
                     </div>
                 </div>
 
@@ -421,12 +423,16 @@ export default function WarrantyClaims() {
                                         <TableCell>{getPriorityBadge(claim.priority)}</TableCell>
                                         <TableCell>
                                             <div className="flex space-x-1">
-                                                <Button variant="ghost" size="sm">
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm">
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
+                                                <Link href={`/service/warranty-claims/${claim.id}`}>
+                                                    <Button variant="ghost" size="sm">
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
+                                                <Link href={`/service/warranty-claims/${claim.id}/edit`}>
+                                                    <Button variant="ghost" size="sm">
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
                                             </div>
                                         </TableCell>
                                     </TableRow>

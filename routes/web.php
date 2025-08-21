@@ -214,10 +214,46 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('service')->name('s
     Route::get('/common-services/{id}/edit', function ($id) {
         return Inertia::render('service/common-service-edit', ['serviceId' => $id]);
     })->name('common-services.edit');
-    
     Route::get('/common-services/{id}', function ($id) {
         return Inertia::render('service/common-service-view', ['serviceId' => $id]);
     })->name('common-services.view');
+    
+    // Warranty Claims Management
+    Route::get('/warranty-claims', function () {
+        return Inertia::render('service/warranty-claims');
+    })->name('service.warranty-claims.index');
+
+    Route::get('/warranty-claims/create', function () {
+        return Inertia::render('service/warranty-claim-create');
+    })->name('service.warranty-claims.create');
+
+    Route::get('/warranty-claims/{id}/edit', function ($id) {
+        return Inertia::render('service/warranty-claim-edit', ['id' => $id]);
+    })->name('service.warranty-claims.edit');
+
+    Route::get('/warranty-claims/{id}', function ($id) {
+        return Inertia::render('service/warranty-claim-view', ['id' => $id]);
+    })->name('service.warranty-claims.show');
+});
+
+// Vehicle Inventory Management Routes
+Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('inventory')->group(function () {
+    // Vehicle Inventory
+    Route::get('/vehicles', function () {
+        return Inertia::render('inventory/vehicles');
+    })->name('inventory.vehicles.index');
+
+    Route::get('/vehicles/create', function () {
+        return Inertia::render('inventory/vehicle-create');
+    })->name('inventory.vehicles.create');
+
+    Route::get('/vehicles/{id}/edit', function ($id) {
+        return Inertia::render('inventory/vehicle-edit', ['id' => $id]);
+    })->name('inventory.vehicles.edit');
+
+    Route::get('/vehicles/{id}', function ($id) {
+        return Inertia::render('inventory/vehicle-view', ['id' => $id]);
+    })->name('inventory.vehicles.show');
 });
 
 require __DIR__.'/settings.php';

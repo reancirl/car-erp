@@ -241,7 +241,7 @@ export default function PartsInventory() {
                             <Download className="h-4 w-4 mr-2" />
                             Export Report
                         </Button>
-                        <Button size="sm">
+                        <Button size="sm" onClick={() => console.log('Add Part clicked')}>
                             <Plus className="h-4 w-4 mr-2" />
                             Add Part
                         </Button>
@@ -438,10 +438,10 @@ export default function PartsInventory() {
                                         <TableCell>{getStatusBadge(item.status)}</TableCell>
                                         <TableCell>
                                             <div className="flex space-x-1">
-                                                <Button variant="ghost" size="sm">
+                                                <Button variant="ghost" size="sm" onClick={() => console.log('View part', item.id)}>
                                                     <Eye className="h-4 w-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="sm">
+                                                <Button variant="ghost" size="sm" onClick={() => console.log('Edit part', item.id)}>
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
                                             </div>

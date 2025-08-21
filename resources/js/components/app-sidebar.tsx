@@ -80,9 +80,18 @@ const operationsNavItems: NavItem[] = [
         icon: FileText,
     },
     {
-        title: 'Parts & Inventory',
+        title: 'Parts & Accessories',
         href: '/service/parts-inventory',
         icon: Package,
+    },
+];
+
+// Inventory Management
+const inventoryNavItems: NavItem[] = [
+    {
+        title: 'Vehicle Inventory',
+        href: '/inventory/vehicles',
+        icon: Car,
     },
 ];
 
@@ -168,6 +177,7 @@ export function AppSidebar() {
             <SidebarContent>
                 <NavMain items={coreNavItems} />
                 <NavMain items={salesNavItems} title="Sales & Customer" />
+                <NavMain items={inventoryNavItems} title="Inventory Management" />
                 <NavMain items={operationsNavItems} title="Operations" />
                 <NavMain items={analyticsNavItems} title="Analytics & Reports" />
                 <NavMain items={complianceNavItems} title="Compliance & Quality" />
