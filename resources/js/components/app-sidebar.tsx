@@ -65,6 +65,16 @@ const operationsNavItems: NavItem[] = [
         icon: Wrench,
     },
     {
+        title: 'Service Types',
+        href: '/service/service-types',
+        icon: Settings,
+    },
+    {
+        title: 'Common Services',
+        href: '/service/common-services',
+        icon: Wrench,
+    },
+    {
         title: 'Warranty Claims',
         href: '/service/warranty-claims',
         icon: FileText,

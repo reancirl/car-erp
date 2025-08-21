@@ -164,6 +164,62 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('admin')->name('adm
     })->name('branch-management.view');
 });
 
+// PMS Work Orders Routes
+Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('pms')->name('pms.')->group(function () {
+    Route::get('/work-orders', function () {
+        return Inertia::render('pms/work-orders');
+    })->name('work-orders');
+    
+    Route::get('/work-orders/create', function () {
+        return Inertia::render('pms/work-order-create');
+    })->name('work-orders.create');
+    
+    Route::get('/work-orders/{id}/edit', function ($id) {
+        return Inertia::render('pms/work-order-edit', ['workOrderId' => $id]);
+    })->name('work-orders.edit');
+    
+    Route::get('/work-orders/{id}', function ($id) {
+        return Inertia::render('pms/work-order-view', ['workOrderId' => $id]);
+    })->name('work-orders.view');
+});
+
+// Service & Parts Routes
+Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('service')->name('service.')->group(function () {
+    // Service Types Routes
+    Route::get('/service-types', function () {
+        return Inertia::render('service/service-types');
+    })->name('service-types');
+    
+    Route::get('/service-types/create', function () {
+        return Inertia::render('service/service-type-create');
+    })->name('service-types.create');
+    
+    Route::get('/service-types/{id}/edit', function ($id) {
+        return Inertia::render('service/service-type-edit', ['serviceTypeId' => $id]);
+    })->name('service-types.edit');
+    
+    Route::get('/service-types/{id}', function ($id) {
+        return Inertia::render('service/service-type-view', ['serviceTypeId' => $id]);
+    })->name('service-types.view');
+    
+    // Common Services Routes
+    Route::get('/common-services', function () {
+        return Inertia::render('service/common-services');
+    })->name('common-services');
+    
+    Route::get('/common-services/create', function () {
+        return Inertia::render('service/common-service-create');
+    })->name('common-services.create');
+    
+    Route::get('/common-services/{id}/edit', function ($id) {
+        return Inertia::render('service/common-service-edit', ['serviceId' => $id]);
+    })->name('common-services.edit');
+    
+    Route::get('/common-services/{id}', function ($id) {
+        return Inertia::render('service/common-service-view', ['serviceId' => $id]);
+    })->name('common-services.view');
+});
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/mfa.php';

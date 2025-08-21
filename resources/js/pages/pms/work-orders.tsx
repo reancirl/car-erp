@@ -6,119 +6,189 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Wrench, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, Camera, MapPin, User, Calendar } from 'lucide-react';
+import { Wrench, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, Camera, MapPin, User, Calendar, PlayCircle, PauseCircle, XCircle } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Service & Parts',
-        href: '/service',
+        title: 'PMS',
+        href: '/pms',
     },
     {
-        title: 'PMS Work Orders',
-        href: '/service/pms-work-orders',
+        title: 'Work Orders',
+        href: '/pms/work-orders',
     },
 ];
 
-export default function PMSWorkOrders() {
+export default function WorkOrders() {
     // Mock data for demonstration
     const mockWorkOrders = [
         {
             id: 1,
-            work_order_no: 'WO-2025-001',
-            vehicle_vin: 'JH4KA8260MC123456',
-            customer_name: 'John Smith',
-            vehicle_make: 'Honda',
-            vehicle_model: 'Civic',
-            vehicle_year: 2023,
-            current_odometer: 15000,
-            service_type: '10K Service',
-            service_interval: 10000,
+            work_order_number: 'WO-2025-001',
+            vehicle: {
+                plate_number: 'ABC-1234',
+                make: 'Toyota',
+                model: 'Vios',
+                year: 2023,
+                vin: 'JH4KA8260MC123456'
+            },
+            customer: {
+                name: 'Maria Santos',
+                phone: '+63-917-123-4567',
+                type: 'individual'
+            },
+            service_type: 'PMS - 15K Service',
+            current_mileage: 15000,
             last_service_km: 5000,
-            last_service_date: '2024-10-15',
             due_date: '2025-01-20',
-            assigned_technician: 'Mike Johnson',
-            status: 'overdue',
+            assigned_technician: 'Carlos Mendoza',
+            status: 'in_progress',
             priority: 'high',
-            created_at: '2025-01-10 08:30:00',
-            photos_uploaded: false,
-            checklist_completed: false,
-            estimated_hours: 2.5,
-            actual_hours: null
+            created_at: '2025-01-15 09:30:00',
+            estimated_hours: 3.5,
+            actual_hours: 2.0,
+            estimated_cost: 4500.00,
+            actual_cost: 3200.00,
+            completion_percentage: 65,
+            photos_uploaded: true,
+            checklist_completed: false
         },
         {
             id: 2,
-            work_order_no: 'WO-2025-002',
-            vehicle_vin: 'WVWZZZ1JZ3W123789',
-            customer_name: 'Sarah Davis',
-            vehicle_make: 'Volkswagen',
-            vehicle_model: 'Golf',
-            vehicle_year: 2022,
-            current_odometer: 25000,
-            service_type: '20K Service',
-            service_interval: 20000,
+            work_order_number: 'WO-2025-002',
+            vehicle: {
+                plate_number: 'XYZ-5678',
+                make: 'Honda',
+                model: 'Civic',
+                year: 2022,
+                vin: 'WVWZZZ1JZ3W123789'
+            },
+            customer: {
+                name: 'John Smith',
+                phone: '+63-917-987-6543',
+                type: 'corporate'
+            },
+            service_type: 'PMS - 20K Service',
+            current_mileage: 25000,
             last_service_km: 10000,
-            last_service_date: '2024-08-15',
-            due_date: '2025-01-15',
-            assigned_technician: 'Tom Wilson',
-            status: 'in_progress',
-            priority: 'medium',
-            created_at: '2025-01-12 09:15:00',
-            photos_uploaded: true,
-            checklist_completed: false,
-            estimated_hours: 3.0,
-            actual_hours: 1.5
+            due_date: '2025-01-18',
+            assigned_technician: 'Maria Rodriguez',
+            status: 'overdue',
+            priority: 'urgent',
+            created_at: '2025-01-10 08:15:00',
+            estimated_hours: 4.0,
+            actual_hours: null,
+            estimated_cost: 6500.00,
+            actual_cost: null,
+            completion_percentage: 0,
+            photos_uploaded: false,
+            checklist_completed: false
         },
         {
             id: 3,
-            work_order_no: 'WO-2025-003',
-            vehicle_vin: 'KMHD84LF5EU456123',
-            customer_name: 'Robert Chen',
-            vehicle_make: 'Hyundai',
-            vehicle_model: 'Elantra',
-            vehicle_year: 2021,
-            current_odometer: 45000,
-            service_type: '40K Service',
-            service_interval: 40000,
-            last_service_km: 30000,
-            last_service_date: '2024-06-20',
+            work_order_number: 'WO-2025-003',
+            vehicle: {
+                plate_number: 'DEF-9012',
+                make: 'Mitsubishi',
+                model: 'Mirage',
+                year: 2021,
+                vin: 'KMHD84LF5EU456123'
+            },
+            customer: {
+                name: 'Sarah Davis',
+                phone: '+63-917-555-0123',
+                type: 'individual'
+            },
+            service_type: 'PMS - 10K Service',
+            current_mileage: 12000,
+            last_service_km: 2000,
             due_date: '2025-01-25',
-            assigned_technician: 'Lisa Brown',
+            assigned_technician: 'Juan Santos',
             status: 'scheduled',
-            priority: 'medium',
-            created_at: '2025-01-11 14:20:00',
+            priority: 'normal',
+            created_at: '2025-01-12 14:20:00',
+            estimated_hours: 2.5,
+            actual_hours: null,
+            estimated_cost: 3500.00,
+            actual_cost: null,
+            completion_percentage: 0,
             photos_uploaded: false,
-            checklist_completed: false,
-            estimated_hours: 4.0,
-            actual_hours: null
+            checklist_completed: false
         },
         {
             id: 4,
-            work_order_no: 'WO-2025-004',
-            vehicle_vin: 'JF1VA1C60M9876543',
-            customer_name: 'Emily Johnson',
-            vehicle_make: 'Subaru',
-            vehicle_model: 'Impreza',
-            vehicle_year: 2020,
-            current_odometer: 35000,
-            service_type: '30K Service',
-            service_interval: 30000,
+            work_order_number: 'WO-2025-004',
+            vehicle: {
+                plate_number: 'GHI-3456',
+                make: 'Hyundai',
+                model: 'Accent',
+                year: 2020,
+                vin: 'JF1VA1C60M9876543'
+            },
+            customer: {
+                name: 'Robert Chen',
+                phone: '+63-917-444-5678',
+                type: 'individual'
+            },
+            service_type: 'PMS - 30K Service',
+            current_mileage: 35000,
             last_service_km: 20000,
-            last_service_date: '2024-05-10',
-            due_date: '2025-02-01',
-            assigned_technician: 'David Kim',
+            due_date: '2025-01-12',
+            assigned_technician: 'Ana Reyes',
             status: 'completed',
-            priority: 'low',
+            priority: 'normal',
             created_at: '2025-01-08 11:45:00',
+            estimated_hours: 5.0,
+            actual_hours: 4.8,
+            estimated_cost: 8500.00,
+            actual_cost: 8200.00,
+            completion_percentage: 100,
             photos_uploaded: true,
-            checklist_completed: true,
-            estimated_hours: 3.5,
-            actual_hours: 3.2
+            checklist_completed: true
+        },
+        {
+            id: 5,
+            work_order_number: 'WO-2025-005',
+            vehicle: {
+                plate_number: 'JKL-7890',
+                make: 'Nissan',
+                model: 'Almera',
+                year: 2023,
+                vin: 'LNBPG2JA5FJ123456'
+            },
+            customer: {
+                name: 'Emily Johnson',
+                phone: '+63-917-333-4567',
+                type: 'corporate'
+            },
+            service_type: 'PMS - 5K Service',
+            current_mileage: 6500,
+            last_service_km: 0,
+            due_date: '2025-02-01',
+            assigned_technician: 'Roberto Cruz',
+            status: 'pending',
+            priority: 'low',
+            created_at: '2025-01-14 16:30:00',
+            estimated_hours: 2.0,
+            actual_hours: null,
+            estimated_cost: 2500.00,
+            actual_cost: null,
+            completion_percentage: 0,
+            photos_uploaded: false,
+            checklist_completed: false
         }
     ];
 
     const getStatusBadge = (status: string) => {
         switch (status) {
+            case 'pending':
+                return (
+                    <Badge variant="outline" className="bg-gray-100 text-gray-800">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Pending
+                    </Badge>
+                );
             case 'scheduled':
                 return (
                     <Badge variant="outline" className="bg-blue-100 text-blue-800">
@@ -129,8 +199,15 @@ export default function PMSWorkOrders() {
             case 'in_progress':
                 return (
                     <Badge variant="default" className="bg-yellow-100 text-yellow-800">
-                        <Clock className="h-3 w-3 mr-1" />
+                        <PlayCircle className="h-3 w-3 mr-1" />
                         In Progress
+                    </Badge>
+                );
+            case 'on_hold':
+                return (
+                    <Badge variant="outline" className="bg-orange-100 text-orange-800">
+                        <PauseCircle className="h-3 w-3 mr-1" />
+                        On Hold
                     </Badge>
                 );
             case 'completed':
@@ -147,6 +224,13 @@ export default function PMSWorkOrders() {
                         Overdue
                     </Badge>
                 );
+            case 'cancelled':
+                return (
+                    <Badge variant="outline" className="bg-red-100 text-red-800">
+                        <XCircle className="h-3 w-3 mr-1" />
+                        Cancelled
+                    </Badge>
+                );
             default:
                 return <Badge variant="secondary">{status}</Badge>;
         }
@@ -154,10 +238,12 @@ export default function PMSWorkOrders() {
 
     const getPriorityBadge = (priority: string) => {
         switch (priority) {
+            case 'urgent':
+                return <Badge variant="destructive">Urgent</Badge>;
             case 'high':
                 return <Badge variant="destructive" className="bg-orange-100 text-orange-800">High</Badge>;
-            case 'medium':
-                return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Medium</Badge>;
+            case 'normal':
+                return <Badge variant="outline" className="bg-blue-100 text-blue-800">Normal</Badge>;
             case 'low':
                 return <Badge variant="outline">Low</Badge>;
             default:
@@ -165,13 +251,21 @@ export default function PMSWorkOrders() {
         }
     };
 
-    const isOverdue = (dueDate: string, currentOdometer: number, lastServiceKm: number) => {
+    const isOverdue = (dueDate: string) => {
         const due = new Date(dueDate);
         const now = new Date();
-        const kmDiff = currentOdometer - lastServiceKm;
-        
-        return due < now || kmDiff >= 10000;
+        return due < now;
     };
+
+    // Calculate stats
+    const totalWorkOrders = mockWorkOrders.length;
+    const overdueCount = mockWorkOrders.filter(wo => wo.status === 'overdue').length;
+    const inProgressCount = mockWorkOrders.filter(wo => wo.status === 'in_progress').length;
+    const completedCount = mockWorkOrders.filter(wo => wo.status === 'completed').length;
+    const avgCompletionTime = mockWorkOrders
+        .filter(wo => wo.actual_hours)
+        .reduce((sum, wo) => sum + (wo.actual_hours || 0), 0) / 
+        mockWorkOrders.filter(wo => wo.actual_hours).length;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -205,7 +299,7 @@ export default function PMSWorkOrders() {
                             <CardTitle className="text-sm font-medium">Total Work Orders</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">4</div>
+                            <div className="text-2xl font-bold">{totalWorkOrders}</div>
                             <p className="text-xs text-muted-foreground">Active this month</p>
                         </CardContent>
                     </Card>
@@ -214,8 +308,8 @@ export default function PMSWorkOrders() {
                             <CardTitle className="text-sm font-medium">Overdue Services</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-red-600">1</div>
-                            <p className="text-xs text-muted-foreground">≥10,000 km or 6 months</p>
+                            <div className="text-2xl font-bold text-red-600">{overdueCount}</div>
+                            <p className="text-xs text-muted-foreground">Require immediate attention</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -223,7 +317,7 @@ export default function PMSWorkOrders() {
                             <CardTitle className="text-sm font-medium">In Progress</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">1</div>
+                            <div className="text-2xl font-bold">{inProgressCount}</div>
                             <p className="text-xs text-muted-foreground">Currently being serviced</p>
                         </CardContent>
                     </Card>
@@ -232,7 +326,7 @@ export default function PMSWorkOrders() {
                             <CardTitle className="text-sm font-medium">Avg Completion Time</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">3.2h</div>
+                            <div className="text-2xl font-bold">{avgCompletionTime.toFixed(1)}h</div>
                             <p className="text-xs text-muted-foreground">This month</p>
                         </CardContent>
                     </Card>
@@ -242,14 +336,14 @@ export default function PMSWorkOrders() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Filter & Search</CardTitle>
-                        <CardDescription>Manage service jobs with km/time intervals, odometer tracking, and technician assignments</CardDescription>
+                        <CardDescription>Manage PMS work orders with scheduling, progress tracking, and technician assignments</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-col md:flex-row gap-4">
                             <div className="flex-1">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input placeholder="Search by work order, VIN, or customer..." className="pl-10" />
+                                    <Input placeholder="Search by work order, plate number, or customer..." className="pl-10" />
                                 </div>
                             </div>
                             <Select>
@@ -258,10 +352,25 @@ export default function PMSWorkOrders() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="pending">Pending</SelectItem>
                                     <SelectItem value="scheduled">Scheduled</SelectItem>
                                     <SelectItem value="in_progress">In Progress</SelectItem>
+                                    <SelectItem value="on_hold">On Hold</SelectItem>
                                     <SelectItem value="completed">Completed</SelectItem>
                                     <SelectItem value="overdue">Overdue</SelectItem>
+                                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select>
+                                <SelectTrigger className="w-full md:w-[180px]">
+                                    <SelectValue placeholder="Priority" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Priorities</SelectItem>
+                                    <SelectItem value="urgent">Urgent</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                    <SelectItem value="normal">Normal</SelectItem>
+                                    <SelectItem value="low">Low</SelectItem>
                                 </SelectContent>
                             </Select>
                             <Select>
@@ -270,22 +379,11 @@ export default function PMSWorkOrders() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Technicians</SelectItem>
-                                    <SelectItem value="mike_johnson">Mike Johnson</SelectItem>
-                                    <SelectItem value="tom_wilson">Tom Wilson</SelectItem>
-                                    <SelectItem value="lisa_brown">Lisa Brown</SelectItem>
-                                    <SelectItem value="david_kim">David Kim</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Select>
-                                <SelectTrigger className="w-full md:w-[180px]">
-                                    <SelectValue placeholder="Service Type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Types</SelectItem>
-                                    <SelectItem value="10k">10K Service</SelectItem>
-                                    <SelectItem value="20k">20K Service</SelectItem>
-                                    <SelectItem value="30k">30K Service</SelectItem>
-                                    <SelectItem value="40k">40K Service</SelectItem>
+                                    <SelectItem value="carlos_mendoza">Carlos Mendoza</SelectItem>
+                                    <SelectItem value="maria_rodriguez">Maria Rodriguez</SelectItem>
+                                    <SelectItem value="juan_santos">Juan Santos</SelectItem>
+                                    <SelectItem value="ana_reyes">Ana Reyes</SelectItem>
+                                    <SelectItem value="roberto_cruz">Roberto Cruz</SelectItem>
                                 </SelectContent>
                             </Select>
                             <Button variant="outline">
@@ -299,8 +397,8 @@ export default function PMSWorkOrders() {
                 {/* Work Orders Table */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Active Work Orders</CardTitle>
-                        <CardDescription>Service jobs with odometer tracking, VIN entry, and automated overdue flagging</CardDescription>
+                        <CardTitle>Work Orders</CardTitle>
+                        <CardDescription>Preventive maintenance service orders with progress tracking and completion status</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -310,12 +408,12 @@ export default function PMSWorkOrders() {
                                     <TableHead>Vehicle</TableHead>
                                     <TableHead>Customer</TableHead>
                                     <TableHead>Service Type</TableHead>
-                                    <TableHead>Odometer</TableHead>
+                                    <TableHead>Mileage</TableHead>
                                     <TableHead>Due Date</TableHead>
                                     <TableHead>Technician</TableHead>
+                                    <TableHead>Progress</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Priority</TableHead>
-                                    <TableHead>Photos</TableHead>
                                     <TableHead>Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -324,30 +422,48 @@ export default function PMSWorkOrders() {
                                     <TableRow key={order.id} className={order.status === 'overdue' ? 'bg-red-50' : ''}>
                                         <TableCell className="font-medium">
                                             <div>
-                                                <div className="font-medium">{order.work_order_no}</div>
-                                                <div className="text-xs text-muted-foreground font-mono">{order.vehicle_vin}</div>
+                                                <div className="font-medium">{order.work_order_number}</div>
+                                                <div className="text-xs text-muted-foreground font-mono">
+                                                    {order.vehicle.vin.slice(-6)}
+                                                </div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div>
-                                                <div className="font-medium">{order.vehicle_year} {order.vehicle_make} {order.vehicle_model}</div>
-                                                <div className="text-xs text-muted-foreground">VIN: {order.vehicle_vin.slice(-6)}</div>
+                                                <div className="font-medium">{order.vehicle.plate_number}</div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {order.vehicle.year} {order.vehicle.make} {order.vehicle.model}
+                                                </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell>{order.customer_name}</TableCell>
+                                        <TableCell>
+                                            <div>
+                                                <div className="font-medium">{order.customer.name}</div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    <Badge variant="outline" className="text-xs">
+                                                        {order.customer.type}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </TableCell>
                                         <TableCell>
                                             <Badge variant="outline">{order.service_type}</Badge>
                                         </TableCell>
                                         <TableCell>
                                             <div>
-                                                <div className="font-medium">{order.current_odometer.toLocaleString()} km</div>
+                                                <div className="font-medium">{order.current_mileage.toLocaleString()} km</div>
                                                 <div className="text-xs text-muted-foreground">
                                                     Last: {order.last_service_km.toLocaleString()} km
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell className={order.status === 'overdue' ? 'text-red-600 font-medium' : ''}>
-                                            {order.due_date}
+                                            <div>
+                                                <div>{order.due_date}</div>
+                                                {isOverdue(order.due_date) && order.status !== 'completed' && (
+                                                    <div className="text-xs text-red-600">Overdue</div>
+                                                )}
+                                            </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center space-x-1">
@@ -355,16 +471,19 @@ export default function PMSWorkOrders() {
                                                 <span className="text-sm">{order.assigned_technician}</span>
                                             </div>
                                         </TableCell>
-                                        <TableCell>{getStatusBadge(order.status)}</TableCell>
-                                        <TableCell>{getPriorityBadge(order.priority)}</TableCell>
                                         <TableCell>
-                                            <div className="flex items-center space-x-1">
-                                                <Camera className={`h-4 w-4 ${order.photos_uploaded ? 'text-green-600' : 'text-gray-400'}`} />
-                                                <span className="text-xs">
-                                                    {order.photos_uploaded ? 'Uploaded' : 'Pending'}
-                                                </span>
+                                            <div className="flex items-center space-x-2">
+                                                <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[60px]">
+                                                    <div 
+                                                        className="bg-blue-600 h-2 rounded-full" 
+                                                        style={{ width: `${order.completion_percentage}%` }}
+                                                    ></div>
+                                                </div>
+                                                <span className="text-xs font-medium">{order.completion_percentage}%</span>
                                             </div>
                                         </TableCell>
+                                        <TableCell>{getStatusBadge(order.status)}</TableCell>
+                                        <TableCell>{getPriorityBadge(order.priority)}</TableCell>
                                         <TableCell>
                                             <div className="flex space-x-1">
                                                 <Link href={`/pms/work-orders/${order.id}/view`}>
@@ -386,35 +505,35 @@ export default function PMSWorkOrders() {
                     </CardContent>
                 </Card>
 
-                {/* Technician Assignment & Photo Upload Requirements */}
+                {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Technician Assignment Rules</CardTitle>
-                            <CardDescription>Randomized assignments to avoid favoritism</CardDescription>
+                            <CardTitle>Service Intervals & Tracking</CardTitle>
+                            <CardDescription>Automated PMS scheduling based on mileage and time intervals</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between p-3 border rounded-lg">
                                     <div>
-                                        <div className="font-medium">Auto-Assignment</div>
-                                        <div className="text-sm text-muted-foreground">Randomly assign available technicians</div>
+                                        <div className="font-medium">5K Service Interval</div>
+                                        <div className="text-sm text-muted-foreground">Basic maintenance every 5,000 km</div>
                                     </div>
-                                    <Badge variant="default" className="bg-green-100 text-green-800">Enabled</Badge>
+                                    <Badge variant="outline" className="bg-blue-100 text-blue-800">1 Active</Badge>
                                 </div>
                                 <div className="flex items-center justify-between p-3 border rounded-lg">
                                     <div>
-                                        <div className="font-medium">Workload Balancing</div>
-                                        <div className="text-sm text-muted-foreground">Consider current workload in assignment</div>
+                                        <div className="font-medium">10K Service Interval</div>
+                                        <div className="text-sm text-muted-foreground">Comprehensive check every 10,000 km</div>
                                     </div>
-                                    <Badge variant="default" className="bg-green-100 text-green-800">Enabled</Badge>
+                                    <Badge variant="outline" className="bg-green-100 text-green-800">1 Scheduled</Badge>
                                 </div>
                                 <div className="flex items-center justify-between p-3 border rounded-lg">
                                     <div>
-                                        <div className="font-medium">Skill Matching</div>
-                                        <div className="text-sm text-muted-foreground">Match technician expertise to service type</div>
+                                        <div className="font-medium">15K+ Service Intervals</div>
+                                        <div className="text-sm text-muted-foreground">Extended maintenance services</div>
                                     </div>
-                                    <Badge variant="outline">Optional</Badge>
+                                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800">3 Active</Badge>
                                 </div>
                             </div>
                         </CardContent>
@@ -422,78 +541,44 @@ export default function PMSWorkOrders() {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Photo Upload Requirements</CardTitle>
-                            <CardDescription>Mandatory geotagged before/after photos</CardDescription>
+                            <CardTitle>Quality Assurance</CardTitle>
+                            <CardDescription>Photo documentation and completion verification</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between p-3 border rounded-lg">
                                     <div>
-                                        <div className="font-medium">Before Photos</div>
-                                        <div className="text-sm text-muted-foreground">Required before starting work</div>
+                                        <div className="font-medium">Photo Documentation</div>
+                                        <div className="text-sm text-muted-foreground">Before/after photos required</div>
                                     </div>
                                     <div className="flex items-center space-x-1">
-                                        <MapPin className="h-3 w-3 text-green-600" />
-                                        <span className="text-xs text-green-600">Geotagged</span>
+                                        <Camera className="h-3 w-3 text-green-600" />
+                                        <span className="text-xs text-green-600">2/5 Complete</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between p-3 border rounded-lg">
                                     <div>
-                                        <div className="font-medium">After Photos</div>
-                                        <div className="text-sm text-muted-foreground">Required upon completion</div>
+                                        <div className="font-medium">Digital Checklists</div>
+                                        <div className="text-sm text-muted-foreground">Service completion verification</div>
                                     </div>
                                     <div className="flex items-center space-x-1">
-                                        <MapPin className="h-3 w-3 text-green-600" />
-                                        <span className="text-xs text-green-600">Geotagged</span>
+                                        <CheckCircle className="h-3 w-3 text-green-600" />
+                                        <span className="text-xs text-green-600">1/5 Complete</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between p-3 border rounded-lg">
                                     <div>
-                                        <div className="font-medium">Quality Check</div>
-                                        <div className="text-sm text-muted-foreground">Minimum resolution & clarity requirements</div>
+                                        <div className="font-medium">Time Tracking</div>
+                                        <div className="text-sm text-muted-foreground">Actual vs estimated hours</div>
                                     </div>
-                                    <Badge variant="default" className="bg-blue-100 text-blue-800">Auto-Verified</Badge>
+                                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                                        {avgCompletionTime.toFixed(1)}h avg
+                                    </Badge>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
-
-                {/* End-of-Day Digital Checklist */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>End-of-Day Digital Checklist</CardTitle>
-                        <CardDescription>Daily completion requirements for all active work orders</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="p-4 border rounded-lg">
-                                <div className="flex items-center space-x-2 mb-2">
-                                    <CheckCircle className="h-5 w-5 text-green-600" />
-                                    <h4 className="font-medium">Work Progress</h4>
-                                </div>
-                                <p className="text-sm text-muted-foreground mb-2">Update completion status for all assigned orders</p>
-                                <Badge variant="outline" className="bg-green-100 text-green-800">2/2 Completed</Badge>
-                            </div>
-                            <div className="p-4 border rounded-lg">
-                                <div className="flex items-center space-x-2 mb-2">
-                                    <Camera className="h-5 w-5 text-blue-600" />
-                                    <h4 className="font-medium">Photo Verification</h4>
-                                </div>
-                                <p className="text-sm text-muted-foreground mb-2">Ensure all required photos are uploaded</p>
-                                <Badge variant="outline" className="bg-yellow-100 text-yellow-800">1/2 Pending</Badge>
-                            </div>
-                            <div className="p-4 border rounded-lg">
-                                <div className="flex items-center space-x-2 mb-2">
-                                    <Clock className="h-5 w-5 text-orange-600" />
-                                    <h4 className="font-medium">Time Logging</h4>
-                                </div>
-                                <p className="text-sm text-muted-foreground mb-2">Record actual hours spent on each job</p>
-                                <Badge variant="outline" className="bg-blue-100 text-blue-800">All Updated</Badge>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
             </div>
         </AppLayout>
     );

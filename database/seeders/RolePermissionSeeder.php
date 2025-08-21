@@ -109,6 +109,22 @@ class RolePermissionSeeder extends Seeder
             'system.logs',
         ];
 
+        // Create permissions for Service Types Management
+        $serviceTypesPermissions = [
+            'service_types.view',
+            'service_types.create',
+            'service_types.edit',
+            'service_types.delete',
+        ];
+
+        // Create permissions for Common Services Management
+        $commonServicesPermissions = [
+            'common_services.view',
+            'common_services.create',
+            'common_services.edit',
+            'common_services.delete',
+        ];
+
         // Combine all permissions
         $allPermissions = array_merge(
             $pmsPermissions,
@@ -119,7 +135,9 @@ class RolePermissionSeeder extends Seeder
             $reportingPermissions,
             $userPermissions,
             $auditPermissions,
-            $systemPermissions
+            $systemPermissions,
+            $serviceTypesPermissions,
+            $commonServicesPermissions
         );
 
         // Create permissions
@@ -138,6 +156,10 @@ class RolePermissionSeeder extends Seeder
         $serviceManagerRole->givePermissionTo([
             // PMS permissions
             ...$pmsPermissions,
+            // Service Types permissions
+            ...$serviceTypesPermissions,
+            // Common Services permissions
+            ...$commonServicesPermissions,
             // Warranty permissions
             ...$warrantyPermissions,
             // Customer permissions
@@ -199,6 +221,10 @@ class RolePermissionSeeder extends Seeder
             'pms.view',
             'pms.edit',
             'pms.complete',
+            // Service Types view only
+            'service_types.view',
+            // Common Services view only
+            'common_services.view',
             // Warranty permissions (limited)
             'warranty.view',
             'warranty.create',
