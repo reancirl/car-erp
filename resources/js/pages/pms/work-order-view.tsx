@@ -25,7 +25,7 @@ import {
     MapPin,
     Camera,
     Download,
-    Print
+    Printer
 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
@@ -179,7 +179,7 @@ export default function WorkOrderView({ workOrderId }: WorkOrderViewProps) {
                     </div>
                     <div className="flex space-x-2">
                         <Button variant="outline" size="sm">
-                            <Print className="h-4 w-4 mr-2" />
+                            <Printer className="h-4 w-4 mr-2" />
                             Print
                         </Button>
                         <Button variant="outline" size="sm">
