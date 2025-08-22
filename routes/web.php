@@ -10,7 +10,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
-Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
@@ -66,7 +66,7 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
 });
 
 // Activity & Audit Routes
-Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('audit/activity-logs', function () {
         return Inertia::render('audit/activity-logs');
     })->name('audit.activity-logs');
@@ -81,7 +81,7 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
 });
 
 // Compliance Routes
-Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('compliance/checklists', function () {
         return Inertia::render('compliance/checklists');
     })->name('compliance.checklists');
@@ -92,7 +92,7 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->group(function () {
 });
 
 // Service & Parts Management Routes
-Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('service')->name('service.')->group(function () {
+Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->group(function () {
     Route::get('/pms-work-orders', function () {
         return Inertia::render('service/pms-work-orders');
     })->name('pms-work-orders');
@@ -107,7 +107,7 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('service')->name('s
 });
 
 // Sales & Customer Lifecycle Routes
-Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('sales')->name('sales.')->group(function () {
+Route::middleware(['auth', 'verified'])->prefix('sales')->name('sales.')->group(function () {
     // Lead Management Routes
     Route::get('/lead-management', function () {
         return Inertia::render('sales/lead-management');
@@ -191,7 +191,7 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('sales')->name('sal
 });
 
 // Administration Routes
-Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/user-management', function () {
         return Inertia::render('admin/user-management');
     })->name('user-management');
@@ -226,7 +226,7 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('admin')->name('adm
 });
 
 // PMS Work Orders Routes
-Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('pms')->name('pms.')->group(function () {
+Route::middleware(['auth', 'verified'])->prefix('pms')->name('pms.')->group(function () {
     Route::get('/work-orders', function () {
         return Inertia::render('pms/work-orders');
     })->name('work-orders');
@@ -245,7 +245,7 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('pms')->name('pms.'
 });
 
 // Service & Parts Routes
-Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('service')->name('service.')->group(function () {
+Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->group(function () {
     // Service Types Routes
     Route::get('/service-types', function () {
         return Inertia::render('service/service-types');
@@ -298,7 +298,7 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('service')->name('s
 });
 
 // Vehicle Inventory Management Routes
-Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('inventory')->group(function () {
+Route::middleware(['auth', 'verified'])->prefix('inventory')->group(function () {
     // Vehicle Inventory
     Route::get('/vehicles', function () {
         return Inertia::render('inventory/vehicles');
