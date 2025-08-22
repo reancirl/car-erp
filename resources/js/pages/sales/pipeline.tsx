@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -198,10 +198,12 @@ export default function Pipeline() {
                             <Download className="h-4 w-4 mr-2" />
                             Export Pipeline
                         </Button>
-                        <Button size="sm">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Manual Entry
-                        </Button>
+                        <Link href="/sales/pipeline/create">
+                            <Button size="sm">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Manual Entry
+                            </Button>
+                        </Link>
                     </div>
                 </div>
 
@@ -416,12 +418,16 @@ export default function Pipeline() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex space-x-1">
-                                                <Button variant="ghost" size="sm">
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm">
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
+                                                <Link href={`/sales/pipeline/${entry.id}`}>
+                                                    <Button variant="ghost" size="sm">
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
+                                                <Link href={`/sales/pipeline/${entry.id}/edit`}>
+                                                    <Button variant="ghost" size="sm">
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
                                             </div>
                                         </TableCell>
                                     </TableRow>

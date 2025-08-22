@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Search, Filter, Download, Plus, Eye, Edit, Mail, Phone, Clock, CheckCircle, AlertTriangle, FileText, Link, Calendar, Star } from 'lucide-react';
+import { MessageSquare, Search, Filter, Download, Plus, Eye, Edit, Mail, Phone, Clock, CheckCircle, AlertTriangle, FileText, Link as LinkIcon, Calendar, Star } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -282,10 +282,12 @@ export default function CustomerExperience() {
                             <Download className="h-4 w-4 mr-2" />
                             Export Feedback
                         </Button>
-                        <Button size="sm">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Manual Survey
-                        </Button>
+                        <Link href="/sales/customer-experience/create">
+                            <Button size="sm">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Manual Survey
+                            </Button>
+                        </Link>
                     </div>
                 </div>
 
@@ -440,7 +442,7 @@ export default function CustomerExperience() {
                                                     Sent: {survey.dispatch_timestamp}
                                                 </div>
                                                 <div className="flex items-center space-x-1 mt-1">
-                                                    <Link className="h-3 w-3" />
+                                                    <LinkIcon className="h-3 w-3" />
                                                     <span className="text-xs">Expires: {survey.link_expires}</span>
                                                 </div>
                                             </div>
@@ -486,12 +488,16 @@ export default function CustomerExperience() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex space-x-1">
-                                                <Button variant="ghost" size="sm">
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm">
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
+                                                <Link href={`/sales/customer-experience/${survey.id}`}>
+                                                    <Button variant="ghost" size="sm">
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
+                                                <Link href={`/sales/customer-experience/${survey.id}/edit`}>
+                                                    <Button variant="ghost" size="sm">
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -539,12 +545,16 @@ export default function CustomerExperience() {
                                         <TableCell>{getTaskStatusBadge(task.status)}</TableCell>
                                         <TableCell>
                                             <div className="flex space-x-1">
-                                                <Button variant="ghost" size="sm">
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="sm">
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
+                                                <Link href={`/sales/customer-experience/task/${task.id}`}>
+                                                    <Button variant="ghost" size="sm">
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
+                                                <Link href={`/sales/customer-experience/task/${task.id}/edit`}>
+                                                    <Button variant="ghost" size="sm">
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
                                             </div>
                                         </TableCell>
                                     </TableRow>

@@ -108,21 +108,82 @@ Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('service')->name('s
 
 // Sales & Customer Lifecycle Routes
 Route::middleware(['auth', 'verified', 'mfa.login'])->prefix('sales')->name('sales.')->group(function () {
+    // Lead Management Routes
     Route::get('/lead-management', function () {
         return Inertia::render('sales/lead-management');
     })->name('lead-management');
     
+    Route::get('/lead-management/create', function () {
+        return Inertia::render('sales/lead-create');
+    })->name('lead-management.create');
+    
+    Route::get('/lead-management/{id}/edit', function ($id) {
+        return Inertia::render('sales/lead-edit', ['id' => $id]);
+    })->name('lead-management.edit');
+    
+    Route::get('/lead-management/{id}', function ($id) {
+        return Inertia::render('sales/lead-view', ['id' => $id]);
+    })->name('lead-management.show');
+    
+    // Test Drives Routes
     Route::get('/test-drives', function () {
         return Inertia::render('sales/test-drives');
     })->name('test-drives');
     
+    Route::get('/test-drives/create', function () {
+        return Inertia::render('sales/test-drive-create');
+    })->name('test-drives.create');
+    
+    Route::get('/test-drives/{id}/edit', function ($id) {
+        return Inertia::render('sales/test-drive-edit', ['id' => $id]);
+    })->name('test-drives.edit');
+    
+    Route::get('/test-drives/{id}', function ($id) {
+        return Inertia::render('sales/test-drive-view', ['id' => $id]);
+    })->name('test-drives.show');
+    
+    // Pipeline Routes
     Route::get('/pipeline', function () {
         return Inertia::render('sales/pipeline');
     })->name('pipeline');
     
+    Route::get('/pipeline/create', function () {
+        return Inertia::render('sales/pipeline-create');
+    })->name('pipeline.create');
+    
+    Route::get('/pipeline/{id}/edit', function ($id) {
+        return Inertia::render('sales/pipeline-edit', ['id' => $id]);
+    })->name('pipeline.edit');
+    
+    Route::get('/pipeline/{id}', function ($id) {
+        return Inertia::render('sales/pipeline-view', ['id' => $id]);
+    })->name('pipeline.show');
+    
+    // Customer Experience CRUD routes
     Route::get('/customer-experience', function () {
         return Inertia::render('sales/customer-experience');
-    })->name('customer-experience');
+    })->name('customer-experience.index');
+    
+    Route::get('/customer-experience/create', function () {
+        return Inertia::render('sales/customer-experience-create');
+    })->name('customer-experience.create');
+    
+    Route::get('/customer-experience/{id}', function ($id) {
+        return Inertia::render('sales/customer-experience-view', ['id' => $id]);
+    })->name('customer-experience.show');
+    
+    Route::get('/customer-experience/{id}/edit', function ($id) {
+        return Inertia::render('sales/customer-experience-edit', ['id' => $id]);
+    })->name('customer-experience.edit');
+    
+    // Customer Experience Task CRUD routes
+    Route::get('/customer-experience/task/{id}', function ($id) {
+        return Inertia::render('sales/customer-experience-task-view', ['id' => $id]);
+    })->name('customer-experience.task.show');
+    
+    Route::get('/customer-experience/task/{id}/edit', function ($id) {
+        return Inertia::render('sales/customer-experience-task-edit', ['id' => $id]);
+    })->name('customer-experience.task.edit');
     
     Route::get('/performance-metrics', function () {
         return Inertia::render('sales/performance-metrics');
