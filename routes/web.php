@@ -208,21 +208,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         return Inertia::render('admin/user-view', ['userId' => $id]);
     })->name('user-management.view');
     
-    Route::get('/branch-management', function () {
-        return Inertia::render('admin/branch-management');
-    })->name('branch-management');
-    
-    Route::get('/branch-management/create', function () {
-        return Inertia::render('admin/branch-create');
-    })->name('branch-management.create');
-    
-    Route::get('/branch-management/{id}/edit', function ($id) {
-        return Inertia::render('admin/branch-edit', ['branchId' => $id]);
-    })->name('branch-management.edit');
-    
-    Route::get('/branch-management/{id}', function ($id) {
-        return Inertia::render('admin/branch-view', ['branchId' => $id]);
-    })->name('branch-management.view');
+    // Branch Management Routes - using BranchController
+    Route::resource('branch-management', App\Http\Controllers\BranchController::class)->parameters([
+        'branch-management' => 'branch'
+    ]);
 });
 
 // PMS Work Orders Routes

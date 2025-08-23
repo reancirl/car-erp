@@ -14,11 +14,6 @@ import {
     Save, 
     MapPin, 
     Phone, 
-    Mail, 
-    User, 
-    Calendar,
-    Crown,
-    Building,
     AlertTriangle,
     CheckCircle,
     Clock
@@ -26,8 +21,29 @@ import {
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
+    address: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+    phone?: string;
+    email?: string;
+    status: 'active' | 'inactive' | 'maintenance';
+    business_hours?: Record<string, { open: string; close: string }> | null;
+    latitude?: number;
+    longitude?: number;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+}
+
 interface BranchEditProps {
-    branchId: string;
+    branch: Branch;
+    regions: Record<string, string>;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -45,71 +61,18 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function BranchEdit({ branchId }: BranchEditProps) {
-    // Mock data for the branch being edited
-    const mockBranch = {
-        id: parseInt(branchId) || 2,
-        name: 'Cebu Branch',
-        code: 'CEB',
-        type: 'branch',
-        description: 'Main dealership branch serving Central Visayas region with comprehensive automotive services.',
-        address: '456 Colon Street, Cebu City, Cebu',
-        region: 'Central Visayas',
-        province: 'Cebu',
-        city: 'Cebu City',
-        postal_code: '6000',
-        phone: '+63-32-234-5678',
-        mobile: '+63-917-234-5678',
-        email: 'cebu@dealership.com.ph',
-        fax: '+63-32-234-5679',
-        manager: 'Maria Santos',
-        manager_email: 'maria.santos@dealership.com.ph',
-        manager_phone: '+63-917-345-6789',
-        assistant_manager: 'Carlos Reyes',
-        status: 'active',
-        established_date: '2021-03-20',
-        user_count: 12,
-        services: ['Sales', 'Service', 'Parts'],
-        coordinates: { lat: 10.3157, lng: 123.8854 },
-        weekday_hours: '8:00 AM - 6:00 PM',
-        saturday_hours: '8:00 AM - 5:00 PM',
-        sunday_hours: 'Closed',
-        is_headquarters: false
-    };
+export default function BranchEdit({ branch, regions }: BranchEditProps) {
+    const [branchStatus, setBranchStatus] = useState(branch.status);
 
-    const [selectedServices, setSelectedServices] = useState<string[]>(mockBranch.services);
-    const [branchStatus, setBranchStatus] = useState(mockBranch.status);
-
-    // Philippines regions for dropdown
-    const philippineRegions = [
-        'National Capital Region',
-        'Ilocos Region',
-        'Cagayan Valley',
-        'Central Luzon',
-        'Calabarzon',
-        'Mimaropa',
-        'Bicol Region',
-        'Western Visayas',
-        'Central Visayas',
-        'Eastern Visayas',
-        'Zamboanga Peninsula',
-        'Northern Mindanao',
-        'Davao Region',
-        'Soccsksargen',
-        'Caraga',
-        'Barmm',
-        'Cordillera Administrative Region'
-    ];
-
-    const services = ['Sales', 'Service', 'Parts', 'Finance'];
-
-    const handleServiceChange = (service: string, checked: boolean) => {
-        if (checked) {
-            setSelectedServices([...selectedServices, service]);
-        } else {
-            setSelectedServices(selectedServices.filter(s => s !== service));
+    const handleStatusChange = (value: string) => {
+        if (value === 'active' || value === 'inactive' || value === 'maintenance') {
+            setBranchStatus(value);
         }
     };
+
+    // Get regions from backend
+    const regionEntries = Object.entries(regions);
+
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -139,30 +102,10 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
         }
     };
 
-    const getTypeBadge = (type: string) => {
-        switch (type) {
-            case 'headquarters':
-                return (
-                    <Badge variant="outline" className="bg-purple-100 text-purple-800">
-                        <Crown className="h-3 w-3 mr-1" />
-                        Headquarters
-                    </Badge>
-                );
-            case 'branch':
-                return (
-                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                        <Building className="h-3 w-3 mr-1" />
-                        Branch
-                    </Badge>
-                );
-            default:
-                return <Badge variant="secondary">{type}</Badge>;
-        }
-    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Edit ${mockBranch.name}`} />
+            <Head title={`Edit ${branch.name}`} />
             
             <div className="space-y-6 p-6">
                 {/* Header */}
@@ -176,8 +119,7 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                         </Link>
                         <div className="flex items-center space-x-2">
                             <Building2 className="h-6 w-6" />
-                            <h1 className="text-2xl font-bold">Edit {mockBranch.name}</h1>
-                            {getTypeBadge(mockBranch.type)}
+                            <h1 className="text-2xl font-bold">Edit {branch.name}</h1>
                             {getStatusBadge(branchStatus)}
                         </div>
                     </div>
@@ -197,17 +139,17 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h3 className="font-semibold text-lg">{mockBranch.name} ({mockBranch.code})</h3>
+                                <h3 className="font-semibold text-lg">{branch.name} ({branch.code})</h3>
                                 <p className="text-sm text-muted-foreground">
-                                    Established: {mockBranch.established_date} • {mockBranch.user_count} staff members
+                                    {branch.city}, {branch.state}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                    {mockBranch.city}, {mockBranch.province} • {mockBranch.region}
+                                    {branch.country} • {branch.postal_code}
                                 </p>
                             </div>
                             <div className="text-right">
-                                <p className="text-sm font-medium">Manager: {mockBranch.manager}</p>
-                                <p className="text-sm text-muted-foreground">{mockBranch.manager_email}</p>
+                                <p className="text-sm font-medium">Status: {getStatusBadge(branch.status)}</p>
+                                <p className="text-sm text-muted-foreground">Contact: {branch.phone}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -233,7 +175,7 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                         <Label htmlFor="branch_name">Branch Name *</Label>
                                         <Input 
                                             id="branch_name" 
-                                            defaultValue={mockBranch.name}
+                                            defaultValue={branch.name}
                                             required 
                                         />
                                     </div>
@@ -241,7 +183,7 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                         <Label htmlFor="branch_code">Branch Code *</Label>
                                         <Input 
                                             id="branch_code" 
-                                            defaultValue={mockBranch.code}
+                                            defaultValue={branch.code}
                                             className="uppercase" 
                                             maxLength={5}
                                             required 
@@ -252,16 +194,8 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                     <Label htmlFor="description">Description</Label>
                                     <Textarea 
                                         id="description" 
-                                        defaultValue={mockBranch.description}
+                                        defaultValue={branch.notes || ''}
                                         rows={3}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="established_date">Established Date</Label>
-                                    <Input 
-                                        id="established_date" 
-                                        type="date"
-                                        defaultValue={mockBranch.established_date}
                                     />
                                 </div>
                             </CardContent>
@@ -282,14 +216,14 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="region">Region *</Label>
-                                        <Select defaultValue="central_visayas" required>
+                                        <Select defaultValue={branch.state.toLowerCase().replace(/\s+/g, '_')} required>
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {philippineRegions.map((region) => (
-                                                    <SelectItem key={region} value={region.toLowerCase().replace(/\s+/g, '_')}>
-                                                        {region}
+                                                {regionEntries.map(([key, name]) => (
+                                                    <SelectItem key={key} value={key}>
+                                                        {name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -299,7 +233,7 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                         <Label htmlFor="province">Province *</Label>
                                         <Input 
                                             id="province" 
-                                            defaultValue={mockBranch.province}
+                                            defaultValue={branch.state}
                                             required 
                                         />
                                     </div>
@@ -309,7 +243,7 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                         <Label htmlFor="city">City/Municipality *</Label>
                                         <Input 
                                             id="city" 
-                                            defaultValue={mockBranch.city}
+                                            defaultValue={branch.city}
                                             required 
                                         />
                                     </div>
@@ -317,16 +251,24 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                         <Label htmlFor="postal_code">Postal Code</Label>
                                         <Input 
                                             id="postal_code" 
-                                            defaultValue={mockBranch.postal_code}
+                                            defaultValue={branch.postal_code}
                                             maxLength={4}
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
+                                    <Label htmlFor="country">Country *</Label>
+                                    <Input 
+                                        id="country" 
+                                        defaultValue={branch.country}
+                                        required 
+                                    />
+                                </div>
+                                <div className="space-y-2">
                                     <Label htmlFor="address">Complete Address *</Label>
                                     <Textarea 
                                         id="address" 
-                                        defaultValue={mockBranch.address}
+                                        defaultValue={branch.address}
                                         rows={3}
                                         required
                                     />
@@ -336,7 +278,7 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                         <Label htmlFor="latitude">Latitude</Label>
                                         <Input 
                                             id="latitude" 
-                                            defaultValue={mockBranch.coordinates.lat.toString()}
+                                            defaultValue={branch.latitude?.toString() || ''}
                                             type="number" 
                                             step="any" 
                                         />
@@ -345,7 +287,7 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                         <Label htmlFor="longitude">Longitude</Label>
                                         <Input 
                                             id="longitude" 
-                                            defaultValue={mockBranch.coordinates.lng.toString()}
+                                            defaultValue={branch.longitude?.toString() || ''}
                                             type="number" 
                                             step="any" 
                                         />
@@ -371,7 +313,7 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                         <Label htmlFor="phone">Phone Number *</Label>
                                         <Input 
                                             id="phone" 
-                                            defaultValue={mockBranch.phone}
+                                            defaultValue={branch.phone || ''}
                                             required 
                                         />
                                     </div>
@@ -379,7 +321,7 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                         <Label htmlFor="mobile">Mobile Number</Label>
                                         <Input 
                                             id="mobile" 
-                                            defaultValue={mockBranch.mobile}
+                                            placeholder="+63-917-123-4567"
                                         />
                                     </div>
                                 </div>
@@ -389,7 +331,7 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                         <Input 
                                             id="email" 
                                             type="email" 
-                                            defaultValue={mockBranch.email}
+                                            defaultValue={branch.email || ''}
                                             required 
                                         />
                                     </div>
@@ -397,59 +339,33 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                         <Label htmlFor="fax">Fax Number</Label>
                                         <Input 
                                             id="fax" 
-                                            defaultValue={mockBranch.fax}
+                                            placeholder="+63-32-234-5679"
                                         />
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Management Information */}
+                        {/* Additional Information */}
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
-                                    <User className="h-5 w-5" />
-                                    <span>Management Information</span>
+                                    <Building2 className="h-5 w-5" />
+                                    <span>Additional Information</span>
                                 </CardTitle>
                                 <CardDescription>
-                                    Update branch manager and key personnel details
+                                    Additional notes and branch-specific information
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="manager_name">Branch Manager *</Label>
-                                        <Input 
-                                            id="manager_name" 
-                                            defaultValue={mockBranch.manager}
-                                            required 
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="manager_email">Manager Email *</Label>
-                                        <Input 
-                                            id="manager_email" 
-                                            type="email" 
-                                            defaultValue={mockBranch.manager_email}
-                                            required 
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="manager_phone">Manager Phone</Label>
-                                        <Input 
-                                            id="manager_phone" 
-                                            defaultValue={mockBranch.manager_phone}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="assistant_manager">Assistant Manager</Label>
-                                        <Input 
-                                            id="assistant_manager" 
-                                            defaultValue={mockBranch.assistant_manager}
-                                        />
-                                    </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="notes">Notes</Label>
+                                    <Textarea 
+                                        id="notes" 
+                                        defaultValue={branch.notes || ''}
+                                        placeholder="Any additional notes about this branch..."
+                                        rows={4}
+                                    />
                                 </div>
                             </CardContent>
                         </Card>
@@ -457,32 +373,6 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
 
                     {/* Sidebar */}
                     <div className="space-y-6">
-                        {/* Services Offered */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Services Offered</CardTitle>
-                                <CardDescription>
-                                    Update the services this branch provides
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                {services.map((service) => (
-                                    <div key={service} className="flex items-center space-x-2">
-                                        <Checkbox 
-                                            id={service.toLowerCase()}
-                                            checked={selectedServices.includes(service)}
-                                            onCheckedChange={(checked) => 
-                                                handleServiceChange(service, checked as boolean)
-                                            }
-                                        />
-                                        <Label htmlFor={service.toLowerCase()} className="text-sm font-medium">
-                                            {service}
-                                        </Label>
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-
                         {/* Operating Hours */}
                         <Card>
                             <CardHeader>
@@ -496,21 +386,21 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                     <Label htmlFor="weekday_hours">Weekdays</Label>
                                     <Input 
                                         id="weekday_hours" 
-                                        defaultValue={mockBranch.weekday_hours}
+                                        defaultValue={branch.business_hours?.monday ? `${branch.business_hours.monday.open} - ${branch.business_hours.monday.close}` : ''}
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="saturday_hours">Saturday</Label>
                                     <Input 
                                         id="saturday_hours" 
-                                        defaultValue={mockBranch.saturday_hours}
+                                        defaultValue={branch.business_hours?.saturday ? `${branch.business_hours.saturday.open} - ${branch.business_hours.saturday.close}` : ''}
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="sunday_hours">Sunday</Label>
                                     <Input 
                                         id="sunday_hours" 
-                                        defaultValue={mockBranch.sunday_hours}
+                                        defaultValue={branch.business_hours?.sunday?.open ? `${branch.business_hours.sunday.open} - ${branch.business_hours.sunday.close}` : 'Closed'}
                                     />
                                 </div>
                             </CardContent>
@@ -527,7 +417,7 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="status">Status</Label>
-                                    <Select value={branchStatus} onValueChange={setBranchStatus}>
+                                    <Select value={branchStatus} onValueChange={handleStatusChange}>
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
@@ -541,7 +431,7 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                                 <div className="flex items-center space-x-2">
                                     <Checkbox 
                                         id="is_headquarters" 
-                                        checked={mockBranch.is_headquarters}
+                                        checked={branch.code === 'HQ'}
                                     />
                                     <Label htmlFor="is_headquarters" className="text-sm">
                                         This is a headquarters location
@@ -560,17 +450,17 @@ export default function BranchEdit({ branchId }: BranchEditProps) {
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Staff Members</span>
-                                    <span className="font-medium">{mockBranch.user_count}</span>
+                                    <span className="text-sm text-muted-foreground">Branch Code</span>
+                                    <span className="font-medium">{branch.code}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Services</span>
-                                    <span className="font-medium">{selectedServices.length}</span>
+                                    <span className="text-sm text-muted-foreground">Status</span>
+                                    <span className="font-medium">{branch.status}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Years Operating</span>
+                                    <span className="text-sm text-muted-foreground">Created</span>
                                     <span className="font-medium">
-                                        {new Date().getFullYear() - new Date(mockBranch.established_date).getFullYear()}
+                                        {new Date(branch.created_at).toLocaleDateString()}
                                     </span>
                                 </div>
                             </CardContent>

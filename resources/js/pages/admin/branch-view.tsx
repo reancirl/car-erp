@@ -26,8 +26,28 @@ import {
 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
+    address: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+    phone?: string;
+    email?: string;
+    status: 'active' | 'inactive';
+    business_hours?: any;
+    latitude?: number;
+    longitude?: number;
+    notes?: string;
+    created_at: string;
+    updated_at: string;
+}
+
 interface BranchViewProps {
-    branchId: string;
+    branch: Branch;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -45,41 +65,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function BranchView({ branchId }: BranchViewProps) {
-    // Mock branch data for viewing
-    const mockBranch = {
-        id: parseInt(branchId) || 2,
-        name: 'Cebu Branch',
-        code: 'CEB',
-        type: 'branch',
-        description: 'Main dealership branch serving Central Visayas region with comprehensive automotive services including sales, service, parts, and finance.',
-        address: '456 Colon Street, Lahug, Cebu City, Cebu 6000',
-        region: 'Central Visayas',
-        province: 'Cebu',
-        city: 'Cebu City',
-        postal_code: '6000',
-        phone: '+63-32-234-5678',
-        mobile: '+63-917-234-5678',
-        email: 'cebu@dealership.com.ph',
-        fax: '+63-32-234-5679',
-        manager: 'Maria Santos',
-        manager_email: 'maria.santos@dealership.com.ph',
-        manager_phone: '+63-917-345-6789',
-        assistant_manager: 'Carlos Reyes',
-        status: 'active',
-        established_date: '2021-03-20',
-        user_count: 12,
-        services: ['Sales', 'Service', 'Parts'],
-        coordinates: { lat: 10.3157, lng: 123.8854 },
-        weekday_hours: '8:00 AM - 6:00 PM',
-        saturday_hours: '8:00 AM - 5:00 PM',
-        sunday_hours: 'Closed',
-        is_headquarters: false,
-        monthly_sales: 45,
-        customer_satisfaction: 4.7,
-        service_capacity: 25,
-        parts_inventory_value: 2500000
-    };
+export default function BranchView({ branch }: BranchViewProps) {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -132,7 +118,7 @@ export default function BranchView({ branchId }: BranchViewProps) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`${mockBranch.name} - Branch Details`} />
+            <Head title={`${branch.name} - Branch Details`} />
             
             <div className="space-y-6 p-6">
                 {/* Header */}
@@ -146,13 +132,12 @@ export default function BranchView({ branchId }: BranchViewProps) {
                         </Link>
                         <div className="flex items-center space-x-2">
                             <Building2 className="h-6 w-6" />
-                            <h1 className="text-2xl font-bold">{mockBranch.name}</h1>
-                            {getTypeBadge(mockBranch.type)}
-                            {getStatusBadge(mockBranch.status)}
+                            <h1 className="text-2xl font-bold">{branch.name}</h1>
+                            {getStatusBadge(branch.status)}
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Link href={`/admin/branch-management/${mockBranch.id}/edit`}>
+                        <Link href={`/admin/branch-management/${branch.id}/edit`}>
                             <Button>
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit Branch
@@ -168,36 +153,33 @@ export default function BranchView({ branchId }: BranchViewProps) {
                             <div>
                                 <h3 className="font-semibold text-lg mb-2">Location</h3>
                                 <div className="space-y-1">
-                                    <p className="text-sm"><span className="font-medium">Code:</span> {mockBranch.code}</p>
-                                    <p className="text-sm"><span className="font-medium">City:</span> {mockBranch.city}</p>
-                                    <p className="text-sm"><span className="font-medium">Region:</span> {mockBranch.region}</p>
+                                    <p className="text-sm"><span className="font-medium">Code:</span> {branch.code}</p>
+                                    <p className="text-sm"><span className="font-medium">City:</span> {branch.city}</p>
+                                    <p className="text-sm"><span className="font-medium">State:</span> {branch.state}</p>
                                 </div>
                             </div>
                             <div>
-                                <h3 className="font-semibold text-lg mb-2">Management</h3>
+                                <h3 className="font-semibold text-lg mb-2">Contact</h3>
                                 <div className="space-y-1">
-                                    <p className="text-sm"><span className="font-medium">Manager:</span> {mockBranch.manager}</p>
-                                    <p className="text-sm"><span className="font-medium">Assistant:</span> {mockBranch.assistant_manager}</p>
-                                    <p className="text-sm"><span className="font-medium">Staff:</span> {mockBranch.user_count} members</p>
+                                    <p className="text-sm"><span className="font-medium">Phone:</span> {branch.phone}</p>
+                                    <p className="text-sm"><span className="font-medium">Email:</span> {branch.email}</p>
+                                    <p className="text-sm"><span className="font-medium">Country:</span> {branch.country}</p>
                                 </div>
                             </div>
                             <div>
-                                <h3 className="font-semibold text-lg mb-2">Services</h3>
-                                <div className="flex flex-wrap gap-1">
-                                    {mockBranch.services.map((service) => (
-                                        <Badge key={service} variant="outline" className="text-xs">
-                                            {service}
-                                        </Badge>
-                                    ))}
-                                </div>
-                                <p className="text-sm mt-1"><span className="font-medium">Established:</span> {mockBranch.established_date}</p>
-                            </div>
-                            <div>
-                                <h3 className="font-semibold text-lg mb-2">Performance</h3>
+                                <h3 className="font-semibold text-lg mb-2">Details</h3>
                                 <div className="space-y-1">
-                                    <p className="text-sm"><span className="font-medium">Monthly Sales:</span> {mockBranch.monthly_sales} units</p>
-                                    <p className="text-sm"><span className="font-medium">Satisfaction:</span> {mockBranch.customer_satisfaction}/5.0</p>
-                                    <p className="text-sm"><span className="font-medium">Capacity:</span> {mockBranch.service_capacity} vehicles/day</p>
+                                    <p className="text-sm"><span className="font-medium">Status:</span> {branch.status}</p>
+                                    <p className="text-sm"><span className="font-medium">Postal Code:</span> {branch.postal_code}</p>
+                                    <p className="text-sm"><span className="font-medium">Created:</span> {new Date(branch.created_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-lg mb-2">Location</h3>
+                                <div className="space-y-1">
+                                    <p className="text-sm"><span className="font-medium">Latitude:</span> {branch.latitude || 'N/A'}</p>
+                                    <p className="text-sm"><span className="font-medium">Longitude:</span> {branch.longitude || 'N/A'}</p>
+                                    <p className="text-sm"><span className="font-medium">Updated:</span> {new Date(branch.updated_at).toLocaleDateString()}</p>
                                 </div>
                             </div>
                         </div>
@@ -219,22 +201,22 @@ export default function BranchView({ branchId }: BranchViewProps) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <Label className="text-sm font-medium text-muted-foreground">Branch Name</Label>
-                                        <p className="text-sm font-medium">{mockBranch.name}</p>
+                                        <p className="text-sm font-medium">{branch.name}</p>
                                     </div>
                                     <div>
                                         <Label className="text-sm font-medium text-muted-foreground">Branch Code</Label>
-                                        <p className="text-sm font-medium">{mockBranch.code}</p>
+                                        <p className="text-sm font-medium">{branch.code}</p>
                                     </div>
                                 </div>
                                 <div>
                                     <Label className="text-sm font-medium text-muted-foreground">Description</Label>
-                                    <p className="text-sm">{mockBranch.description}</p>
+                                    <p className="text-sm">{branch.notes || 'No additional notes available.'}</p>
                                 </div>
                                 <div>
-                                    <Label className="text-sm font-medium text-muted-foreground">Established Date</Label>
+                                    <Label className="text-sm font-medium text-muted-foreground">Created Date</Label>
                                     <div className="flex items-center space-x-2">
                                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                                        <p className="text-sm font-medium">{mockBranch.established_date}</p>
+                                        <p className="text-sm font-medium">{new Date(branch.created_at).toLocaleDateString()}</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -252,28 +234,28 @@ export default function BranchView({ branchId }: BranchViewProps) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <Label className="text-sm font-medium text-muted-foreground">Region</Label>
-                                        <p className="text-sm font-medium">{mockBranch.region}</p>
+                                        <p className="text-sm font-medium">{branch.state}</p>
                                     </div>
                                     <div>
                                         <Label className="text-sm font-medium text-muted-foreground">Province</Label>
-                                        <p className="text-sm font-medium">{mockBranch.province}</p>
+                                        <p className="text-sm font-medium">{branch.state}</p>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <Label className="text-sm font-medium text-muted-foreground">City/Municipality</Label>
-                                        <p className="text-sm font-medium">{mockBranch.city}</p>
+                                        <p className="text-sm font-medium">{branch.city}</p>
                                     </div>
                                     <div>
                                         <Label className="text-sm font-medium text-muted-foreground">Postal Code</Label>
-                                        <p className="text-sm font-medium">{mockBranch.postal_code}</p>
+                                        <p className="text-sm font-medium">{branch.postal_code}</p>
                                     </div>
                                 </div>
                                 <div>
                                     <Label className="text-sm font-medium text-muted-foreground">Complete Address</Label>
                                     <div className="flex items-start space-x-2">
                                         <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                        <p className="text-sm">{mockBranch.address}</p>
+                                        <p className="text-sm">{branch.address}</p>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -281,14 +263,14 @@ export default function BranchView({ branchId }: BranchViewProps) {
                                         <Label className="text-sm font-medium text-muted-foreground">Latitude</Label>
                                         <div className="flex items-center space-x-2">
                                             <Navigation className="h-4 w-4 text-muted-foreground" />
-                                            <p className="text-sm font-medium">{mockBranch.coordinates.lat}</p>
+                                            <p className="text-sm font-medium">{branch.latitude || 'N/A'}</p>
                                         </div>
                                     </div>
                                     <div>
                                         <Label className="text-sm font-medium text-muted-foreground">Longitude</Label>
                                         <div className="flex items-center space-x-2">
                                             <Navigation className="h-4 w-4 text-muted-foreground" />
-                                            <p className="text-sm font-medium">{mockBranch.coordinates.lng}</p>
+                                            <p className="text-sm font-medium">{branch.longitude || 'N/A'}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -309,14 +291,14 @@ export default function BranchView({ branchId }: BranchViewProps) {
                                         <Label className="text-sm font-medium text-muted-foreground">Phone Number</Label>
                                         <div className="flex items-center space-x-2">
                                             <Phone className="h-4 w-4 text-muted-foreground" />
-                                            <p className="text-sm font-medium">{mockBranch.phone}</p>
+                                            <p className="text-sm font-medium">{branch.phone || 'N/A'}</p>
                                         </div>
                                     </div>
                                     <div>
                                         <Label className="text-sm font-medium text-muted-foreground">Mobile Number</Label>
                                         <div className="flex items-center space-x-2">
                                             <Phone className="h-4 w-4 text-muted-foreground" />
-                                            <p className="text-sm font-medium">{mockBranch.mobile}</p>
+                                            <p className="text-sm font-medium">N/A</p>
                                         </div>
                                     </div>
                                 </div>
@@ -325,53 +307,41 @@ export default function BranchView({ branchId }: BranchViewProps) {
                                         <Label className="text-sm font-medium text-muted-foreground">Email Address</Label>
                                         <div className="flex items-center space-x-2">
                                             <Mail className="h-4 w-4 text-muted-foreground" />
-                                            <p className="text-sm font-medium">{mockBranch.email}</p>
+                                            <p className="text-sm font-medium">{branch.email || 'N/A'}</p>
                                         </div>
                                     </div>
                                     <div>
                                         <Label className="text-sm font-medium text-muted-foreground">Fax Number</Label>
                                         <div className="flex items-center space-x-2">
                                             <Phone className="h-4 w-4 text-muted-foreground" />
-                                            <p className="text-sm font-medium">{mockBranch.fax}</p>
+                                            <p className="text-sm font-medium">N/A</p>
                                         </div>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Management Information */}
+                        {/* Additional Information */}
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
-                                    <User className="h-5 w-5" />
-                                    <span>Management Information</span>
+                                    <Building2 className="h-5 w-5" />
+                                    <span>Additional Information</span>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label className="text-sm font-medium text-muted-foreground">Branch Manager</Label>
-                                        <p className="text-sm font-medium">{mockBranch.manager}</p>
-                                    </div>
-                                    <div>
-                                        <Label className="text-sm font-medium text-muted-foreground">Manager Email</Label>
-                                        <div className="flex items-center space-x-2">
-                                            <Mail className="h-4 w-4 text-muted-foreground" />
-                                            <p className="text-sm font-medium">{mockBranch.manager_email}</p>
-                                        </div>
-                                    </div>
+                                <div>
+                                    <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
+                                    <p className="text-sm">{branch.notes || 'No additional notes available.'}</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <Label className="text-sm font-medium text-muted-foreground">Manager Phone</Label>
-                                        <div className="flex items-center space-x-2">
-                                            <Phone className="h-4 w-4 text-muted-foreground" />
-                                            <p className="text-sm font-medium">{mockBranch.manager_phone}</p>
-                                        </div>
+                                        <Label className="text-sm font-medium text-muted-foreground">Country</Label>
+                                        <p className="text-sm font-medium">{branch.country}</p>
                                     </div>
                                     <div>
-                                        <Label className="text-sm font-medium text-muted-foreground">Assistant Manager</Label>
-                                        <p className="text-sm font-medium">{mockBranch.assistant_manager}</p>
+                                        <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
+                                        <p className="text-sm font-medium">{new Date(branch.updated_at).toLocaleDateString()}</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -391,93 +361,72 @@ export default function BranchView({ branchId }: BranchViewProps) {
                             <CardContent className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-muted-foreground">Status</span>
-                                    {getStatusBadge(mockBranch.status)}
+                                    {getStatusBadge(branch.status)}
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-muted-foreground">Type</span>
-                                    {getTypeBadge(mockBranch.type)}
+                                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                                        <Building className="h-3 w-3 mr-1" />
+                                        {branch.code === 'HQ' ? 'Headquarters' : 'Branch'}
+                                    </Badge>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-muted-foreground">Staff Count</span>
                                     <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                                        {mockBranch.user_count} members
+                                        Active
                                     </Badge>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Services Offered */}
+                        {/* Business Hours */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Services Offered</CardTitle>
+                                <CardTitle>Business Hours</CardTitle>
                                 <CardDescription>
-                                    Available services at this branch
+                                    Operating schedule for this branch
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                {mockBranch.services.map((service) => (
-                                    <div key={service} className="flex items-center space-x-2">
-                                        <CheckCircle className="h-4 w-4 text-green-600" />
-                                        <span className="text-sm font-medium">{service}</span>
-                                    </div>
-                                ))}
+                                {branch.business_hours ? (
+                                    Object.entries(branch.business_hours).map(([day, hours]: [string, any]) => (
+                                        <div key={day} className="flex items-center justify-between">
+                                            <span className="text-sm font-medium capitalize">{day}</span>
+                                            <span className="text-sm text-muted-foreground">
+                                                {hours?.open && hours?.close ? `${hours.open} - ${hours.close}` : 'Closed'}
+                                            </span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No business hours set</p>
+                                )}
                             </CardContent>
                         </Card>
 
-                        {/* Operating Hours */}
+                        {/* Branch Statistics */}
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
-                                    <Clock3 className="h-5 w-5" />
-                                    <span>Operating Hours</span>
+                                    <Activity className="h-5 w-5" />
+                                    <span>Branch Statistics</span>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Weekdays</span>
-                                    <span className="text-sm font-medium">{mockBranch.weekday_hours}</span>
+                                    <span className="text-sm text-muted-foreground">Branch Code</span>
+                                    <span className="text-sm font-medium">{branch.code}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Saturday</span>
-                                    <span className="text-sm font-medium">{mockBranch.saturday_hours}</span>
+                                    <span className="text-sm text-muted-foreground">Status</span>
+                                    <span className="text-sm font-medium capitalize">{branch.status}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Sunday</span>
-                                    <span className="text-sm font-medium">{mockBranch.sunday_hours}</span>
+                                    <span className="text-sm text-muted-foreground">Created</span>
+                                    <span className="text-sm font-medium">{new Date(branch.created_at).toLocaleDateString()}</span>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Performance Metrics */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <Star className="h-5 w-5" />
-                                    <span>Performance Metrics</span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Monthly Sales</span>
-                                    <span className="text-sm font-medium">{mockBranch.monthly_sales} units</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Customer Satisfaction</span>
-                                    <div className="flex items-center space-x-1">
-                                        <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                                        <span className="text-sm font-medium">{mockBranch.customer_satisfaction}/5.0</span>
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Service Capacity</span>
-                                    <span className="text-sm font-medium">{mockBranch.service_capacity}/day</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Parts Inventory</span>
-                                    <span className="text-sm font-medium">₱{mockBranch.parts_inventory_value.toLocaleString()}</span>
-                                </div>
-                            </CardContent>
-                        </Card>
 
                         {/* Quick Actions */}
                         <Card>
@@ -485,7 +434,7 @@ export default function BranchView({ branchId }: BranchViewProps) {
                                 <CardTitle>Quick Actions</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2">
-                                <Link href={`/admin/branch-management/${mockBranch.id}/edit`}>
+                                <Link href={`/admin/branch-management/${branch.id}/edit`}>
                                     <Button variant="outline" size="sm" className="w-full justify-start">
                                         <Edit className="h-4 w-4 mr-2" />
                                         Edit Branch Details
@@ -494,10 +443,6 @@ export default function BranchView({ branchId }: BranchViewProps) {
                                 <Button variant="outline" size="sm" className="w-full justify-start">
                                     <Users className="h-4 w-4 mr-2" />
                                     Manage Staff
-                                </Button>
-                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <Settings className="h-4 w-4 mr-2" />
-                                    Branch Settings
                                 </Button>
                                 <Button variant="outline" size="sm" className="w-full justify-start">
                                     <Activity className="h-4 w-4 mr-2" />

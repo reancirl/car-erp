@@ -15,6 +15,9 @@ class DatabaseSeeder extends Seeder
     {
         // Seed roles and permissions first
         $this->call(RolePermissionSeeder::class);
+        
+        // Seed branches
+        $this->call(BranchSeeder::class);
 
         // Create test users with roles
         $admin = User::factory()->create([
