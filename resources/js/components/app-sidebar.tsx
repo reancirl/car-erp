@@ -219,12 +219,12 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={coreNavItems} />
-                {filteredSalesNavItems.length > 0 && <NavMain items={filteredSalesNavItems} title="Sales & Customer" />}
-                {filteredInventoryNavItems.length > 0 && <NavMain items={filteredInventoryNavItems} title="Inventory Management" />}
-                {filteredOperationsNavItems.length > 0 && <NavMain items={filteredOperationsNavItems} title="Operations" />}
-                {filteredAnalyticsNavItems.length > 0 && <NavMain items={filteredAnalyticsNavItems} title="Analytics & Reports" />}
-                {filteredComplianceNavItems.length > 0 && <NavMain items={filteredComplianceNavItems} title="Compliance & Quality" />}
-                {filteredAdminNavItems.length > 0 && <NavMain items={filteredAdminNavItems} title="Administration" />}
+                {filteredSalesNavItems.length > 0 && <NavMain items={filteredSalesNavItems} title="Sales & Customer" collapsible />}
+                {filteredInventoryNavItems.length > 0 && <NavMain items={filteredInventoryNavItems} title="Inventory Management" collapsible />}
+                {filteredOperationsNavItems.length > 0 && <NavMain items={filteredOperationsNavItems} title="Operations" collapsible />}
+                {filteredAnalyticsNavItems.length > 0 && <NavMain items={filteredAnalyticsNavItems} title="Analytics & Reports" collapsible />}
+                {filteredComplianceNavItems.length > 0 && <NavMain items={filteredComplianceNavItems} title="Compliance & Quality" collapsible />}
+                {filteredAdminNavItems.length > 0 && <NavMain items={filteredAdminNavItems} title="Administration" collapsible />}
             </SidebarContent>
 
             <SidebarFooter>
