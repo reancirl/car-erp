@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -66,6 +66,15 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function BranchView({ branch }: BranchViewProps) {
+    const handleManageStaff = () => {
+        // Navigate to user management filtered by this branch
+        router.visit(`/admin/user-management?branch_id=${branch.id}`);
+    };
+
+    const handleViewReports = () => {
+        // Navigate to reports for this branch
+        alert('Branch reporting feature coming soon!');
+    };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -440,11 +449,11 @@ export default function BranchView({ branch }: BranchViewProps) {
                                         Edit Branch Details
                                     </Button>
                                 </Link>
-                                <Button variant="outline" size="sm" className="w-full justify-start">
+                                <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleManageStaff}>
                                     <Users className="h-4 w-4 mr-2" />
                                     Manage Staff
                                 </Button>
-                                <Button variant="outline" size="sm" className="w-full justify-start">
+                                <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleViewReports}>
                                     <Activity className="h-4 w-4 mr-2" />
                                     View Reports
                                 </Button>

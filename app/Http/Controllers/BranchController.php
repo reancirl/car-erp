@@ -52,26 +52,43 @@ class BranchController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:10|unique:branches,code',
-            'address' => 'required|string',
-            'city' => 'required|string|max:255',
-            'state' => 'required|string|max:255',
-            'postal_code' => 'required|string|max:20',
+            'name' => 'required|string|min:3|max:255',
+            'code' => 'required|string|min:2|max:10|unique:branches,code|alpha_dash',
+            'address' => 'required|string|min:10|max:500',
+            'city' => 'required|string|min:2|max:255',
+            'state' => 'required|string|min:2|max:255',
+            'postal_code' => 'required|string|min:4|max:4|regex:/^[0-9]{4}$/',
             'country' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
+            'phone' => 'required|string|regex:/^\+?63[-\s]?[0-9]{1,2}[-\s]?[0-9]{3,4}[-\s]?[0-9]{4}$/',
+            'email' => 'required|email:rfc,dns|max:255',
             'status' => 'required|in:active,inactive',
             'business_hours' => 'nullable|array',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
-            'notes' => 'nullable|string',
+            'notes' => 'nullable|string|max:1000',
+        ], [
+            'name.required' => 'Branch name is required.',
+            'name.min' => 'Branch name must be at least 3 characters.',
+            'code.required' => 'Branch code is required.',
+            'code.unique' => 'This branch code is already taken.',
+            'code.alpha_dash' => 'Branch code can only contain letters, numbers, dashes and underscores.',
+            'postal_code.regex' => 'Postal code must be exactly 4 digits.',
+            'phone.required' => 'Phone number is required.',
+            'phone.regex' => 'Please enter a valid Philippine phone number format (e.g., +63-2-8123-4567).',
+            'email.required' => 'Email address is required.',
+            'email.email' => 'Please enter a valid email address.',
         ]);
 
-        Branch::create($validated);
+        try {
+            Branch::create($validated);
 
-        return redirect()->route('admin.branch-management.index')
-            ->with('success', 'Branch created successfully.');
+            return redirect()->route('admin.branch-management.index')
+                ->with('success', 'Branch created successfully! ' . $validated['name'] . ' is now active.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to create branch. Please try again.');
+        }
     }
 
     /**
@@ -101,26 +118,43 @@ class BranchController extends Controller
     public function update(Request $request, Branch $branch): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => ['required', 'string', 'max:10', Rule::unique('branches')->ignore($branch->id)],
-            'address' => 'required|string',
-            'city' => 'required|string|max:255',
-            'state' => 'required|string|max:255',
-            'postal_code' => 'required|string|max:20',
+            'name' => 'required|string|min:3|max:255',
+            'code' => ['required', 'string', 'min:2', 'max:10', 'alpha_dash', Rule::unique('branches')->ignore($branch->id)],
+            'address' => 'required|string|min:10|max:500',
+            'city' => 'required|string|min:2|max:255',
+            'state' => 'required|string|min:2|max:255',
+            'postal_code' => 'required|string|min:4|max:4|regex:/^[0-9]{4}$/',
             'country' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
+            'phone' => 'required|string|regex:/^\+?63[-\s]?[0-9]{1,2}[-\s]?[0-9]{3,4}[-\s]?[0-9]{4}$/',
+            'email' => 'required|email:rfc,dns|max:255',
             'status' => 'required|in:active,inactive',
             'business_hours' => 'nullable|array',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
-            'notes' => 'nullable|string',
+            'notes' => 'nullable|string|max:1000',
+        ], [
+            'name.required' => 'Branch name is required.',
+            'name.min' => 'Branch name must be at least 3 characters.',
+            'code.required' => 'Branch code is required.',
+            'code.unique' => 'This branch code is already taken.',
+            'code.alpha_dash' => 'Branch code can only contain letters, numbers, dashes and underscores.',
+            'postal_code.regex' => 'Postal code must be exactly 4 digits.',
+            'phone.required' => 'Phone number is required.',
+            'phone.regex' => 'Please enter a valid Philippine phone number format (e.g., +63-2-8123-4567).',
+            'email.required' => 'Email address is required.',
+            'email.email' => 'Please enter a valid email address.',
         ]);
 
-        $branch->update($validated);
+        try {
+            $branch->update($validated);
 
-        return redirect()->route('admin.branch-management.index')
-            ->with('success', 'Branch updated successfully.');
+            return redirect()->route('admin.branch-management.index')
+                ->with('success', 'Branch updated successfully! ' . $validated['name'] . ' has been updated.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to update branch. Please try again.');
+        }
     }
 
     /**
@@ -128,10 +162,16 @@ class BranchController extends Controller
      */
     public function destroy(Branch $branch): RedirectResponse
     {
-        $branch->delete();
+        try {
+            $branchName = $branch->name;
+            $branch->delete();
 
-        return redirect()->route('admin.branch-management.index')
-            ->with('success', 'Branch deleted successfully.');
+            return redirect()->route('admin.branch-management.index')
+                ->with('success', 'Branch deleted successfully! ' . $branchName . ' has been removed.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Failed to delete branch. It may have associated records.');
+        }
     }
 
 }

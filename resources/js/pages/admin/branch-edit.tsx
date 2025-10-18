@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,10 +16,11 @@ import {
     Phone, 
     AlertTriangle,
     CheckCircle,
-    Clock
+    Clock,
+    Loader2
 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 
 interface Branch {
     id: number;
@@ -62,12 +63,35 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function BranchEdit({ branch, regions }: BranchEditProps) {
-    const [branchStatus, setBranchStatus] = useState(branch.status);
+    const { data, setData, put, processing, errors } = useForm({
+        name: branch.name,
+        code: branch.code,
+        address: branch.address,
+        city: branch.city,
+        state: branch.state,
+        postal_code: branch.postal_code,
+        country: branch.country,
+        phone: branch.phone || '',
+        email: branch.email || '',
+        status: branch.status,
+        latitude: branch.latitude?.toString() || '',
+        longitude: branch.longitude?.toString() || '',
+        notes: branch.notes || '',
+        business_hours: branch.business_hours || null,
+    });
 
-    const handleStatusChange = (value: string) => {
-        if (value === 'active' || value === 'inactive' || value === 'maintenance') {
-            setBranchStatus(value);
-        }
+    const handleSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        put(`/admin/branch-management/${branch.id}`, {
+            preserveScroll: true,
+            onError: (errors) => {
+                console.log('Validation errors:', errors);
+            },
+        });
+    };
+
+    const handleCancel = () => {
+        router.visit('/admin/branch-management');
     };
 
     // Get regions from backend
@@ -107,7 +131,7 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Edit ${branch.name}`} />
             
-            <div className="space-y-6 p-6">
+            <form onSubmit={handleSubmit} className="space-y-6 p-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
@@ -120,16 +144,20 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
                         <div className="flex items-center space-x-2">
                             <Building2 className="h-6 w-6" />
                             <h1 className="text-2xl font-bold">Edit {branch.name}</h1>
-                            {getStatusBadge(branchStatus)}
+                            {getStatusBadge(data.status)}
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline">
+                        <Button variant="outline" type="button" onClick={handleCancel}>
                             Cancel Changes
                         </Button>
-                        <Button>
-                            <Save className="h-4 w-4 mr-2" />
-                            Save Changes
+                        <Button type="submit" disabled={processing}>
+                            {processing ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                                <Save className="h-4 w-4 mr-2" />
+                            )}
+                            {processing ? 'Saving...' : 'Save Changes'}
                         </Button>
                     </div>
                 </div>
@@ -175,26 +203,36 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
                                         <Label htmlFor="branch_name">Branch Name *</Label>
                                         <Input 
                                             id="branch_name" 
-                                            defaultValue={branch.name}
+                                            value={data.name}
+                                            onChange={(e) => setData('name', e.target.value)}
+                                            maxLength={255}
+                                            minLength={3}
                                             required 
                                         />
+                                        {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
+                                        {!errors.name && <p className="text-xs text-muted-foreground">Minimum 3 characters</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="branch_code">Branch Code *</Label>
                                         <Input 
                                             id="branch_code" 
-                                            defaultValue={branch.code}
+                                            value={data.code}
+                                            onChange={(e) => setData('code', e.target.value.toUpperCase())}
                                             className="uppercase" 
-                                            maxLength={5}
+                                            maxLength={10}
+                                            minLength={2}
                                             required 
                                         />
+                                        {errors.code && <p className="text-sm text-red-600">{errors.code}</p>}
+                                        {!errors.code && <p className="text-xs text-muted-foreground">2-10 characters, unique code</p>}
                                     </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="description">Description</Label>
                                     <Textarea 
                                         id="description" 
-                                        defaultValue={branch.notes || ''}
+                                        value={data.notes}
+                                        onChange={(e) => setData('notes', e.target.value)}
                                         rows={3}
                                     />
                                 </div>
@@ -216,7 +254,7 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="region">Region *</Label>
-                                        <Select defaultValue={branch.state.toLowerCase().replace(/\s+/g, '_')} required>
+                                        <Select value={data.state} onValueChange={(value) => setData('state', value)} required>
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
@@ -233,9 +271,11 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
                                         <Label htmlFor="province">Province *</Label>
                                         <Input 
                                             id="province" 
-                                            defaultValue={branch.state}
+                                            value={data.state}
+                                            onChange={(e) => setData('state', e.target.value)}
                                             required 
                                         />
+                                        {errors.state && <p className="text-sm text-red-600">{errors.state}</p>}
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -243,24 +283,33 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
                                         <Label htmlFor="city">City/Municipality *</Label>
                                         <Input 
                                             id="city" 
-                                            defaultValue={branch.city}
+                                            value={data.city}
+                                            onChange={(e) => setData('city', e.target.value)}
                                             required 
                                         />
+                                        {errors.city && <p className="text-sm text-red-600">{errors.city}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="postal_code">Postal Code</Label>
+                                        <Label htmlFor="postal_code">Postal Code *</Label>
                                         <Input 
                                             id="postal_code" 
-                                            defaultValue={branch.postal_code}
+                                            value={data.postal_code}
+                                            onChange={(e) => setData('postal_code', e.target.value.replace(/\D/g, ''))}
                                             maxLength={4}
+                                            minLength={4}
+                                            pattern="[0-9]{4}"
+                                            required
                                         />
+                                        {errors.postal_code && <p className="text-sm text-red-600">{errors.postal_code}</p>}
+                                        {!errors.postal_code && <p className="text-xs text-muted-foreground">Exactly 4 digits</p>}
                                     </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="country">Country *</Label>
                                     <Input 
                                         id="country" 
-                                        defaultValue={branch.country}
+                                        value={data.country}
+                                        onChange={(e) => setData('country', e.target.value)}
                                         required 
                                     />
                                 </div>
@@ -268,17 +317,23 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
                                     <Label htmlFor="address">Complete Address *</Label>
                                     <Textarea 
                                         id="address" 
-                                        defaultValue={branch.address}
+                                        value={data.address}
+                                        onChange={(e) => setData('address', e.target.value)}
                                         rows={3}
+                                        maxLength={500}
+                                        minLength={10}
                                         required
                                     />
+                                    {errors.address && <p className="text-sm text-red-600">{errors.address}</p>}
+                                    {!errors.address && <p className="text-xs text-muted-foreground">Minimum 10 characters, maximum 500</p>}
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="latitude">Latitude</Label>
                                         <Input 
                                             id="latitude" 
-                                            defaultValue={branch.latitude?.toString() || ''}
+                                            value={data.latitude}
+                                            onChange={(e) => setData('latitude', e.target.value)}
                                             type="number" 
                                             step="any" 
                                         />
@@ -287,7 +342,8 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
                                         <Label htmlFor="longitude">Longitude</Label>
                                         <Input 
                                             id="longitude" 
-                                            defaultValue={branch.longitude?.toString() || ''}
+                                            value={data.longitude}
+                                            onChange={(e) => setData('longitude', e.target.value)}
                                             type="number" 
                                             step="any" 
                                         />
@@ -313,9 +369,14 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
                                         <Label htmlFor="phone">Phone Number *</Label>
                                         <Input 
                                             id="phone" 
-                                            defaultValue={branch.phone || ''}
+                                            type="tel"
+                                            value={data.phone}
+                                            onChange={(e) => setData('phone', e.target.value)}
+                                            pattern="^\+?63[-\s]?[0-9]{1,2}[-\s]?[0-9]{3,4}[-\s]?[0-9]{4}$"
                                             required 
                                         />
+                                        {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
+                                        {!errors.phone && <p className="text-xs text-muted-foreground">Format: +63-2-8123-4567</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="mobile">Mobile Number</Label>
@@ -331,9 +392,11 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
                                         <Input 
                                             id="email" 
                                             type="email" 
-                                            defaultValue={branch.email || ''}
+                                            value={data.email}
+                                            onChange={(e) => setData('email', e.target.value)}
                                             required 
                                         />
+                                        {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="fax">Fax Number</Label>
@@ -362,10 +425,13 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
                                     <Label htmlFor="notes">Notes</Label>
                                     <Textarea 
                                         id="notes" 
-                                        defaultValue={branch.notes || ''}
+                                        value={data.notes}
+                                        onChange={(e) => setData('notes', e.target.value)}
                                         placeholder="Any additional notes about this branch..."
                                         rows={4}
+                                        maxLength={1000}
                                     />
+                                    <p className="text-xs text-muted-foreground text-right">{data.notes.length}/1000 characters</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -417,7 +483,7 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="status">Status</Label>
-                                    <Select value={branchStatus} onValueChange={handleStatusChange}>
+                                    <Select value={data.status} onValueChange={(value) => setData('status', value as 'active' | 'inactive' | 'maintenance')}>
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
@@ -467,7 +533,7 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
                         </Card>
                     </div>
                 </div>
-            </div>
+            </form>
         </AppLayout>
     );
 }

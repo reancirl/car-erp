@@ -137,7 +137,10 @@ class BranchSeeder extends Seeder
         ];
 
         foreach ($branches as $branchData) {
-            Branch::create($branchData);
+            Branch::updateOrCreate(
+                ['code' => $branchData['code']], // Match on code
+                $branchData // Update or create with this data
+            );
         }
     }
 }

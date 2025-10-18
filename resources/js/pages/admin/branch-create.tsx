@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Building2, Save, MapPin, Phone, Mail, User, Calendar } from 'lucide-react';
+import { ArrowLeft, Building2, Save, MapPin, Phone, Mail, User, Calendar, Loader2 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState, FormEvent } from 'react';
 
@@ -56,11 +56,8 @@ export default function BranchCreate({ regions }: BranchCreateProps) {
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        console.log('Form data being submitted:', data);
         post('/admin/branch-management', {
-            onSuccess: () => {
-                console.log('Form submitted successfully');
-            },
+            preserveScroll: true,
             onError: (errors) => {
                 console.log('Form submission errors:', errors);
             }
@@ -97,7 +94,11 @@ export default function BranchCreate({ regions }: BranchCreateProps) {
                             </Button>
                         </Link>
                         <Button type="submit" disabled={processing}>
-                            <Save className="h-4 w-4 mr-2" />
+                            {processing ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                                <Save className="h-4 w-4 mr-2" />
+                            )}
                             {processing ? 'Creating...' : 'Create Branch'}
                         </Button>
                     </div>
@@ -126,9 +127,12 @@ export default function BranchCreate({ regions }: BranchCreateProps) {
                                             placeholder="e.g., Cebu Branch" 
                                             value={data.name}
                                             onChange={(e) => setData('name', e.target.value)}
+                                            maxLength={255}
+                                            minLength={3}
                                             required 
                                         />
                                         {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
+                                        {!errors.name && <p className="text-xs text-muted-foreground">Minimum 3 characters</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="branch_code">Branch Code *</Label>
@@ -136,12 +140,14 @@ export default function BranchCreate({ regions }: BranchCreateProps) {
                                             id="branch_code" 
                                             placeholder="e.g., CEB" 
                                             className="uppercase" 
-                                            maxLength={5}
+                                            maxLength={10}
+                                            minLength={2}
                                             value={data.code}
                                             onChange={(e) => setData('code', e.target.value.toUpperCase())}
                                             required 
                                         />
                                         {errors.code && <p className="text-sm text-red-600">{errors.code}</p>}
+                                        {!errors.code && <p className="text-xs text-muted-foreground">2-10 characters, unique code</p>}
                                     </div>
                                 </div>
                                 <div className="space-y-2">
@@ -210,14 +216,19 @@ export default function BranchCreate({ regions }: BranchCreateProps) {
                                         {errors.city && <p className="text-sm text-red-600">{errors.city}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="postal_code">Postal Code</Label>
+                                        <Label htmlFor="postal_code">Postal Code *</Label>
                                         <Input 
                                             id="postal_code" 
                                             placeholder="e.g., 6000" 
                                             maxLength={4}
+                                            minLength={4}
+                                            pattern="[0-9]{4}"
                                             value={data.postal_code}
-                                            onChange={(e) => setData('postal_code', e.target.value)}
+                                            onChange={(e) => setData('postal_code', e.target.value.replace(/\D/g, ''))}
+                                            required
                                         />
+                                        {errors.postal_code && <p className="text-sm text-red-600">{errors.postal_code}</p>}
+                                        {!errors.postal_code && <p className="text-xs text-muted-foreground">Exactly 4 digits</p>}
                                     </div>
                                 </div>
                                 <div className="space-y-2">
@@ -235,11 +246,14 @@ export default function BranchCreate({ regions }: BranchCreateProps) {
                                         id="address" 
                                         placeholder="Street number, street name, barangay, building details..."
                                         rows={3}
+                                        maxLength={500}
+                                        minLength={10}
                                         value={data.address}
                                         onChange={(e) => setData('address', e.target.value)}
                                         required
                                     />
                                     {errors.address && <p className="text-sm text-red-600">{errors.address}</p>}
+                                    {!errors.address && <p className="text-xs text-muted-foreground">Minimum 10 characters, maximum 500</p>}
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
@@ -285,12 +299,15 @@ export default function BranchCreate({ regions }: BranchCreateProps) {
                                         <Label htmlFor="phone">Phone Number *</Label>
                                         <Input 
                                             id="phone" 
+                                            type="tel"
                                             placeholder="+63-32-234-5678" 
                                             value={data.phone}
                                             onChange={(e) => setData('phone', e.target.value)}
+                                            pattern="^\+?63[-\s]?[0-9]{1,2}[-\s]?[0-9]{3,4}[-\s]?[0-9]{4}$"
                                             required 
                                         />
                                         {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
+                                        {!errors.phone && <p className="text-xs text-muted-foreground">Format: +63-2-8123-4567</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="mobile">Mobile Number</Label>
@@ -346,9 +363,11 @@ export default function BranchCreate({ regions }: BranchCreateProps) {
                                         id="notes" 
                                         placeholder="Any additional notes about this branch..."
                                         rows={4}
+                                        maxLength={1000}
                                         value={data.notes}
                                         onChange={(e) => setData('notes', e.target.value)}
                                     />
+                                    <p className="text-xs text-muted-foreground text-right">{data.notes.length}/1000 characters</p>
                                 </div>
                             </CardContent>
                         </Card>
