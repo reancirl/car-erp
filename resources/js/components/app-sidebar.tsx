@@ -3,7 +3,7 @@ import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { 
   Users,
   Settings,
@@ -159,7 +159,50 @@ const complianceNavItems: NavItem[] = [
 
 const footerNavItems: NavItem[] = [];
 
+// Permission mapping for navigation items
+const navPermissions: Record<string, string> = {
+    '/admin/user-management': 'users.view',
+    '/admin/branch-management': 'users.view', // Branch management requires admin access
+    '/roles': 'users.view',
+    '/settings/mfa': 'users.view',
+    '/service/pms-work-orders': 'pms.view',
+    '/service/service-types': 'service_types.view',
+    '/service/common-services': 'common_services.view',
+    '/service/warranty-claims': 'warranty.view',
+    '/service/parts-inventory': 'inventory.view',
+    '/inventory/vehicles': 'inventory.view',
+    '/sales/lead-management': 'sales.view',
+    '/sales/test-drives': 'sales.view',
+    '/sales/pipeline': 'sales.view',
+    '/sales/customer-experience': 'customer.view',
+    '/sales/performance-metrics': 'reports.view',
+    '/audit/activity-logs': 'audit.view',
+    '/audit/time-tracking': 'audit.view',
+    '/audit/supervisor-approvals': 'audit.supervisor_override',
+    '/compliance/checklists': 'compliance.view',
+    '/compliance/reminders': 'compliance.view',
+};
+
+function filterNavItemsByPermissions(items: NavItem[], permissions: string[]): NavItem[] {
+    return items.filter(item => {
+        const requiredPermission = navPermissions[item.href];
+        if (!requiredPermission) return true; // Dashboard and other unprotected routes
+        return permissions.includes(requiredPermission);
+    });
+}
+
 export function AppSidebar() {
+    const { auth } = usePage().props as any;
+    const userPermissions = auth?.permissions || [];
+
+    // Filter navigation items based on user permissions
+    const filteredAdminNavItems = filterNavItemsByPermissions(adminNavItems, userPermissions);
+    const filteredOperationsNavItems = filterNavItemsByPermissions(operationsNavItems, userPermissions);
+    const filteredInventoryNavItems = filterNavItemsByPermissions(inventoryNavItems, userPermissions);
+    const filteredSalesNavItems = filterNavItemsByPermissions(salesNavItems, userPermissions);
+    const filteredAnalyticsNavItems = filterNavItemsByPermissions(analyticsNavItems, userPermissions);
+    const filteredComplianceNavItems = filterNavItemsByPermissions(complianceNavItems, userPermissions);
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -176,12 +219,12 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={coreNavItems} />
-                <NavMain items={salesNavItems} title="Sales & Customer" />
-                <NavMain items={inventoryNavItems} title="Inventory Management" />
-                <NavMain items={operationsNavItems} title="Operations" />
-                <NavMain items={analyticsNavItems} title="Analytics & Reports" />
-                <NavMain items={complianceNavItems} title="Compliance & Quality" />
-                <NavMain items={adminNavItems} title="Administration" />
+                {filteredSalesNavItems.length > 0 && <NavMain items={filteredSalesNavItems} title="Sales & Customer" />}
+                {filteredInventoryNavItems.length > 0 && <NavMain items={filteredInventoryNavItems} title="Inventory Management" />}
+                {filteredOperationsNavItems.length > 0 && <NavMain items={filteredOperationsNavItems} title="Operations" />}
+                {filteredAnalyticsNavItems.length > 0 && <NavMain items={filteredAnalyticsNavItems} title="Analytics & Reports" />}
+                {filteredComplianceNavItems.length > 0 && <NavMain items={filteredComplianceNavItems} title="Compliance & Quality" />}
+                {filteredAdminNavItems.length > 0 && <NavMain items={filteredAdminNavItems} title="Administration" />}
             </SidebarContent>
 
             <SidebarFooter>

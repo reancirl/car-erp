@@ -66,7 +66,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // Activity & Audit Routes
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'permission:audit.view'])->group(function () {
     Route::get('audit/activity-logs', function () {
         return Inertia::render('audit/activity-logs');
     })->name('audit.activity-logs');
@@ -77,11 +77,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     Route::get('audit/supervisor-approvals', function () {
         return Inertia::render('audit/supervisor-approvals');
-    })->name('audit.supervisor-approvals');
+    })->name('audit.supervisor-approvals')->middleware('permission:audit.supervisor_override');
 });
 
 // Compliance Routes
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'permission:compliance.view'])->group(function () {
     Route::get('compliance/checklists', function () {
         return Inertia::render('compliance/checklists');
     })->name('compliance.checklists');
@@ -95,7 +95,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->group(function () {
     Route::get('/pms-work-orders', function () {
         return Inertia::render('service/pms-work-orders');
-    })->name('pms-work-orders');
+    })->name('pms-work-orders')->middleware('permission:pms.view');
     
     Route::get('/warranty-claims', function () {
         return Inertia::render('service/warranty-claims');
@@ -107,7 +107,7 @@ Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->gr
 });
 
 // Sales & Customer Lifecycle Routes
-Route::middleware(['auth', 'verified'])->prefix('sales')->name('sales.')->group(function () {
+Route::middleware(['auth', 'verified', 'permission:sales.view'])->prefix('sales')->name('sales.')->group(function () {
     // Lead Management Routes
     Route::get('/lead-management', function () {
         return Inertia::render('sales/lead-management');
@@ -159,6 +159,13 @@ Route::middleware(['auth', 'verified'])->prefix('sales')->name('sales.')->group(
         return Inertia::render('sales/pipeline-view', ['id' => $id]);
     })->name('pipeline.show');
     
+    Route::get('/performance-metrics', function () {
+        return Inertia::render('sales/performance-metrics');
+    })->name('performance-metrics')->middleware('permission:reports.view');
+});
+
+// Customer Experience Routes - Separate from sales (uses customer.view permission)
+Route::middleware(['auth', 'verified', 'permission:customer.view'])->prefix('sales')->name('sales.')->group(function () {
     // Customer Experience CRUD routes
     Route::get('/customer-experience', function () {
         return Inertia::render('sales/customer-experience');
@@ -184,29 +191,14 @@ Route::middleware(['auth', 'verified'])->prefix('sales')->name('sales.')->group(
     Route::get('/customer-experience/task/{id}/edit', function ($id) {
         return Inertia::render('sales/customer-experience-task-edit', ['id' => $id]);
     })->name('customer-experience.task.edit');
-    
-    Route::get('/performance-metrics', function () {
-        return Inertia::render('sales/performance-metrics');
-    })->name('performance-metrics');
 });
 
 // Administration Routes
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/user-management', function () {
-        return Inertia::render('admin/user-management');
-    })->name('user-management');
-    
-    Route::get('/user-management/create', function () {
-        return Inertia::render('admin/user-create');
-    })->name('user-management.create');
-    
-    Route::get('/user-management/{id}/edit', function ($id) {
-        return Inertia::render('admin/user-edit', ['userId' => $id]);
-    })->name('user-management.edit');
-    
-    Route::get('/user-management/{id}', function ($id) {
-        return Inertia::render('admin/user-view', ['userId' => $id]);
-    })->name('user-management.view');
+    // User Management Routes - using UserController
+    Route::resource('user-management', App\Http\Controllers\UserController::class)->parameters([
+        'user-management' => 'user'
+    ])->middleware('permission:users.view');
     
     // Branch Management Routes - using BranchController
     Route::resource('branch-management', App\Http\Controllers\BranchController::class)->parameters([
