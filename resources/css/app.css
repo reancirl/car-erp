@@ -138,4 +138,29 @@
     body {
         @apply bg-background text-foreground;
     }
+
+    /* Ensure all interactive elements have pointer cursor */
+    button,
+    a,
+    [role="button"],
+    [type="button"],
+    [type="submit"],
+    [type="reset"],
+    select,
+    input[type="checkbox"],
+    input[type="radio"],
+    label[for],
+    summary {
+        @apply cursor-pointer;
+    }
+
+    button:disabled,
+    a:disabled,
+    [role="button"]:disabled,
+    [type="button"]:disabled,
+    [type="submit"]:disabled,
+    [type="reset"]:disabled,
+    select:disabled {
+        @apply cursor-not-allowed;
+    }
 }
