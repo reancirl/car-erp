@@ -116,6 +116,7 @@ Route::middleware(['auth', 'verified', 'permission:sales.view'])->prefix('sales'
     Route::get('/lead-management/{lead}/edit', [\App\Http\Controllers\LeadController::class, 'edit'])->name('lead-management.edit')->middleware('permission:sales.edit');
     Route::put('/lead-management/{lead}', [\App\Http\Controllers\LeadController::class, 'update'])->name('lead-management.update')->middleware('permission:sales.edit');
     Route::delete('/lead-management/{lead}', [\App\Http\Controllers\LeadController::class, 'destroy'])->name('lead-management.destroy')->middleware('permission:sales.delete');
+    Route::post('/lead-management/{id}/restore', [\App\Http\Controllers\LeadController::class, 'restore'])->name('lead-management.restore')->middleware('permission:sales.create');
     
     // Test Drives Routes
     Route::get('/test-drives', function () {
@@ -191,11 +192,16 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::resource('user-management', App\Http\Controllers\UserController::class)->parameters([
         'user-management' => 'user'
     ])->middleware('permission:users.view');
+    Route::post('user-management/{id}/restore', [App\Http\Controllers\UserController::class, 'restore'])
+        ->name('user-management.restore')
+        ->middleware('permission:users.create');
     
     // Branch Management Routes - using BranchController
     Route::resource('branch-management', App\Http\Controllers\BranchController::class)->parameters([
         'branch-management' => 'branch'
     ]);
+    Route::post('branch-management/{id}/restore', [App\Http\Controllers\BranchController::class, 'restore'])
+        ->name('branch-management.restore');
 });
 
 // PMS Work Orders Routes

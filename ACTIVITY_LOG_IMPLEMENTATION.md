@@ -12,6 +12,7 @@ Successfully implemented a comprehensive activity logging system that automatica
 - **subject_type** & **subject_id**: Polymorphic relation to the affected model
 - **event**: Type of event (created, updated, deleted)
 - **causer_type** & **causer_id**: Polymorphic relation to the user who performed the action
+- **branch_id**: Foreign key to branches table - automatically captured from logged-in user
 - **properties**: JSON field storing additional metadata
 - **action**: Standardized action identifier (e.g., 'sales.create', 'branch.update')
 - **module**: Display module name (e.g., 'Sales', 'Branch', 'Users')
@@ -19,6 +20,19 @@ Successfully implemented a comprehensive activity logging system that automatica
 - **ip_address**: User's IP address
 - **user_agent**: User's browser information
 - **created_at** & **updated_at**: Timestamps
+
+### 🔒 Branch-Based Access Control
+
+**Non-Admin Users:**
+- Can only see activity logs from their own branch
+- All filters and statistics are scoped to their branch
+- No branch filter dropdown visible (automatic filtering)
+
+**Admin Users:**
+- Can see all activity logs across all branches by default
+- Have access to a "Branch" filter dropdown
+- Can filter logs by specific branch
+- Statistics update based on selected branch filter
 
 ### 2. Core Components
 
@@ -90,8 +104,10 @@ class YourController extends Controller
   
 - **Filtering & Search:**
   - Search by description or action
+  - Filter by branch (Admin only - dropdown with all active branches)
   - Filter by module (Sales, Branch, Users, etc.)
   - Filter by status (success, failed, flagged)
+  - **Branch-scoped**: Non-admin users automatically see only their branch's logs
   
 - **Activity Table:**
   - Timestamp, user, action, module, status, IP address
@@ -118,6 +134,16 @@ Route::middleware(['auth', 'verified', 'permission:audit.view'])->group(function
         ->name('audit.activity-logs.export')
         ->middleware('permission:audit.export');
 });
+```
+
+## Automatic Branch Capture
+
+The `LogsActivity` trait automatically captures the `branch_id` from the authenticated user when logging activities. You don't need to manually pass the branch_id - it's handled automatically!
+
+```php
+// When a user from Branch A creates a lead, the activity log will automatically
+// have branch_id set to the user's branch
+$this->logCreated(...); // branch_id is auto-captured from Auth::user()->branch_id
 ```
 
 ## How to Add Logging to New Controllers
@@ -237,9 +263,10 @@ The following indexes are created for optimal query performance:
 - `log_name`
 - `subject_type` + `subject_id` (composite)
 - `causer_type` + `causer_id` (composite)
+- `branch_id` (with foreign key constraint)
 - `action`
 - `module`
 - `status`
 - `created_at`
 
-This ensures fast filtering and searching even with millions of log entries.
+This ensures fast filtering and searching even with millions of log entries, including efficient branch-scoped queries.

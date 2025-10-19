@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ActivityLog extends Model
 {
@@ -15,6 +16,7 @@ class ActivityLog extends Model
         'event',
         'causer_type',
         'causer_id',
+        'branch_id',
         'properties',
         'action',
         'module',
@@ -37,6 +39,16 @@ class ActivityLog extends Model
     public function causer(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function scopeForBranch($query, int $branchId)
+    {
+        return $query->where('branch_id', $branchId);
     }
 
     public function scopeForModule($query, string $module)

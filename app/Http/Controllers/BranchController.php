@@ -20,6 +20,9 @@ class BranchController extends Controller
     public function index(): Response
     {
         $branches = Branch::query()
+            ->when(request('include_deleted'), function ($query) {
+                $query->withTrashed();
+            })
             ->when(request('search'), function ($query, $search) {
                 $query->where('name', 'like', "%{$search}%")
                       ->orWhere('code', 'like', "%{$search}%")
@@ -34,7 +37,7 @@ class BranchController extends Controller
 
         return Inertia::render('admin/branch-management', [
             'branches' => $branches,
-            'filters' => request()->only(['search', 'status']),
+            'filters' => request()->only(['search', 'status', 'include_deleted']),
         ]);
     }
 
@@ -220,6 +223,43 @@ class BranchController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Failed to delete branch. It may have associated records.');
+        }
+    }
+
+    /**
+     * Restore a soft-deleted branch.
+     */
+    public function restore(Request $request, $id): RedirectResponse
+    {
+        try {
+            $branch = Branch::withTrashed()->findOrFail($id);
+            
+            // Check if already active
+            if (!$branch->trashed()) {
+                return redirect()->back()
+                    ->with('error', 'Branch is not deleted.');
+            }
+            
+            $branchName = $branch->name;
+            $branch->restore();
+
+            // Log activity
+            $this->logRestored(
+                module: 'Branch',
+                subject: $branch,
+                description: "Restored branch {$branchName} ({$branch->code})",
+                properties: [
+                    'branch_code' => $branch->code,
+                    'city' => $branch->city,
+                    'status' => $branch->status,
+                ]
+            );
+
+            return redirect()->route('admin.branch-management.index')
+                ->with('success', 'Branch restored successfully! ' . $branchName . ' is now active.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Failed to restore branch. Please try again.');
         }
     }
 

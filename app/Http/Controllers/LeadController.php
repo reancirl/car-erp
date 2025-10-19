@@ -25,6 +25,9 @@ class LeadController extends Controller
 
         // Base query with branch filtering
         $query = Lead::with(['branch', 'assignedUser'])
+            ->when($request->include_deleted, function ($q) {
+                $q->withTrashed();
+            })
             ->when(!$user->hasRole('admin'), function ($q) use ($user) {
                 // Non-admin: Only see leads from their branch
                 $q->forUserBranch($user);
@@ -67,7 +70,7 @@ class LeadController extends Controller
         return Inertia::render('sales/lead-management', [
             'leads' => $leads,
             'stats' => $stats,
-            'filters' => $request->only(['search', 'status', 'source', 'branch_id', 'lead_score']),
+            'filters' => $request->only(['search', 'status', 'source', 'branch_id', 'lead_score', 'include_deleted']),
             'branches' => $user->hasRole('admin') ? Branch::where('status', 'active')->get() : null,
         ]);
     }
@@ -408,5 +411,52 @@ class LeadController extends Controller
         }
 
         return [min(100, $score), $flags];
+    }
+
+    /**
+     * Restore a soft-deleted lead.
+     */
+    public function restore(Request $request, $id): RedirectResponse
+    {
+        try {
+            $lead = Lead::withTrashed()->findOrFail($id);
+            
+            // Authorization check
+            if (!$request->user()->hasRole('admin') && $lead->branch_id !== $request->user()->branch_id) {
+                abort(403, 'You can only restore leads from your branch.');
+            }
+            
+            // Check if already active
+            if (!$lead->trashed()) {
+                return redirect()->back()
+                    ->with('error', 'Lead is not deleted.');
+            }
+            
+            $leadId = $lead->lead_id;
+            $leadName = $lead->name;
+            
+            $lead->restore();
+
+            // Log activity
+            $this->logRestored(
+                module: 'Sales',
+                subject: $lead,
+                description: "Restored lead {$leadId} - {$leadName}",
+                properties: [
+                    'lead_id' => $leadId,
+                    'name' => $leadName,
+                    'email' => $lead->email,
+                    'phone' => $lead->phone,
+                    'status' => $lead->status,
+                ]
+            );
+
+            return redirect()
+                ->route('sales.lead-management')
+                ->with('success', "Lead {$leadId} restored successfully!");
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Failed to restore lead. Please try again.');
+        }
     }
 }

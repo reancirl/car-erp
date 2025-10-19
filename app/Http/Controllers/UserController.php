@@ -23,6 +23,9 @@ class UserController extends Controller
     {
         $users = User::query()
             ->with(['branch', 'roles'])
+            ->when(request('include_deleted'), function ($query) {
+                $query->withTrashed();
+            })
             ->when(request('search'), function ($query, $search) {
                 $query->where('name', 'like', "%{$search}%")
                       ->orWhere('email', 'like', "%{$search}%");
@@ -49,7 +52,7 @@ class UserController extends Controller
             'users' => $users,
             'branches' => $branches,
             'roles' => $roles,
-            'filters' => request()->only(['search', 'branch_id', 'role']),
+            'filters' => request()->only(['search', 'branch_id', 'role', 'include_deleted']),
         ]);
     }
 
@@ -269,6 +272,46 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Failed to delete user. They may have associated records.');
+        }
+    }
+
+    /**
+     * Restore a soft-deleted user.
+     */
+    public function restore(Request $request, $id): RedirectResponse
+    {
+        try {
+            $user = User::withTrashed()->findOrFail($id);
+            
+            // Check if already active
+            if (!$user->trashed()) {
+                return redirect()->back()
+                    ->with('error', 'User is not deleted.');
+            }
+            
+            $userName = $user->name;
+            $userEmail = $user->email;
+            $userRole = $user->roles->first()?->name;
+            
+            $user->restore();
+
+            // Log activity
+            $this->logRestored(
+                module: 'Users',
+                subject: $user,
+                description: "Restored user {$userName} ({$userEmail})",
+                properties: [
+                    'email' => $userEmail,
+                    'role' => $userRole,
+                    'branch_id' => $user->branch_id,
+                ]
+            );
+
+            return redirect()->route('admin.user-management.index')
+                ->with('success', 'User restored successfully! ' . $userName . ' has been restored.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Failed to restore user. Please try again.');
         }
     }
 }

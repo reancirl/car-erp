@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -13,10 +14,21 @@ class ActivityLogController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = ActivityLog::with('causer:id,name')
+        $user = $request->user();
+        
+        $query = ActivityLog::with('causer:id,name', 'branch:id,name')
             ->orderBy('created_at', 'desc');
 
-        // Apply filters
+        // Branch filtering based on role
+        if (!$user->hasRole('admin')) {
+            // Non-admin: Only see logs from their branch
+            $query->where('branch_id', $user->branch_id);
+        } elseif ($request->filled('branch_id')) {
+            // Admin: Can filter by branch
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        // Apply other filters
         if ($request->filled('module')) {
             $query->where('module', $request->module);
         }
@@ -35,6 +47,17 @@ class ActivityLogController extends Controller
 
         // Paginate results
         $logs = $query->paginate(50)->through(function ($log) {
+            // Check if subject is soft deleted
+            $subjectDeleted = false;
+            if ($log->subject_type && $log->subject_id) {
+                try {
+                    $model = app($log->subject_type)::withTrashed()->find($log->subject_id);
+                    $subjectDeleted = $model && method_exists($model, 'trashed') ? $model->trashed() : false;
+                } catch (\Exception $e) {
+                    // Model doesn't exist or doesn't support soft deletes
+                }
+            }
+
             return [
                 'id' => $log->id,
                 'action' => $log->action,
@@ -45,44 +68,56 @@ class ActivityLogController extends Controller
                 'details' => $log->description,
                 'status' => $log->status,
                 'properties' => $log->properties,
+                'subject_type' => $log->subject_type,
+                'subject_id' => $log->subject_id,
+                'subject_deleted' => $subjectDeleted,
             ];
         });
 
         // Get statistics
-        $stats = $this->getStatistics();
+        $stats = $this->getStatistics($user, $request->branch_id);
 
         return Inertia::render('audit/activity-logs', [
             'logs' => $logs,
             'stats' => $stats,
-            'filters' => $request->only(['module', 'status', 'search']),
+            'filters' => $request->only(['module', 'status', 'search', 'branch_id']),
+            'branches' => $user->hasRole('admin') ? Branch::where('status', 'active')->get(['id', 'name', 'code']) : null,
         ]);
     }
 
-    private function getStatistics(): array
+    private function getStatistics($user, $branchId = null): array
     {
         $today = Carbon::today();
         $yesterday = Carbon::yesterday();
 
+        // Base query with branch filtering
+        $baseQuery = ActivityLog::query();
+        if (!$user->hasRole('admin')) {
+            $baseQuery->where('branch_id', $user->branch_id);
+        } elseif ($branchId) {
+            $baseQuery->where('branch_id', $branchId);
+        }
+
         // Total events today
-        $eventsToday = ActivityLog::whereDate('created_at', $today)->count();
-        $eventsYesterday = ActivityLog::whereDate('created_at', $yesterday)->count();
+        $eventsToday = (clone $baseQuery)->whereDate('created_at', $today)->count();
+        $eventsYesterday = (clone $baseQuery)->whereDate('created_at', $yesterday)->count();
         $eventsChange = $eventsYesterday > 0
             ? round((($eventsToday - $eventsYesterday) / $eventsYesterday) * 100)
             : 0;
 
         // Active users (users who performed actions today)
-        $activeUsers = ActivityLog::whereDate('created_at', $today)
+        $activeUsers = (clone $baseQuery)->whereDate('created_at', $today)
             ->whereNotNull('causer_id')
             ->distinct('causer_id')
             ->count('causer_id');
 
         // Failed actions today
-        $failedActions = ActivityLog::whereDate('created_at', $today)
+        $failedActions = (clone $baseQuery)->whereDate('created_at', $today)
             ->where('status', 'failed')
             ->count();
 
         // Flagged events (last 7 days)
-        $flaggedEvents = ActivityLog::where('status', 'flagged')
+        $flaggedEvents = (clone $baseQuery)->where('status', 'flagged')
             ->where('created_at', '>=', now()->subDays(7))
             ->count();
 
@@ -97,8 +132,17 @@ class ActivityLogController extends Controller
 
     public function export(Request $request)
     {
+        $user = $request->user();
+        
         $query = ActivityLog::with('causer:id,name')
             ->orderBy('created_at', 'desc');
+
+        // Branch filtering for export
+        if (!$user->hasRole('admin')) {
+            $query->where('branch_id', $user->branch_id);
+        } elseif ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
 
         // Apply the same filters
         if ($request->filled('module')) {

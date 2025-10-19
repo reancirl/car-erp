@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Activity, Search, Filter, Download, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Activity, Search, Filter, Download, Eye, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 
@@ -21,6 +21,9 @@ interface ActivityLog {
     details: string;
     status: string;
     properties?: Record<string, any>;
+    subject_type?: string;
+    subject_id?: number;
+    subject_deleted?: boolean;
 }
 
 interface Stats {
@@ -29,6 +32,12 @@ interface Stats {
     active_users: number;
     failed_actions: number;
     flagged_events: number;
+}
+
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
 }
 
 interface Props {
@@ -45,7 +54,9 @@ interface Props {
         module?: string;
         status?: string;
         search?: string;
+        branch_id?: number;
     };
+    branches?: Branch[] | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -59,10 +70,11 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function ActivityLogs({ logs, stats, filters = {} }: Props) {
+export default function ActivityLogs({ logs, stats, filters = {}, branches }: Props) {
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [selectedModule, setSelectedModule] = useState(filters.module || 'all');
     const [selectedStatus, setSelectedStatus] = useState(filters.status || 'all');
+    const [selectedBranch, setSelectedBranch] = useState(filters.branch_id?.toString() || 'all');
     const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -76,11 +88,42 @@ export default function ActivityLogs({ logs, stats, filters = {} }: Props) {
         setSelectedLog(null);
     };
 
+    const handleRestore = (log: ActivityLog) => {
+        if (!log.subject_id || !log.module) return;
+
+        let restoreRoute = '';
+        
+        // Determine restore route based on module
+        switch (log.module) {
+            case 'Branch':
+                restoreRoute = route('admin.branch-management.restore', log.subject_id);
+                break;
+            case 'Users':
+                restoreRoute = route('admin.user-management.restore', log.subject_id);
+                break;
+            case 'Sales':
+                restoreRoute = route('sales.lead-management.restore', log.subject_id);
+                break;
+            default:
+                return;
+        }
+
+        if (confirm('Are you sure you want to restore this record?')) {
+            router.post(restoreRoute, {}, {
+                onSuccess: () => {
+                    handleCloseModal();
+                    router.reload();
+                },
+            });
+        }
+    };
+
     const handleFilter = () => {
         const params: Record<string, string> = {};
         if (searchTerm) params.search = searchTerm;
         if (selectedModule && selectedModule !== 'all') params.module = selectedModule;
         if (selectedStatus && selectedStatus !== 'all') params.status = selectedStatus;
+        if (selectedBranch && selectedBranch !== 'all') params.branch_id = selectedBranch;
 
         router.get(route('audit.activity-logs'), params, {
             preserveState: true,
@@ -92,6 +135,7 @@ export default function ActivityLogs({ logs, stats, filters = {} }: Props) {
         const params: Record<string, string> = {};
         if (selectedModule && selectedModule !== 'all') params.module = selectedModule;
         if (selectedStatus && selectedStatus !== 'all') params.status = selectedStatus;
+        if (selectedBranch && selectedBranch !== 'all') params.branch_id = selectedBranch;
         window.location.href = route('audit.activity-logs.export', params);
     };
 
@@ -200,6 +244,21 @@ export default function ActivityLogs({ logs, stats, filters = {} }: Props) {
                                     />
                                 </div>
                             </div>
+                            {branches && (
+                                <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                                    <SelectTrigger className="w-full md:w-[180px]">
+                                        <SelectValue placeholder="Branch" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Branches</SelectItem>
+                                        {branches.map((branch) => (
+                                            <SelectItem key={branch.id} value={branch.id.toString()}>
+                                                {branch.name} ({branch.code})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                             <Select value={selectedModule} onValueChange={setSelectedModule}>
                                 <SelectTrigger className="w-full md:w-[180px]">
                                     <SelectValue placeholder="Module" />
@@ -411,7 +470,19 @@ export default function ActivityLogs({ logs, stats, filters = {} }: Props) {
                                 </div>
                             )}
 
-                            <div className="flex justify-end gap-2 pt-4 border-t">
+                            <div className="flex justify-between items-center gap-2 pt-4 border-t">
+                                <div>
+                                    {selectedLog.subject_deleted && (
+                                        <Button 
+                                            variant="default" 
+                                            onClick={() => handleRestore(selectedLog)}
+                                            className="bg-green-600 hover:bg-green-700"
+                                        >
+                                            <RotateCcw className="h-4 w-4 mr-2" />
+                                            Restore Record
+                                        </Button>
+                                    )}
+                                </div>
                                 <Button variant="outline" onClick={handleCloseModal}>
                                     Close
                                 </Button>

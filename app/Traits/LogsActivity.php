@@ -37,6 +37,12 @@ trait LogsActivity
         if (Auth::check()) {
             $logData['causer_type'] = get_class(Auth::user());
             $logData['causer_id'] = Auth::id();
+            
+            // Capture branch_id from authenticated user
+            $user = Auth::user();
+            if ($user && isset($user->branch_id)) {
+                $logData['branch_id'] = $user->branch_id;
+            }
         }
 
         return ActivityLog::create($logData);
@@ -78,6 +84,19 @@ trait LogsActivity
             properties: $properties,
             status: 'success',
             event: 'deleted'
+        );
+    }
+
+    protected function logRestored(string $module, $subject, string $description, array $properties = []): ActivityLog
+    {
+        return $this->logActivity(
+            action: strtolower($module) . '.restore',
+            module: $module,
+            description: $description,
+            subject: $subject,
+            properties: $properties,
+            status: 'success',
+            event: 'restored'
         );
     }
 }
