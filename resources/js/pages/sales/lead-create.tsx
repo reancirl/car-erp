@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,26 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { 
-    ArrowLeft, 
-    UserPlus, 
-    Save, 
-    User,
-    Phone,
-    Mail,
-    MapPin,
-    Star,
-    AlertTriangle,
-    CheckCircle,
-    X,
-    Globe,
-    DollarSign,
-    Calendar,
-    Clock,
-    Target
-} from 'lucide-react';
+import { ArrowLeft, Save, User, Globe, Target, Star, Calendar, X, AlertCircle } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
+import { formatPHP, formatPhoneNumberPH, isValidPhoneNumberPH, PH_REGIONS } from '@/utils/formatters';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -44,100 +28,118 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function LeadCreate() {
-    const [selectedStatus, setSelectedStatus] = useState('new');
-    const [selectedSource, setSelectedSource] = useState('web_form');
-    const [selectedPriority, setSelectedPriority] = useState('medium');
-    const [selectedTags, setSelectedTags] = useState<string[]>([]);
-    const [estimatedScore, setEstimatedScore] = useState(65);
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
+}
 
-    const leadSources = [
-        { value: 'web_form', label: 'Web Form', description: 'Online inquiry form', score: 20 },
-        { value: 'phone', label: 'Phone Call', description: 'Inbound phone inquiry', score: 30 },
-        { value: 'walk_in', label: 'Walk-in', description: 'Physical visit to dealership', score: 40 },
-        { value: 'referral', label: 'Referral', description: 'Customer referral', score: 35 },
-        { value: 'social_media', label: 'Social Media', description: 'Social media inquiry', score: 15 },
-    ];
+interface SalesRep {
+    id: number;
+    name: string;
+    branch_id: number;
+}
 
-    const leadStatuses = [
-        { value: 'new', label: 'New', description: 'Recently received lead' },
-        { value: 'contacted', label: 'Contacted', description: 'Initial contact made' },
-        { value: 'qualified', label: 'Qualified', description: 'Meets qualification criteria' },
-        { value: 'hot', label: 'Hot', description: 'High priority, ready to buy' },
-        { value: 'unqualified', label: 'Unqualified', description: 'Does not meet criteria' },
-    ];
+interface Role {
+    id: number;
+    name: string;
+    guard_name: string;
+}
 
-    const priorities = [
-        { value: 'low', label: 'Low', description: 'Standard follow-up' },
-        { value: 'medium', label: 'Medium', description: 'Regular attention' },
-        { value: 'high', label: 'High', description: 'Priority follow-up' },
-        { value: 'urgent', label: 'Urgent', description: 'Immediate attention' },
-    ];
+interface Props {
+    branches: Branch[] | null;
+    salesReps: SalesRep[];
+    auth: {
+        user: {
+            roles?: Role[];
+            branch_id?: number;
+        };
+    };
+}
+
+export default function LeadCreate({ branches, salesReps, auth }: Props) {
+    const isAdmin = auth.user.roles?.some(role => role.name === 'admin');
+    
+    const { data, setData, post, processing, errors } = useForm({
+        branch_id: !isAdmin && auth.user.branch_id ? auth.user.branch_id.toString() : '',
+        name: '',
+        email: '',
+        phone: '',
+        location: '',
+        ip_address: '',
+        source: 'web_form',
+        status: 'new',
+        priority: 'medium',
+        vehicle_interest: '',
+        budget_min: '',
+        budget_max: '',
+        purchase_timeline: '',
+        assigned_to: 'unassigned',
+        next_followup_at: '',
+        contact_method: '',
+        notes: '',
+        tags: [] as string[],
+    });
 
     const availableTags = [
-        { id: 'hot_lead', name: 'Hot Lead', color: 'bg-red-100 text-red-800' },
-        { id: 'financing_needed', name: 'Financing Needed', color: 'bg-blue-100 text-blue-800' },
-        { id: 'trade_in', name: 'Trade-in', color: 'bg-green-100 text-green-800' },
-        { id: 'cash_buyer', name: 'Cash Buyer', color: 'bg-purple-100 text-purple-800' },
-        { id: 'first_time_buyer', name: 'First Time Buyer', color: 'bg-yellow-100 text-yellow-800' },
-        { id: 'repeat_customer', name: 'Repeat Customer', color: 'bg-indigo-100 text-indigo-800' },
-        { id: 'urgent', name: 'Urgent', color: 'bg-orange-100 text-orange-800' },
-        { id: 'pre_approved', name: 'Pre-approved', color: 'bg-teal-100 text-teal-800' },
+        { id: 'hot_lead', name: 'Hot Lead' },
+        { id: 'financing_needed', name: 'Financing Needed' },
+        { id: 'trade_in', name: 'Trade-in' },
+        { id: 'cash_buyer', name: 'Cash Buyer' },
+        { id: 'first_time_buyer', name: 'First Time Buyer' },
+        { id: 'repeat_customer', name: 'Repeat Customer' },
+        { id: 'urgent', name: 'Urgent' },
+        { id: 'pre_approved', name: 'Pre-approved' },
     ];
-
-    const salesReps = [
-        { id: '1', name: 'Sarah Sales Rep', specialties: ['Honda', 'Toyota'], workload: 'Light' },
-        { id: '2', name: 'Mike Sales Rep', specialties: ['BMW', 'Mercedes'], workload: 'Medium' },
-        { id: '3', name: 'Lisa Sales Rep', specialties: ['Hyundai', 'Kia'], workload: 'Heavy' },
-        { id: '4', name: 'Tom Sales Rep', specialties: ['Ford', 'Chevrolet'], workload: 'Light' },
-    ];
-
-    const getStatusBadge = (status: string) => {
-        const colors = {
-            new: 'bg-gray-100 text-gray-800',
-            contacted: 'bg-blue-100 text-blue-800',
-            qualified: 'bg-green-100 text-green-800',
-            hot: 'bg-red-100 text-red-800',
-            unqualified: 'bg-yellow-100 text-yellow-800',
-        };
-        return <Badge className={colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>{status}</Badge>;
-    };
-
-    const getPriorityBadge = (priority: string) => {
-        const colors = {
-            low: 'bg-gray-100 text-gray-800',
-            medium: 'bg-blue-100 text-blue-800',
-            high: 'bg-orange-100 text-orange-800',
-            urgent: 'bg-red-100 text-red-800',
-        };
-        return <Badge className={colors[priority as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>{priority}</Badge>;
-    };
 
     const toggleTag = (tagId: string) => {
-        setSelectedTags(prev => 
-            prev.includes(tagId) 
-                ? prev.filter(id => id !== tagId)
-                : [...prev, tagId]
+        setData('tags', data.tags.includes(tagId)
+            ? data.tags.filter(id => id !== tagId)
+            : [...data.tags, tagId]
         );
     };
 
-    const calculateLeadScore = () => {
-        const sourceScore = leadSources.find(s => s.value === selectedSource)?.score || 0;
-        const priorityScore = selectedPriority === 'urgent' ? 30 : selectedPriority === 'high' ? 20 : selectedPriority === 'medium' ? 10 : 0;
-        const tagScore = selectedTags.length * 5;
-        return Math.min(100, sourceScore + priorityScore + tagScore + 15); // Base score of 15
+    const handleSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        post('/sales/lead-management', {
+            preserveScroll: true,
+        });
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Lead" />
             
-            <div className="space-y-6 p-6">
+            <form onSubmit={handleSubmit} className="space-y-6 p-6">
+                {/* Validation Error Banner */}
+                {Object.keys(errors).length > 0 && (
+                    <Card className="border-red-200 bg-red-50">
+                        <CardContent className="pt-6">
+                            <div className="flex items-start space-x-3">
+                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-red-900">Validation Error</h3>
+                                    <p className="text-sm text-red-800 mt-1">
+                                        Please correct the following errors before submitting:
+                                    </p>
+                                    <ul className="list-disc list-inside text-sm text-red-700 mt-2 space-y-1">
+                                        {Object.entries(errors).map(([field, message]) => (
+                                            <li key={field}>
+                                                <strong className="capitalize">{field.replace(/_/g, ' ')}</strong>: {message}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         <Link href="/sales/lead-management">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" type="button">
                                 <ArrowLeft className="h-4 w-4 mr-2" />
                                 Back to Leads
                             </Button>
@@ -148,431 +150,415 @@ export default function LeadCreate() {
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline">
-                            <X className="h-4 w-4 mr-2" />
-                            Cancel
-                        </Button>
-                        <Button>
+                        <Link href="/sales/lead-management">
+                            <Button variant="outline" type="button">
+                                <X className="h-4 w-4 mr-2" />
+                                Cancel
+                            </Button>
+                        </Link>
+                        <Button type="submit" disabled={processing}>
                             <Save className="h-4 w-4 mr-2" />
-                            Create Lead
+                            {processing ? 'Creating...' : 'Create Lead'}
                         </Button>
                     </div>
                 </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Main Form */}
+                        <div className="lg:col-span-2 space-y-6">
+                            {/* Branch Selection (Admin Only) */}
+                            {isAdmin && branches && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Branch Assignment</CardTitle>
+                                        <CardDescription>Select which branch this lead belongs to (Required)</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="branch_id">Branch *</Label>
+                                            <Select value={data.branch_id} onValueChange={(value) => setData('branch_id', value)} required>
+                                                <SelectTrigger className={errors.branch_id ? 'border-red-500' : ''}>
+                                                    <SelectValue placeholder="Select branch (Required)" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {branches.map((branch) => (
+                                                        <SelectItem key={branch.id} value={branch.id.toString()}>
+                                                            {branch.name} ({branch.code})
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.branch_id && <p className="text-sm text-red-600">{errors.branch_id}</p>}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Form */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Lead Information */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <User className="h-5 w-5 mr-2" />
-                                    Lead Information
-                                </CardTitle>
-                                <CardDescription>
-                                    Basic contact and identification details
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="lead-id">Lead ID</Label>
-                                        <Input 
-                                            id="lead-id" 
-                                            placeholder="Auto-generated"
-                                            disabled
-                                            value="LD-2025-005"
-                                        />
+                            {/* Lead Information */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center">
+                                        <User className="h-5 w-5 mr-2" />
+                                        Lead Information
+                                    </CardTitle>
+                                    <CardDescription>Basic contact and identification details</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="name">Full Name *</Label>
+                                            <Input 
+                                                id="name" 
+                                                placeholder="Enter full name"
+                                                value={data.name}
+                                                onChange={(e) => setData('name', e.target.value)}
+                                                required
+                                            />
+                                            {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="email">Email Address *</Label>
+                                            <Input 
+                                                id="email" 
+                                                type="email"
+                                                placeholder="Enter email address"
+                                                value={data.email}
+                                                onChange={(e) => setData('email', e.target.value)}
+                                                required
+                                            />
+                                            {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="phone">Phone Number *</Label>
+                                            <Input 
+                                                id="phone" 
+                                                placeholder="e.g., 0912 345 6789 or +63 912 345 6789"
+                                                value={data.phone}
+                                                onChange={(e) => setData('phone', e.target.value)}
+                                                required
+                                            />
+                                            {data.phone && !isValidPhoneNumberPH(data.phone) && (
+                                                <p className="text-xs text-amber-600">⚠️ Please enter a valid Philippine mobile number</p>
+                                            )}
+                                            {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="location">Location / Region</Label>
+                                            <Select value={data.location} onValueChange={(value) => setData('location', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select region" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {PH_REGIONS.map((region) => (
+                                                        <SelectItem key={region} value={region}>
+                                                            {region}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.location && <p className="text-sm text-red-600">{errors.location}</p>}
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="created-date">Created Date</Label>
+                                        <Label htmlFor="ip_address">IP Address (Optional)</Label>
                                         <Input 
-                                            id="created-date" 
-                                            type="date"
-                                            defaultValue={new Date().toISOString().split('T')[0]}
+                                            id="ip_address" 
+                                            placeholder="e.g., 192.168.1.1"
+                                            value={data.ip_address}
+                                            onChange={(e) => setData('ip_address', e.target.value)}
                                         />
+                                        {errors.ip_address && <p className="text-sm text-red-600">{errors.ip_address}</p>}
                                     </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name">Full Name *</Label>
-                                        <Input 
-                                            id="name" 
-                                            placeholder="Enter full name"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email">Email Address *</Label>
-                                        <Input 
-                                            id="email" 
-                                            type="email"
-                                            placeholder="Enter email address"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="phone">Phone Number *</Label>
-                                        <Input 
-                                            id="phone" 
-                                            placeholder="Enter phone number"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="location">Location</Label>
-                                        <Input 
-                                            id="location" 
-                                            placeholder="City, State"
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
 
-                        {/* Lead Source & Classification */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Globe className="h-5 w-5 mr-2" />
-                                    Source & Classification
-                                </CardTitle>
-                                <CardDescription>
-                                    Lead source, status, and priority settings
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Source & Classification */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center">
+                                        <Globe className="h-5 w-5 mr-2" />
+                                        Source & Classification
+                                    </CardTitle>
+                                    <CardDescription>Lead source, status, and priority settings</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="source">Lead Source *</Label>
+                                            <Select value={data.source} onValueChange={(value) => setData('source', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select source" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="web_form">Web Form</SelectItem>
+                                                    <SelectItem value="phone">Phone Call</SelectItem>
+                                                    <SelectItem value="walk_in">Walk-in</SelectItem>
+                                                    <SelectItem value="referral">Referral</SelectItem>
+                                                    <SelectItem value="social_media">Social Media</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.source && <p className="text-sm text-red-600">{errors.source}</p>}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="status">Initial Status</Label>
+                                            <Select value={data.status} onValueChange={(value) => setData('status', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select status" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="new">New</SelectItem>
+                                                    <SelectItem value="contacted">Contacted</SelectItem>
+                                                    <SelectItem value="qualified">Qualified</SelectItem>
+                                                    <SelectItem value="hot">Hot</SelectItem>
+                                                    <SelectItem value="unqualified">Unqualified</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.status && <p className="text-sm text-red-600">{errors.status}</p>}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="priority">Priority</Label>
+                                            <Select value={data.priority} onValueChange={(value) => setData('priority', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select priority" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="low">Low</SelectItem>
+                                                    <SelectItem value="medium">Medium</SelectItem>
+                                                    <SelectItem value="high">High</SelectItem>
+                                                    <SelectItem value="urgent">Urgent</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.priority && <p className="text-sm text-red-600">{errors.priority}</p>}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="assigned_to">Assign to Sales Rep</Label>
+                                            <Select value={data.assigned_to} onValueChange={(value) => setData('assigned_to', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select sales rep" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                                                    {salesReps.map((rep) => (
+                                                        <SelectItem key={rep.id} value={rep.id.toString()}>
+                                                            {rep.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.assigned_to && <p className="text-sm text-red-600">{errors.assigned_to}</p>}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Vehicle Interest & Budget */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center">
+                                        <Target className="h-5 w-5 mr-2" />
+                                        Vehicle Interest & Budget
+                                    </CardTitle>
+                                    <CardDescription>Customer preferences and budget information</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="source">Lead Source *</Label>
-                                        <Select value={selectedSource} onValueChange={setSelectedSource}>
+                                        <Label htmlFor="vehicle_interest">Vehicle of Interest</Label>
+                                        <Input 
+                                            id="vehicle_interest" 
+                                            placeholder="e.g., 2024 Honda Civic, SUV, Sedan"
+                                            value={data.vehicle_interest}
+                                            onChange={(e) => setData('vehicle_interest', e.target.value)}
+                                        />
+                                        {errors.vehicle_interest && <p className="text-sm text-red-600">{errors.vehicle_interest}</p>}
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="budget_min">Budget Min (₱)</Label>
+                                            <Input 
+                                                id="budget_min" 
+                                                type="number"
+                                                placeholder="500000"
+                                                value={data.budget_min}
+                                                onChange={(e) => setData('budget_min', e.target.value)}
+                                            />
+                                            {data.budget_min && (
+                                                <p className="text-xs text-muted-foreground">{formatPHP(data.budget_min)}</p>
+                                            )}
+                                            {errors.budget_min && <p className="text-sm text-red-600">{errors.budget_min}</p>}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="budget_max">Budget Max (₱)</Label>
+                                            <Input 
+                                                id="budget_max" 
+                                                type="number"
+                                                placeholder="1000000"
+                                                value={data.budget_max}
+                                                onChange={(e) => setData('budget_max', e.target.value)}
+                                            />
+                                            {data.budget_max && (
+                                                <p className="text-xs text-muted-foreground">{formatPHP(data.budget_max)}</p>
+                                            )}
+                                            {errors.budget_max && <p className="text-sm text-red-600">{errors.budget_max}</p>}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="purchase_timeline">Purchase Timeline</Label>
+                                        <Select value={data.purchase_timeline} onValueChange={(value) => setData('purchase_timeline', value)}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select source" />
+                                                <SelectValue placeholder="When are they looking to buy?" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {leadSources.map((source) => (
-                                                    <SelectItem key={source.value} value={source.value}>
-                                                        <div className="flex items-center justify-between w-full">
-                                                            <span>{source.label}</span>
-                                                            <span className="text-xs text-muted-foreground ml-2">+{source.score} pts</span>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
+                                                <SelectItem value="immediate">Immediate (within 1 week)</SelectItem>
+                                                <SelectItem value="soon">Soon (1-4 weeks)</SelectItem>
+                                                <SelectItem value="month">Within a month</SelectItem>
+                                                <SelectItem value="quarter">Within 3 months</SelectItem>
+                                                <SelectItem value="exploring">Just exploring</SelectItem>
                                             </SelectContent>
                                         </Select>
+                                        {errors.purchase_timeline && <p className="text-sm text-red-600">{errors.purchase_timeline}</p>}
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="status">Initial Status</Label>
-                                        <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select status" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {leadStatuses.map((status) => (
-                                                    <SelectItem key={status.value} value={status.value}>
-                                                        <div className="flex items-center justify-between w-full">
-                                                            <span>{status.label}</span>
-                                                            <span className="text-xs text-muted-foreground ml-2">{status.description}</span>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="priority">Priority</Label>
-                                        <Select value={selectedPriority} onValueChange={setSelectedPriority}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select priority" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {priorities.map((priority) => (
-                                                    <SelectItem key={priority.value} value={priority.value}>
-                                                        <div className="flex items-center justify-between w-full">
-                                                            <span>{priority.label}</span>
-                                                            <span className="text-xs text-muted-foreground ml-2">{priority.description}</span>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="assigned-to">Assign to Sales Rep</Label>
-                                        <Select>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Auto-assign or select" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="auto">Auto-assign (Recommended)</SelectItem>
-                                                {salesReps.map((rep) => (
-                                                    <SelectItem key={rep.id} value={rep.id}>
-                                                        <div>
-                                                            <div className="font-medium">{rep.name}</div>
-                                                            <div className="text-xs text-muted-foreground">
-                                                                {rep.specialties.join(', ')} • {rep.workload} workload
-                                                            </div>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
 
-                        {/* Vehicle Interest & Budget */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Target className="h-5 w-5 mr-2" />
-                                    Vehicle Interest & Budget
-                                </CardTitle>
-                                <CardDescription>
-                                    Customer preferences and budget information
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="vehicle-interest">Vehicle of Interest</Label>
-                                    <Input 
-                                        id="vehicle-interest" 
-                                        placeholder="e.g., 2024 Honda Civic, SUV, Sedan"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Tags & Notes */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center">
+                                        <Star className="h-5 w-5 mr-2" />
+                                        Tags & Notes
+                                    </CardTitle>
+                                    <CardDescription>Additional classification and notes</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="budget-min">Budget Min ($)</Label>
-                                        <Input 
-                                            id="budget-min" 
-                                            type="number"
-                                            placeholder="15000"
-                                        />
+                                        <Label>Lead Tags</Label>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                            {availableTags.map((tag) => (
+                                                <div key={tag.id} className="flex items-center space-x-2">
+                                                    <Checkbox 
+                                                        id={tag.id}
+                                                        checked={data.tags.includes(tag.id)}
+                                                        onCheckedChange={() => toggleTag(tag.id)}
+                                                    />
+                                                    <Label htmlFor={tag.id} className="text-sm cursor-pointer">
+                                                        {tag.name}
+                                                    </Label>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="budget-max">Budget Max ($)</Label>
-                                        <Input 
-                                            id="budget-max" 
-                                            type="number"
-                                            placeholder="25000"
+                                        <Label htmlFor="notes">Initial Notes</Label>
+                                        <Textarea 
+                                            id="notes" 
+                                            placeholder="Any additional information about the lead"
+                                            rows={4}
+                                            value={data.notes}
+                                            onChange={(e) => setData('notes', e.target.value)}
                                         />
+                                        {errors.notes && <p className="text-sm text-red-600">{errors.notes}</p>}
                                     </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="timeline">Purchase Timeline</Label>
-                                    <Select>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="When are they looking to buy?" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="immediate">Immediate (within 1 week)</SelectItem>
-                                            <SelectItem value="soon">Soon (1-4 weeks)</SelectItem>
-                                            <SelectItem value="month">Within a month</SelectItem>
-                                            <SelectItem value="quarter">Within 3 months</SelectItem>
-                                            <SelectItem value="exploring">Just exploring</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
 
-                        {/* Tags & Notes */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Star className="h-5 w-5 mr-2" />
-                                    Tags & Notes
-                                </CardTitle>
-                                <CardDescription>
-                                    Additional classification and notes
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label>Lead Tags</Label>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        {availableTags.map((tag) => (
-                                            <div key={tag.id} className="flex items-center space-x-2">
-                                                <Checkbox 
-                                                    id={tag.id}
-                                                    checked={selectedTags.includes(tag.id)}
-                                                    onCheckedChange={() => toggleTag(tag.id)}
-                                                />
-                                                <Label htmlFor={tag.id} className="text-sm cursor-pointer">
-                                                    {tag.name}
-                                                </Label>
+                            {/* Follow-up Schedule */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center">
+                                        <Calendar className="h-5 w-5 mr-2" />
+                                        Initial Follow-up
+                                    </CardTitle>
+                                    <CardDescription>Set the first contact schedule</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="next_followup_at">Next Follow-up Date & Time</Label>
+                                            <Input 
+                                                id="next_followup_at" 
+                                                type="datetime-local"
+                                                value={data.next_followup_at}
+                                                onChange={(e) => setData('next_followup_at', e.target.value)}
+                                            />
+                                            {errors.next_followup_at && <p className="text-sm text-red-600">{errors.next_followup_at}</p>}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="contact_method">Preferred Contact Method</Label>
+                                            <Select value={data.contact_method} onValueChange={(value) => setData('contact_method', value)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="How should we contact them?" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="phone">Phone Call</SelectItem>
+                                                    <SelectItem value="email">Email</SelectItem>
+                                                    <SelectItem value="text">Text Message</SelectItem>
+                                                    <SelectItem value="any">Any Method</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.contact_method && <p className="text-sm text-red-600">{errors.contact_method}</p>}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Sidebar */}
+                        <div className="space-y-6">
+                            {/* Preview */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-sm">Lead Preview</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Status</p>
+                                        <Badge>{data.status || 'new'}</Badge>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Priority</p>
+                                        <Badge>{data.priority || 'medium'}</Badge>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Source</p>
+                                        <Badge variant="outline">{data.source}</Badge>
+                                    </div>
+                                    {data.tags.length > 0 && (
+                                        <div>
+                                            <p className="text-xs text-muted-foreground mb-1">Tags</p>
+                                            <div className="flex flex-wrap gap-1">
+                                                {data.tags.map((tagId) => {
+                                                    const tag = availableTags.find(t => t.id === tagId);
+                                                    return tag ? (
+                                                        <Badge key={tagId} variant="outline" className="text-xs">
+                                                            {tag.name}
+                                                        </Badge>
+                                                    ) : null;
+                                                })}
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="notes">Initial Notes</Label>
-                                    <Textarea 
-                                        id="notes" 
-                                        placeholder="Any additional information about the lead, their preferences, or conversation details"
-                                        rows={4}
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
 
-                        {/* Follow-up Schedule */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Calendar className="h-5 w-5 mr-2" />
-                                    Initial Follow-up
-                                </CardTitle>
-                                <CardDescription>
-                                    Set the first contact and follow-up schedule
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="first-contact-date">First Contact Date</Label>
-                                        <Input 
-                                            id="first-contact-date" 
-                                            type="date"
-                                            defaultValue={new Date().toISOString().split('T')[0]}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="first-contact-time">Preferred Time</Label>
-                                        <Input 
-                                            id="first-contact-time" 
-                                            type="time"
-                                            defaultValue="09:00"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="contact-method">Preferred Contact Method</Label>
-                                    <Select>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="How should we contact them?" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="phone">Phone Call</SelectItem>
-                                            <SelectItem value="email">Email</SelectItem>
-                                            <SelectItem value="text">Text Message</SelectItem>
-                                            <SelectItem value="any">Any Method</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </CardContent>
-                        </Card>
+                            {/* Guidelines */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-sm">Guidelines</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2 text-xs text-muted-foreground">
+                                    <p>• Verify contact information accuracy</p>
+                                    <p>• Set appropriate priority based on urgency</p>
+                                    <p>• Add relevant tags for better categorization</p>
+                                    <p>• Schedule follow-up within 24 hours for hot leads</p>
+                                    <p>• Include detailed notes from initial conversation</p>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
-
-                    {/* Sidebar */}
-                    <div className="space-y-6">
-                        {/* Lead Preview */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Lead Preview</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Status</p>
-                                    {getStatusBadge(selectedStatus)}
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Priority</p>
-                                    {getPriorityBadge(selectedPriority)}
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Estimated Lead Score</p>
-                                    <p className="text-sm font-medium">{calculateLeadScore()}/100</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Selected Tags</p>
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                        {selectedTags.map((tagId) => {
-                                            const tag = availableTags.find(t => t.id === tagId);
-                                            return tag ? (
-                                                <Badge key={tagId} className={`text-xs ${tag.color}`}>
-                                                    {tag.name}
-                                                </Badge>
-                                            ) : null;
-                                        })}
-                                        {selectedTags.length === 0 && (
-                                            <span className="text-xs text-muted-foreground">No tags selected</span>
-                                        )}
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Scoring Breakdown */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Score Breakdown</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Source Score:</span>
-                                    <span className="text-sm font-medium">+{leadSources.find(s => s.value === selectedSource)?.score || 0}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Priority Score:</span>
-                                    <span className="text-sm font-medium">+{selectedPriority === 'urgent' ? 30 : selectedPriority === 'high' ? 20 : selectedPriority === 'medium' ? 10 : 0}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Tags Score:</span>
-                                    <span className="text-sm font-medium">+{selectedTags.length * 5}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Base Score:</span>
-                                    <span className="text-sm font-medium">+15</span>
-                                </div>
-                                <div className="border-t pt-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-medium">Total Score:</span>
-                                        <span className="font-medium text-green-600">{calculateLeadScore()}/100</span>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Auto-Assignment Preview */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Auto-Assignment</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Recommended Assignment</p>
-                                    <p className="text-sm font-medium">Sarah Sales Rep</p>
-                                    <p className="text-xs text-muted-foreground">Based on: Light workload, Honda expertise</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Routing Method</p>
-                                    <Badge variant="outline" className="bg-blue-100 text-blue-800">Skill-based</Badge>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Guidelines */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Lead Creation Guidelines</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2 text-xs text-muted-foreground">
-                                <p>• Verify contact information accuracy</p>
-                                <p>• Set appropriate priority based on urgency</p>
-                                <p>• Add relevant tags for better categorization</p>
-                                <p>• Schedule follow-up within 24 hours for hot leads</p>
-                                <p>• Include detailed notes from initial conversation</p>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            </div>
+            </form>
         </AppLayout>
     );
 }

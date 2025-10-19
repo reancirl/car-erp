@@ -1,39 +1,11 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-    ArrowLeft, 
-    UserPlus, 
-    Edit, 
-    User, 
-    Phone, 
-    Mail, 
-    MapPin,
-    Globe,
-    Star,
-    Clock,
-    DollarSign,
-    Calendar,
-    CheckCircle,
-    AlertTriangle,
-    XCircle,
-    MessageSquare,
-    FileText,
-    TrendingUp,
-    Users,
-    Activity,
-    Target,
-    Download,
-    Printer
-} from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, User, Mail, Phone, MapPin, Globe, Star, TrendingUp, DollarSign, Calendar, Clock, AlertTriangle, Users, Target } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
-
-interface LeadViewProps {
-    id: string;
-}
+import { formatPHP, formatPhoneNumberPH } from '@/utils/formatters';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -50,114 +22,117 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// Mock lead data
-const mockLead = {
-    id: '1',
-    lead_id: 'LD-2025-001',
-    name: 'John Smith',
-    email: 'john.smith@email.com',
-    phone: '+1-555-0123',
-    source: 'web_form',
-    ip_address: '192.168.1.100',
-    location: 'New York, NY',
-    vehicle_interest: '2024 Honda Civic',
-    budget_range: '$25,000 - $30,000',
-    lead_score: 85,
-    status: 'qualified',
-    priority: 'high',
-    assigned_to: 'Sarah Sales Rep',
-    created_at: '2025-01-13 09:15:00',
-    last_contact: '2025-01-13 14:30:00',
-    next_followup: '2025-01-14 10:00:00',
-    conversion_probability: 78,
-    fake_lead_score: 15,
-    duplicate_flags: [],
-    tags: ['hot_lead', 'financing_needed', 'urgent'],
-    notes: 'Interested in financing options. Prefers automatic transmission. Looking to purchase within 2 weeks. Has trade-in vehicle (2018 Toyota Corolla). Pre-approved for financing up to $30,000.',
-    contact_history: [
-        { id: 1, type: 'call', date: '2025-01-13 14:30:00', user: 'Sarah Sales Rep', notes: 'Initial contact call. Customer very interested, wants to schedule test drive.' },
-        { id: 2, type: 'email', date: '2025-01-13 10:45:00', user: 'System', notes: 'Welcome email sent with dealership information and contact details.' },
-        { id: 3, type: 'web_form', date: '2025-01-13 09:15:00', user: 'System', notes: 'Lead submitted via website contact form.' }
-    ],
-    activities: [
-        { id: 1, type: 'status_change', date: '2025-01-13 14:35:00', user: 'Sarah Sales Rep', description: 'Status changed from "new" to "qualified"' },
-        { id: 2, type: 'assignment', date: '2025-01-13 09:20:00', user: 'System', description: 'Lead automatically assigned to Sarah Sales Rep based on Honda specialization' },
-        { id: 3, type: 'lead_created', date: '2025-01-13 09:15:00', user: 'System', description: 'Lead created from web form submission' }
-    ]
-};
+interface Lead {
+    id: number;
+    lead_id: string;
+    name: string;
+    email: string;
+    phone: string;
+    location: string | null;
+    ip_address: string | null;
+    source: string;
+    status: string;
+    priority: string;
+    vehicle_interest: string | null;
+    budget_min: number | null;
+    budget_max: number | null;
+    budget_range: string | null;
+    purchase_timeline: string | null;
+    lead_score: number;
+    fake_lead_score: number;
+    conversion_probability: number;
+    assigned_to: number | null;
+    last_contact_at: string | null;
+    next_followup_at: string | null;
+    contact_method: string | null;
+    notes: string | null;
+    tags: string[] | null;
+    duplicate_flags: string[] | null;
+    created_at: string;
+    updated_at: string;
+    branch: {
+        id: number;
+        name: string;
+        code: string;
+    };
+    assigned_user: {
+        id: number;
+        name: string;
+    } | null;
+}
 
-export default function LeadView({ id }: LeadViewProps) {
-    const getStatusBadge = (status: string) => {
-        const statusConfig = {
-            new: { color: 'bg-gray-100 text-gray-800', icon: Clock },
-            contacted: { color: 'bg-blue-100 text-blue-800', icon: Phone },
-            qualified: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
-            hot: { color: 'bg-red-100 text-red-800', icon: Star },
-            unqualified: { color: 'bg-yellow-100 text-yellow-800', icon: AlertTriangle },
-            lost: { color: 'bg-gray-100 text-gray-800', icon: XCircle },
-        };
-        
-        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.new;
-        const IconComponent = config.icon;
-        
-        return (
-            <Badge className={config.color}>
-                <IconComponent className="h-3 w-3 mr-1" />
-                {status.toUpperCase()}
-            </Badge>
-        );
+interface Props {
+    lead: Lead;
+    can: {
+        edit: boolean;
+        delete: boolean;
+    };
+}
+
+export default function LeadView({ lead, can }: Props) {
+    const handleDelete = () => {
+        if (confirm(`Are you sure you want to delete lead ${lead.lead_id}?`)) {
+            router.delete(`/sales/lead-management/${lead.id}`, {
+                onSuccess: () => {
+                    router.visit('/sales/lead-management');
+                }
+            });
+        }
     };
 
     const getSourceBadge = (source: string) => {
-        const colors = {
-            web_form: 'bg-blue-100 text-blue-800',
-            phone: 'bg-green-100 text-green-800',
-            walk_in: 'bg-purple-100 text-purple-800',
-            referral: 'bg-indigo-100 text-indigo-800',
-            social_media: 'bg-pink-100 text-pink-800',
+        const sourceConfig: Record<string, { color: string; label: string }> = {
+            web_form: { color: 'bg-blue-100 text-blue-800', label: 'Web Form' },
+            phone: { color: 'bg-green-100 text-green-800', label: 'Phone' },
+            walk_in: { color: 'bg-purple-100 text-purple-800', label: 'Walk-in' },
+            referral: { color: 'bg-indigo-100 text-indigo-800', label: 'Referral' },
+            social_media: { color: 'bg-pink-100 text-pink-800', label: 'Social Media' },
         };
-        return <Badge className={colors[source as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>{source.replace('_', ' ').toUpperCase()}</Badge>;
+        
+        const config = sourceConfig[source] || { color: '', label: source };
+        return <Badge variant="outline" className={config.color}>{config.label}</Badge>;
+    };
+
+    const getStatusBadge = (status: string) => {
+        const statusConfig: Record<string, { color: string; label: string }> = {
+            hot: { color: 'bg-red-100 text-red-800', label: 'Hot' },
+            qualified: { color: 'bg-green-100 text-green-800', label: 'Qualified' },
+            contacted: { color: 'bg-blue-100 text-blue-800', label: 'Contacted' },
+            new: { color: 'bg-gray-100 text-gray-800', label: 'New' },
+            unqualified: { color: 'bg-yellow-100 text-yellow-800', label: 'Unqualified' },
+            lost: { color: 'bg-gray-100 text-gray-800', label: 'Lost' },
+        };
+        
+        const config = statusConfig[status] || { color: '', label: status };
+        return <Badge className={config.color}>{config.label}</Badge>;
     };
 
     const getPriorityBadge = (priority: string) => {
-        const colors = {
-            low: 'bg-gray-100 text-gray-800',
-            medium: 'bg-blue-100 text-blue-800',
-            high: 'bg-orange-100 text-orange-800',
-            urgent: 'bg-red-100 text-red-800',
+        const priorityConfig: Record<string, { color: string; label: string }> = {
+            urgent: { color: 'bg-red-600 text-white', label: 'Urgent' },
+            high: { color: 'bg-orange-100 text-orange-800', label: 'High' },
+            medium: { color: 'bg-yellow-100 text-yellow-800', label: 'Medium' },
+            low: { color: 'bg-gray-100 text-gray-800', label: 'Low' },
         };
-        return <Badge className={colors[priority as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>{priority.toUpperCase()}</Badge>;
+        
+        const config = priorityConfig[priority] || { color: '', label: priority };
+        return <Badge className={config.color}>{config.label}</Badge>;
     };
 
-    const getActivityIcon = (type: string) => {
-        switch (type) {
-            case 'status_change':
-                return <TrendingUp className="h-4 w-4 text-blue-600" />;
-            case 'assignment':
-                return <Users className="h-4 w-4 text-green-600" />;
-            case 'lead_created':
-                return <UserPlus className="h-4 w-4 text-purple-600" />;
-            default:
-                return <Activity className="h-4 w-4 text-gray-600" />;
-        }
-    };
-
-    const getContactIcon = (type: string) => {
-        switch (type) {
-            case 'call':
-                return <Phone className="h-4 w-4 text-green-600" />;
-            case 'email':
-                return <Mail className="h-4 w-4 text-blue-600" />;
-            case 'web_form':
-                return <Globe className="h-4 w-4 text-purple-600" />;
-            default:
-                return <MessageSquare className="h-4 w-4 text-gray-600" />;
-        }
+    const formatDate = (date: string | null) => {
+        if (!date) return 'Not set';
+        return new Date(date).toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Lead Details - ${mockLead.lead_id}`} />
+            <Head title={`Lead - ${lead.lead_id}`} />
             
             <div className="space-y-6 p-6">
                 {/* Header */}
@@ -170,259 +145,288 @@ export default function LeadView({ id }: LeadViewProps) {
                             </Button>
                         </Link>
                         <div>
-                            <h1 className="text-2xl font-bold">Lead Details - {mockLead.lead_id}</h1>
-                            <div className="flex items-center space-x-2 mt-1">
-                                {getStatusBadge(mockLead.status)}
-                                {getSourceBadge(mockLead.source)}
-                                {getPriorityBadge(mockLead.priority)}
-                            </div>
+                            <h1 className="text-2xl font-bold">{lead.name}</h1>
+                            <p className="text-muted-foreground">Lead ID: {lead.lead_id}</p>
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export
-                        </Button>
-                        <Button variant="outline">
-                            <Printer className="h-4 w-4 mr-2" />
-                            Print
-                        </Button>
-                        <Link href={`/sales/lead-management/${id}/edit`}>
-                            <Button>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Lead
+                        {can.edit && (
+                            <Link href={`/sales/lead-management/${lead.id}/edit`}>
+                                <Button size="sm">
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                </Button>
+                            </Link>
+                        )}
+                        {can.delete && (
+                            <Button size="sm" variant="destructive" onClick={handleDelete}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
                             </Button>
-                        </Link>
+                        )}
                     </div>
                 </div>
+
+                {/* Warning Banner for Suspicious Leads */}
+                {(lead.fake_lead_score > 70 || (lead.duplicate_flags && lead.duplicate_flags.length > 0)) && (
+                    <Card className="border-orange-200 bg-orange-50">
+                        <CardContent className="pt-6">
+                            <div className="flex items-start space-x-3">
+                                <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
+                                <div>
+                                    <h3 className="font-semibold text-orange-900">Suspicious Lead Detected</h3>
+                                    <p className="text-sm text-orange-800 mt-1">
+                                        This lead has been flagged for potential issues. Fake lead score: {lead.fake_lead_score}%
+                                    </p>
+                                    {lead.duplicate_flags && lead.duplicate_flags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                            {lead.duplicate_flags.map((flag: string) => (
+                                                <Badge key={flag} variant="outline" className="bg-white text-orange-800">
+                                                    {flag.replace('_', ' ')}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Lead Overview */}
+                        {/* Contact Information */}
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center">
-                                    <UserPlus className="h-5 w-5 mr-2" />
-                                    Lead Overview
+                                    <User className="h-5 w-5 mr-2" />
+                                    Contact Information
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Created Date</p>
-                                        <p className="font-medium">{new Date(mockLead.created_at).toLocaleDateString()}</p>
+                                        <p className="text-sm text-muted-foreground">Full Name</p>
+                                        <p className="font-medium">{lead.name}</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Lead Score</p>
-                                        <p className="font-medium">{mockLead.lead_score}/100</p>
+                                        <p className="text-sm text-muted-foreground flex items-center">
+                                            <Mail className="h-3 w-3 mr-1" />
+                                            Email Address
+                                        </p>
+                                        <p className="font-medium">{lead.email}</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Conversion Probability</p>
-                                        <p className="font-medium text-green-600">{mockLead.conversion_probability}%</p>
+                                        <p className="text-sm text-muted-foreground flex items-center">
+                                            <Phone className="h-3 w-3 mr-1" />
+                                            Phone Number
+                                        </p>
+                                        <p className="font-medium">{formatPhoneNumberPH(lead.phone)}</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Assigned To</p>
-                                        <p className="font-medium">{mockLead.assigned_to}</p>
+                                        <p className="text-sm text-muted-foreground flex items-center">
+                                            <MapPin className="h-3 w-3 mr-1" />
+                                            Location
+                                        </p>
+                                        <p className="font-medium">{lead.location || 'Not specified'}</p>
+                                    </div>
+                                    {lead.ip_address && (
+                                        <div>
+                                            <p className="text-sm text-muted-foreground flex items-center">
+                                                <Globe className="h-3 w-3 mr-1" />
+                                                IP Address
+                                            </p>
+                                            <p className="font-medium">{lead.ip_address}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Lead Classification */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center">
+                                    <Star className="h-5 w-5 mr-2" />
+                                    Lead Classification
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Status</p>
+                                        <div className="mt-1">{getStatusBadge(lead.status)}</div>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Priority</p>
+                                        <div className="mt-1">{getPriorityBadge(lead.priority)}</div>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Source</p>
+                                        <div className="mt-1">{getSourceBadge(lead.source)}</div>
                                     </div>
                                 </div>
-                                <Separator />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Branch</p>
+                                        <p className="font-medium">{lead.branch.name} ({lead.branch.code})</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground flex items-center">
+                                            <Users className="h-3 w-3 mr-1" />
+                                            Assigned To
+                                        </p>
+                                        <p className="font-medium">{lead.assigned_user?.name || 'Unassigned'}</p>
+                                    </div>
+                                </div>
+                                {lead.tags && lead.tags.length > 0 && (
+                                    <div>
+                                        <p className="text-sm text-muted-foreground mb-2">Tags</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {lead.tags.map((tag: string) => (
+                                                <Badge key={tag} variant="outline">
+                                                    {tag.replace('_', ' ')}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Vehicle Interest & Budget */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center">
+                                    <Target className="h-5 w-5 mr-2" />
+                                    Vehicle Interest & Budget
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
                                 <div>
-                                    <p className="text-sm text-muted-foreground mb-2">Tags</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {mockLead.tags.map((tag) => (
-                                            <Badge key={tag} variant="outline" className="bg-blue-100 text-blue-800">
-                                                {tag.replace('_', ' ')}
-                                            </Badge>
-                                        ))}
+                                    <p className="text-sm text-muted-foreground">Vehicle of Interest</p>
+                                    <p className="font-medium text-lg">{lead.vehicle_interest || 'Not specified'}</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground flex items-center">
+                                            <DollarSign className="h-3 w-3 mr-1" />
+                                            Budget Range
+                                        </p>
+                                        <p className="font-medium">
+                                            {lead.budget_min && lead.budget_max 
+                                                ? `${formatPHP(lead.budget_min)} - ${formatPHP(lead.budget_max)}`
+                                                : lead.budget_range || 'Not specified'
+                                            }
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground flex items-center">
+                                            <Calendar className="h-3 w-3 mr-1" />
+                                            Purchase Timeline
+                                        </p>
+                                        <p className="font-medium">
+                                            {lead.purchase_timeline
+                                                ? lead.purchase_timeline.replace('_', ' ')
+                                                : 'Not specified'}
+                                        </p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Contact Information */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center">
-                                        <User className="h-5 w-5 mr-2" />
-                                        Contact Information
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
+                        {/* Follow-up & Contact */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center">
+                                    <Clock className="h-5 w-5 mr-2" />
+                                    Follow-up & Contact History
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <p className="font-medium text-lg">{mockLead.name}</p>
-                                        <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-1">
-                                            <Mail className="h-4 w-4" />
-                                            <span>{mockLead.email}</span>
-                                        </div>
-                                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                                            <Phone className="h-4 w-4" />
-                                            <span>{mockLead.phone}</span>
-                                        </div>
-                                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                                            <MapPin className="h-4 w-4" />
-                                            <span>{mockLead.location}</span>
-                                        </div>
-                                    </div>
-                                    {mockLead.ip_address && (
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">IP Address</p>
-                                            <p className="text-sm font-mono">{mockLead.ip_address}</p>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center">
-                                        <Target className="h-5 w-5 mr-2" />
-                                        Vehicle Interest
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Vehicle of Interest</p>
-                                        <p className="font-medium">{mockLead.vehicle_interest}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Budget Range</p>
-                                        <p className="font-medium">{mockLead.budget_range}</p>
+                                        <p className="text-sm text-muted-foreground">Last Contact</p>
+                                        <p className="font-medium">{formatDate(lead.last_contact_at)}</p>
                                     </div>
                                     <div>
                                         <p className="text-sm text-muted-foreground">Next Follow-up</p>
-                                        <p className="font-medium">{new Date(mockLead.next_followup).toLocaleString()}</p>
+                                        <p className="font-medium">{formatDate(lead.next_followup_at)}</p>
                                     </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        {/* Contact History */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <MessageSquare className="h-5 w-5 mr-2" />
-                                    Contact History
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    {mockLead.contact_history.map((contact) => (
-                                        <div key={contact.id} className="flex items-start space-x-3 p-3 border rounded-lg">
-                                            {getContactIcon(contact.type)}
-                                            <div className="flex-1">
-                                                <div className="flex items-center justify-between">
-                                                    <p className="font-medium capitalize">{contact.type.replace('_', ' ')}</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {new Date(contact.date).toLocaleString()}
-                                                    </p>
-                                                </div>
-                                                <p className="text-sm text-muted-foreground">By: {contact.user}</p>
-                                                <p className="text-sm mt-1">{contact.notes}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Activity Timeline */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Activity className="h-5 w-5 mr-2" />
-                                    Activity Timeline
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    {mockLead.activities.map((activity) => (
-                                        <div key={activity.id} className="flex items-start space-x-3">
-                                            {getActivityIcon(activity.type)}
-                                            <div className="flex-1">
-                                                <div className="flex items-center justify-between">
-                                                    <p className="font-medium capitalize">{activity.type.replace('_', ' ')}</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {new Date(activity.date).toLocaleString()}
-                                                    </p>
-                                                </div>
-                                                <p className="text-sm text-muted-foreground">By: {activity.user}</p>
-                                                <p className="text-sm">{activity.description}</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Preferred Contact Method</p>
+                                        <p className="font-medium">{lead.contact_method || 'Not specified'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Lead Created</p>
+                                        <p className="font-medium">{formatDate(lead.created_at)}</p>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
 
                         {/* Notes */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <FileText className="h-5 w-5 mr-2" />
-                                    Notes
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm">{mockLead.notes}</p>
-                            </CardContent>
-                        </Card>
+                        {lead.notes && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Notes</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm whitespace-pre-wrap">{lead.notes}</p>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
 
                     {/* Sidebar */}
                     <div className="space-y-6">
-                        {/* Lead Metrics */}
+                        {/* Lead Score Card */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-sm">Lead Metrics</CardTitle>
+                                <CardTitle className="text-sm flex items-center">
+                                    <TrendingUp className="h-4 w-4 mr-2" />
+                                    Lead Quality Score
+                                </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="text-sm">Lead Score:</span>
-                                    <span className="text-sm font-medium">{mockLead.lead_score}/100</span>
+                            <CardContent className="space-y-4">
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-1">Lead Score</p>
+                                    <div className="flex items-center space-x-2">
+                                        <div className="text-3xl font-bold">{lead.lead_score}</div>
+                                        <div className="text-muted-foreground">/100</div>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                        <div 
+                                            className={`h-2 rounded-full ${
+                                                lead.lead_score >= 80 ? 'bg-green-600' : 
+                                                lead.lead_score >= 60 ? 'bg-yellow-600' : 
+                                                'bg-red-600'
+                                            }`}
+                                            style={{ width: `${lead.lead_score}%` }}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-sm">Conversion Probability:</span>
-                                    <span className="text-sm font-medium text-green-600">{mockLead.conversion_probability}%</span>
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-1">Conversion Probability</p>
+                                    <div className="flex items-center space-x-2">
+                                        <div className="text-2xl font-bold text-green-600">{lead.conversion_probability}%</div>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-sm">Fake Lead Score:</span>
-                                    <span className="text-sm font-medium">{mockLead.fake_lead_score}%</span>
-                                </div>
-                                <Separator />
-                                <div className="flex justify-between">
-                                    <span className="text-sm">Days Since Created:</span>
-                                    <span className="text-sm font-medium">1</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-sm">Last Contact:</span>
-                                    <span className="text-sm font-medium">Today</span>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Quality Indicators */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Quality Indicators</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Email Validity</span>
-                                    <Badge variant="outline" className="bg-green-100 text-green-800">Valid</Badge>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Phone Validity</span>
-                                    <Badge variant="outline" className="bg-green-100 text-green-800">Valid</Badge>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Duplicate Risk</span>
-                                    <Badge variant="outline" className="bg-green-100 text-green-800">Low</Badge>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Source Quality</span>
-                                    <Badge variant="outline" className="bg-blue-100 text-blue-800">Good</Badge>
+                                <div>
+                                    <p className="text-sm text-muted-foreground mb-1">Fake Lead Score</p>
+                                    <div className="flex items-center space-x-2">
+                                        <div className={`text-2xl font-bold ${
+                                            lead.fake_lead_score > 70 ? 'text-red-600' : 
+                                            lead.fake_lead_score > 40 ? 'text-yellow-600' : 
+                                            'text-green-600'
+                                        }`}>
+                                            {lead.fake_lead_score}%
+                                        </div>
+                                    </div>
+                                    {lead.fake_lead_score > 70 && (
+                                        <p className="text-xs text-red-600 mt-1">High risk - review required</p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -433,52 +437,46 @@ export default function LeadView({ id }: LeadViewProps) {
                                 <CardTitle className="text-sm">Quick Actions</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2">
-                                <Button variant="outline" className="w-full justify-start">
-                                    <Phone className="h-4 w-4 mr-2" />
-                                    Call Lead
+                                <Button className="w-full" variant="outline" size="sm" asChild>
+                                    <a href={`mailto:${lead.email}`}>
+                                        <Mail className="h-4 w-4 mr-2" />
+                                        Send Email
+                                    </a>
                                 </Button>
-                                <Button variant="outline" className="w-full justify-start">
-                                    <Mail className="h-4 w-4 mr-2" />
-                                    Send Email
+                                <Button className="w-full" variant="outline" size="sm" asChild>
+                                    <a href={`tel:${lead.phone}`}>
+                                        <Phone className="h-4 w-4 mr-2" />
+                                        Call Lead
+                                    </a>
                                 </Button>
-                                <Button variant="outline" className="w-full justify-start">
-                                    <Calendar className="h-4 w-4 mr-2" />
-                                    Schedule Test Drive
-                                </Button>
-                                <Button variant="outline" className="w-full justify-start">
-                                    <MessageSquare className="h-4 w-4 mr-2" />
-                                    Add Note
-                                </Button>
-                                <Button variant="outline" className="w-full justify-start">
-                                    <TrendingUp className="h-4 w-4 mr-2" />
-                                    Update Status
-                                </Button>
+                                {can.edit && (
+                                    <Link href={`/sales/lead-management/${lead.id}/edit`}>
+                                        <Button className="w-full" variant="outline" size="sm">
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit Details
+                                        </Button>
+                                    </Link>
+                                )}
                             </CardContent>
                         </Card>
 
-                        {/* Lead Source Details */}
+                        {/* Metadata */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-sm">Source Details</CardTitle>
+                                <CardTitle className="text-sm">Metadata</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3">
+                            <CardContent className="space-y-2 text-xs">
                                 <div>
-                                    <p className="text-xs text-muted-foreground">Source Type</p>
-                                    {getSourceBadge(mockLead.source)}
+                                    <p className="text-muted-foreground">Created</p>
+                                    <p className="font-medium">{formatDate(lead.created_at)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">Location</p>
-                                    <p className="text-sm font-medium">{mockLead.location}</p>
+                                    <p className="text-muted-foreground">Last Updated</p>
+                                    <p className="font-medium">{formatDate(lead.updated_at)}</p>
                                 </div>
-                                {mockLead.ip_address && (
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">IP Address</p>
-                                        <p className="text-sm font-mono">{mockLead.ip_address}</p>
-                                    </div>
-                                )}
                                 <div>
-                                    <p className="text-xs text-muted-foreground">Routing Method</p>
-                                    <p className="text-sm">Skill-based (Honda specialist)</p>
+                                    <p className="text-muted-foreground">Lead ID</p>
+                                    <p className="font-medium font-mono">{lead.lead_id}</p>
                                 </div>
                             </CardContent>
                         </Card>

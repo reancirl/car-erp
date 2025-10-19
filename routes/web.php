@@ -108,22 +108,14 @@ Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->gr
 
 // Sales & Customer Lifecycle Routes
 Route::middleware(['auth', 'verified', 'permission:sales.view'])->prefix('sales')->name('sales.')->group(function () {
-    // Lead Management Routes
-    Route::get('/lead-management', function () {
-        return Inertia::render('sales/lead-management');
-    })->name('lead-management');
-    
-    Route::get('/lead-management/create', function () {
-        return Inertia::render('sales/lead-create');
-    })->name('lead-management.create');
-    
-    Route::get('/lead-management/{id}/edit', function ($id) {
-        return Inertia::render('sales/lead-edit', ['id' => $id]);
-    })->name('lead-management.edit');
-    
-    Route::get('/lead-management/{id}', function ($id) {
-        return Inertia::render('sales/lead-view', ['id' => $id]);
-    })->name('lead-management.show');
+    // Lead Management Routes (Resource Controller)
+    Route::get('/lead-management', [\App\Http\Controllers\LeadController::class, 'index'])->name('lead-management');
+    Route::get('/lead-management/create', [\App\Http\Controllers\LeadController::class, 'create'])->name('lead-management.create')->middleware('permission:sales.create');
+    Route::post('/lead-management', [\App\Http\Controllers\LeadController::class, 'store'])->name('lead-management.store')->middleware('permission:sales.create');
+    Route::get('/lead-management/{lead}', [\App\Http\Controllers\LeadController::class, 'show'])->name('lead-management.show');
+    Route::get('/lead-management/{lead}/edit', [\App\Http\Controllers\LeadController::class, 'edit'])->name('lead-management.edit')->middleware('permission:sales.edit');
+    Route::put('/lead-management/{lead}', [\App\Http\Controllers\LeadController::class, 'update'])->name('lead-management.update')->middleware('permission:sales.edit');
+    Route::delete('/lead-management/{lead}', [\App\Http\Controllers\LeadController::class, 'destroy'])->name('lead-management.destroy')->middleware('permission:sales.delete');
     
     // Test Drives Routes
     Route::get('/test-drives', function () {
