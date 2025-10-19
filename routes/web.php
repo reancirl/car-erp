@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ActivityLogController;
 
 // redirect to login
 Route::get('/', function () {
@@ -67,9 +68,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Activity & Audit Routes
 Route::middleware(['auth', 'verified', 'permission:audit.view'])->group(function () {
-    Route::get('audit/activity-logs', function () {
-        return Inertia::render('audit/activity-logs');
-    })->name('audit.activity-logs');
+    Route::get('audit/activity-logs', [ActivityLogController::class, 'index'])->name('audit.activity-logs');
+    Route::get('audit/activity-logs-export', [ActivityLogController::class, 'export'])->name('audit.activity-logs.export')->middleware('permission:audit.export');
     
     Route::get('audit/time-tracking', function () {
         return Inertia::render('audit/time-tracking');

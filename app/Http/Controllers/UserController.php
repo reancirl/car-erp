@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Branch;
+use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
@@ -14,6 +15,7 @@ use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
+    use LogsActivity;
     /**
      * Display a listing of the resource.
      */
@@ -104,6 +106,18 @@ class UserController extends Controller
 
             $user->assignRole($validated['role']);
 
+            // Log activity
+            $this->logCreated(
+                module: 'Users',
+                subject: $user,
+                description: "Created user {$user->name} with role {$validated['role']}",
+                properties: [
+                    'email' => $user->email,
+                    'role' => $validated['role'],
+                    'branch_id' => $user->branch_id,
+                ]
+            );
+
             return redirect()->route('admin.user-management.index')
                 ->with('success', 'User created successfully! ' . $validated['name'] . ' has been added.');
         } catch (\Exception $e) {
@@ -171,6 +185,26 @@ class UserController extends Controller
         ]);
 
         try {
+            // Track changes for logging
+            $changes = [];
+            $oldRole = $user->roles->first()?->name;
+            
+            if ($user->name !== $validated['name']) {
+                $changes['name'] = ['old' => $user->name, 'new' => $validated['name']];
+            }
+            if ($user->email !== $validated['email']) {
+                $changes['email'] = ['old' => $user->email, 'new' => $validated['email']];
+            }
+            if ($user->branch_id !== $validated['branch_id']) {
+                $changes['branch_id'] = ['old' => $user->branch_id, 'new' => $validated['branch_id']];
+            }
+            if ($oldRole !== $validated['role']) {
+                $changes['role'] = ['old' => $oldRole, 'new' => $validated['role']];
+            }
+            if (!empty($validated['password'])) {
+                $changes['password'] = 'updated';
+            }
+
             $updateData = [
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -186,6 +220,16 @@ class UserController extends Controller
 
             // Update role
             $user->syncRoles([$validated['role']]);
+
+            // Log activity
+            $this->logUpdated(
+                module: 'Users',
+                subject: $user,
+                description: "Updated user {$user->name}",
+                properties: [
+                    'changes' => $changes,
+                ]
+            );
 
             return redirect()->route('admin.user-management.index')
                 ->with('success', 'User updated successfully! ' . $validated['name'] . ' has been updated.');
@@ -203,6 +247,21 @@ class UserController extends Controller
     {
         try {
             $userName = $user->name;
+            $userEmail = $user->email;
+            $userRole = $user->roles->first()?->name;
+
+            // Log activity before deletion
+            $this->logDeleted(
+                module: 'Users',
+                subject: $user,
+                description: "Deleted user {$userName} ({$userEmail})",
+                properties: [
+                    'email' => $userEmail,
+                    'role' => $userRole,
+                    'branch_id' => $user->branch_id,
+                ]
+            );
+
             $user->delete();
 
             return redirect()->route('admin.user-management.index')

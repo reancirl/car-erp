@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,8 +6,47 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Activity, Search, Filter, Download, Eye } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Activity, Search, Filter, Download, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+import { useState } from 'react';
+
+interface ActivityLog {
+    id: number;
+    action: string;
+    user: string;
+    module: string;
+    timestamp: string;
+    ip_address: string;
+    details: string;
+    status: string;
+    properties?: Record<string, any>;
+}
+
+interface Stats {
+    total_events_today: number;
+    events_change: number;
+    active_users: number;
+    failed_actions: number;
+    flagged_events: number;
+}
+
+interface Props {
+    logs: {
+        data: ActivityLog[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        links: { url: string | null; label: string; active: boolean }[];
+    };
+    stats: Stats;
+    filters?: {
+        module?: string;
+        status?: string;
+        search?: string;
+    };
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -20,60 +59,41 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function ActivityLogs() {
-    // Mock data for demonstration
-    const mockLogs = [
-        {
-            id: 1,
-            action: 'pms.create',
-            user: 'John Technician',
-            module: 'PMS',
-            timestamp: '2025-01-13 10:30:15',
-            ip_address: '192.168.1.100',
-            details: 'Created work order #WO-2025-001 for Vehicle VIN: ABC123',
-            status: 'success'
-        },
-        {
-            id: 2,
-            action: 'inventory.approve',
-            user: 'Sarah Parts Head',
-            module: 'Inventory',
-            timestamp: '2025-01-13 10:25:42',
-            ip_address: '192.168.1.101',
-            details: 'Approved parts withdrawal for brake pads (Qty: 4)',
-            status: 'success'
-        },
-        {
-            id: 3,
-            action: 'warranty.audit',
-            user: 'Mike Auditor',
-            module: 'Warranty',
-            timestamp: '2025-01-13 10:20:18',
-            ip_address: '192.168.1.102',
-            details: 'Flagged warranty claim #WC-2025-015 for high value review',
-            status: 'flagged'
-        },
-        {
-            id: 4,
-            action: 'sales.test_drive',
-            user: 'Lisa Sales Rep',
-            module: 'Sales',
-            timestamp: '2025-01-13 10:15:33',
-            ip_address: '192.168.1.103',
-            details: 'Test drive completed for Customer ID: C-2025-089',
-            status: 'success'
-        },
-        {
-            id: 5,
-            action: 'system.backup',
-            user: 'Admin User',
-            module: 'System',
-            timestamp: '2025-01-13 09:00:00',
-            ip_address: '192.168.1.1',
-            details: 'Automated daily backup completed successfully',
-            status: 'success'
-        }
-    ];
+export default function ActivityLogs({ logs, stats, filters = {} }: Props) {
+    const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    const [selectedModule, setSelectedModule] = useState(filters.module || 'all');
+    const [selectedStatus, setSelectedStatus] = useState(filters.status || 'all');
+    const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const handleViewLog = (log: ActivityLog) => {
+        setSelectedLog(log);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedLog(null);
+    };
+
+    const handleFilter = () => {
+        const params: Record<string, string> = {};
+        if (searchTerm) params.search = searchTerm;
+        if (selectedModule && selectedModule !== 'all') params.module = selectedModule;
+        if (selectedStatus && selectedStatus !== 'all') params.status = selectedStatus;
+
+        router.get(route('audit.activity-logs'), params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const handleExport = () => {
+        const params: Record<string, string> = {};
+        if (selectedModule && selectedModule !== 'all') params.module = selectedModule;
+        if (selectedStatus && selectedStatus !== 'all') params.status = selectedStatus;
+        window.location.href = route('audit.activity-logs.export', params);
+    };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -89,14 +109,16 @@ export default function ActivityLogs() {
     };
 
     const getModuleBadge = (module: string) => {
-        const colors = {
+        const colors: Record<string, string> = {
             'PMS': 'bg-blue-100 text-blue-800',
             'Inventory': 'bg-purple-100 text-purple-800',
             'Warranty': 'bg-orange-100 text-orange-800',
             'Sales': 'bg-green-100 text-green-800',
+            'Branch': 'bg-indigo-100 text-indigo-800',
+            'Users': 'bg-pink-100 text-pink-800',
             'System': 'bg-gray-100 text-gray-800'
         };
-        return <Badge variant="outline" className={colors[module as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>{module}</Badge>;
+        return <Badge variant="outline" className={colors[module] || 'bg-gray-100 text-gray-800'}>{module}</Badge>;
     };
 
     return (
@@ -110,7 +132,7 @@ export default function ActivityLogs() {
                         <Activity className="h-6 w-6" />
                         <h1 className="text-2xl font-bold">Activity Logs</h1>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={handleExport}>
                         <Download className="h-4 w-4 mr-2" />
                         Export Logs
                     </Button>
@@ -123,8 +145,10 @@ export default function ActivityLogs() {
                             <CardTitle className="text-sm font-medium">Total Events Today</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">1,247</div>
-                            <p className="text-xs text-muted-foreground">+12% from yesterday</p>
+                            <div className="text-2xl font-bold">{stats.total_events_today.toLocaleString()}</div>
+                            <p className="text-xs text-muted-foreground">
+                                {stats.events_change >= 0 ? '+' : ''}{stats.events_change}% from yesterday
+                            </p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -132,8 +156,8 @@ export default function ActivityLogs() {
                             <CardTitle className="text-sm font-medium">Active Users</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">23</div>
-                            <p className="text-xs text-muted-foreground">Currently logged in</p>
+                            <div className="text-2xl font-bold">{stats.active_users}</div>
+                            <p className="text-xs text-muted-foreground">Performed actions today</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -141,7 +165,7 @@ export default function ActivityLogs() {
                             <CardTitle className="text-sm font-medium">Failed Actions</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">3</div>
+                            <div className="text-2xl font-bold">{stats.failed_actions}</div>
                             <p className="text-xs text-muted-foreground">Requires attention</p>
                         </CardContent>
                     </Card>
@@ -150,8 +174,8 @@ export default function ActivityLogs() {
                             <CardTitle className="text-sm font-medium">Flagged Events</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">7</div>
-                            <p className="text-xs text-muted-foreground">Pending review</p>
+                            <div className="text-2xl font-bold">{stats.flagged_events}</div>
+                            <p className="text-xs text-muted-foreground">Last 7 days</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -167,23 +191,31 @@ export default function ActivityLogs() {
                             <div className="flex-1">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input placeholder="Search logs..." className="pl-10" />
+                                    <Input 
+                                        placeholder="Search logs..." 
+                                        className="pl-10"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleFilter()}
+                                    />
                                 </div>
                             </div>
-                            <Select>
+                            <Select value={selectedModule} onValueChange={setSelectedModule}>
                                 <SelectTrigger className="w-full md:w-[180px]">
                                     <SelectValue placeholder="Module" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Modules</SelectItem>
-                                    <SelectItem value="pms">PMS</SelectItem>
-                                    <SelectItem value="inventory">Inventory</SelectItem>
-                                    <SelectItem value="warranty">Warranty</SelectItem>
-                                    <SelectItem value="sales">Sales</SelectItem>
-                                    <SelectItem value="system">System</SelectItem>
+                                    <SelectItem value="Sales">Sales</SelectItem>
+                                    <SelectItem value="Branch">Branch</SelectItem>
+                                    <SelectItem value="Users">Users</SelectItem>
+                                    <SelectItem value="PMS">PMS</SelectItem>
+                                    <SelectItem value="Inventory">Inventory</SelectItem>
+                                    <SelectItem value="Warranty">Warranty</SelectItem>
+                                    <SelectItem value="System">System</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Select>
+                            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                                 <SelectTrigger className="w-full md:w-[180px]">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
@@ -194,7 +226,7 @@ export default function ActivityLogs() {
                                     <SelectItem value="failed">Failed</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button variant="outline">
+                            <Button variant="outline" onClick={handleFilter}>
                                 <Filter className="h-4 w-4 mr-2" />
                                 Apply
                             </Button>
@@ -223,29 +255,171 @@ export default function ActivityLogs() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {mockLogs.map((log) => (
-                                    <TableRow key={log.id}>
-                                        <TableCell className="font-mono text-sm">{log.timestamp}</TableCell>
-                                        <TableCell className="font-medium">{log.user}</TableCell>
-                                        <TableCell>
-                                            <code className="bg-muted px-2 py-1 rounded text-sm">{log.action}</code>
-                                        </TableCell>
-                                        <TableCell>{getModuleBadge(log.module)}</TableCell>
-                                        <TableCell>{getStatusBadge(log.status)}</TableCell>
-                                        <TableCell className="font-mono text-sm">{log.ip_address}</TableCell>
-                                        <TableCell className="max-w-xs truncate">{log.details}</TableCell>
-                                        <TableCell>
-                                            <Button variant="ghost" size="sm">
-                                                <Eye className="h-4 w-4" />
-                                            </Button>
+                                {logs.data.length > 0 ? (
+                                    logs.data.map((log) => (
+                                        <TableRow key={log.id}>
+                                            <TableCell className="font-mono text-sm">{log.timestamp}</TableCell>
+                                            <TableCell className="font-medium">{log.user}</TableCell>
+                                            <TableCell>
+                                                <code className="bg-muted px-2 py-1 rounded text-sm">{log.action}</code>
+                                            </TableCell>
+                                            <TableCell>{getModuleBadge(log.module)}</TableCell>
+                                            <TableCell>{getStatusBadge(log.status)}</TableCell>
+                                            <TableCell className="font-mono text-sm">{log.ip_address}</TableCell>
+                                            <TableCell className="max-w-xs truncate">{log.details}</TableCell>
+                                            <TableCell>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    onClick={() => handleViewLog(log)}
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                                            No activity logs found. Start using the system to generate activity logs.
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                )}
                             </TableBody>
                         </Table>
+                        
+                        {/* Pagination */}
+                        {logs.data.length > 0 && logs.last_page > 1 && (
+                            <div className="flex items-center justify-between px-4 py-4 border-t">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing {((logs.current_page - 1) * logs.per_page) + 1} to{' '}
+                                    {Math.min(logs.current_page * logs.per_page, logs.total)} of{' '}
+                                    {logs.total} results
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    {logs.links.map((link, index) => {
+                                        if (link.label === '&laquo; Previous') {
+                                            return (
+                                                <Button
+                                                    key={index}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={!link.url}
+                                                    onClick={() => link.url && router.visit(link.url)}
+                                                >
+                                                    <ChevronLeft className="h-4 w-4" />
+                                                </Button>
+                                            );
+                                        }
+                                        if (link.label === 'Next &raquo;') {
+                                            return (
+                                                <Button
+                                                    key={index}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={!link.url}
+                                                    onClick={() => link.url && router.visit(link.url)}
+                                                >
+                                                    <ChevronRight className="h-4 w-4" />
+                                                </Button>
+                                            );
+                                        }
+                                        return (
+                                            <Button
+                                                key={index}
+                                                variant={link.active ? "default" : "outline"}
+                                                size="sm"
+                                                disabled={!link.url}
+                                                onClick={() => link.url && router.visit(link.url)}
+                                            >
+                                                {link.label}
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
+
+            {/* View Log Details Modal */}
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Activity Log Details</DialogTitle>
+                        <DialogDescription>
+                            Complete information about this activity log entry
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    {selectedLog && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Log ID</label>
+                                    <p className="text-sm font-mono">#{selectedLog.id}</p>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Timestamp</label>
+                                    <p className="text-sm font-mono">{selectedLog.timestamp}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">User</label>
+                                    <p className="text-sm font-medium">{selectedLog.user}</p>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">IP Address</label>
+                                    <p className="text-sm font-mono">{selectedLog.ip_address}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Module</label>
+                                    <div className="mt-1">{getModuleBadge(selectedLog.module)}</div>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Status</label>
+                                    <div className="mt-1">{getStatusBadge(selectedLog.status)}</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium text-muted-foreground">Action</label>
+                                <p className="text-sm">
+                                    <code className="bg-muted px-2 py-1 rounded text-sm">{selectedLog.action}</code>
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium text-muted-foreground">Description</label>
+                                <p className="text-sm mt-1">{selectedLog.details}</p>
+                            </div>
+
+                            {selectedLog.properties && Object.keys(selectedLog.properties).length > 0 && (
+                                <div>
+                                    <label className="text-sm font-medium text-muted-foreground">Additional Properties</label>
+                                    <div className="mt-2 bg-muted p-4 rounded-lg">
+                                        <pre className="text-xs overflow-x-auto">
+                                            {JSON.stringify(selectedLog.properties, null, 2)}
+                                        </pre>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-2 pt-4 border-t">
+                                <Button variant="outline" onClick={handleCloseModal}>
+                                    Close
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

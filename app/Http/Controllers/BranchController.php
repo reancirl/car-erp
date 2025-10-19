@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Constants\PhRegions;
+use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
@@ -12,6 +13,7 @@ use Inertia\Response;
 
 class BranchController extends Controller
 {
+    use LogsActivity;
     /**
      * Display a listing of the resource.
      */
@@ -80,7 +82,19 @@ class BranchController extends Controller
         ]);
 
         try {
-            Branch::create($validated);
+            $branch = Branch::create($validated);
+
+            // Log activity
+            $this->logCreated(
+                module: 'Branch',
+                subject: $branch,
+                description: "Created branch {$branch->name} ({$branch->code})",
+                properties: [
+                    'branch_code' => $branch->code,
+                    'city' => $branch->city,
+                    'status' => $branch->status,
+                ]
+            );
 
             return redirect()->route('admin.branch-management.index')
                 ->with('success', 'Branch created successfully! ' . $validated['name'] . ' is now active.');
@@ -146,7 +160,28 @@ class BranchController extends Controller
         ]);
 
         try {
+            // Track changes for logging
+            $changes = [];
+            foreach ($validated as $key => $value) {
+                if ($branch->{$key} != $value) {
+                    $changes[$key] = [
+                        'old' => $branch->{$key},
+                        'new' => $value,
+                    ];
+                }
+            }
+
             $branch->update($validated);
+
+            // Log activity
+            $this->logUpdated(
+                module: 'Branch',
+                subject: $branch,
+                description: "Updated branch {$branch->name} ({$branch->code})",
+                properties: [
+                    'changes' => $changes,
+                ]
+            );
 
             return redirect()->route('admin.branch-management.index')
                 ->with('success', 'Branch updated successfully! ' . $validated['name'] . ' has been updated.');
@@ -164,6 +199,20 @@ class BranchController extends Controller
     {
         try {
             $branchName = $branch->name;
+            $branchCode = $branch->code;
+
+            // Log activity before deletion
+            $this->logDeleted(
+                module: 'Branch',
+                subject: $branch,
+                description: "Deleted branch {$branchName} ({$branchCode})",
+                properties: [
+                    'branch_code' => $branchCode,
+                    'city' => $branch->city,
+                    'status' => $branch->status,
+                ]
+            );
+
             $branch->delete();
 
             return redirect()->route('admin.branch-management.index')

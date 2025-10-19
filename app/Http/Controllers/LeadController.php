@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\User;
 use App\Http\Requests\StoreLeadRequest;
 use App\Http\Requests\UpdateLeadRequest;
+use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -14,6 +15,7 @@ use Inertia\Response;
 
 class LeadController extends Controller
 {
+    use LogsActivity;
     /**
      * Display a listing of the resource.
      */
@@ -106,6 +108,21 @@ class LeadController extends Controller
 
         $lead = Lead::create($data);
 
+        // Log activity
+        $this->logCreated(
+            module: 'Sales',
+            subject: $lead,
+            description: "Created lead {$lead->lead_id} - {$lead->name} ({$lead->source})",
+            properties: [
+                'lead_id' => $lead->lead_id,
+                'name' => $lead->name,
+                'email' => $lead->email,
+                'source' => $lead->source,
+                'status' => $lead->status,
+                'lead_score' => $lead->lead_score,
+            ]
+        );
+
         return redirect()
             ->route('sales.lead-management')
             ->with('success', "Lead {$lead->lead_id} created successfully!");
@@ -174,7 +191,29 @@ class LeadController extends Controller
             [$data['fake_lead_score'], $data['duplicate_flags']] = $this->detectSuspiciousLead(array_merge($lead->toArray(), $data), $lead->id);
         }
 
+        // Track changes for logging
+        $changes = [];
+        foreach ($data as $key => $value) {
+            if ($lead->{$key} != $value) {
+                $changes[$key] = [
+                    'old' => $lead->{$key},
+                    'new' => $value,
+                ];
+            }
+        }
+
         $lead->update($data);
+
+        // Log activity
+        $this->logUpdated(
+            module: 'Sales',
+            subject: $lead,
+            description: "Updated lead {$lead->lead_id} - {$lead->name}",
+            properties: [
+                'lead_id' => $lead->lead_id,
+                'changes' => $changes,
+            ]
+        );
 
         return redirect()
             ->route('sales.lead-management')
@@ -192,6 +231,22 @@ class LeadController extends Controller
         }
 
         $leadId = $lead->lead_id;
+        $leadName = $lead->name;
+
+        // Log activity before deletion
+        $this->logDeleted(
+            module: 'Sales',
+            subject: $lead,
+            description: "Deleted lead {$leadId} - {$leadName}",
+            properties: [
+                'lead_id' => $leadId,
+                'name' => $leadName,
+                'email' => $lead->email,
+                'phone' => $lead->phone,
+                'status' => $lead->status,
+            ]
+        );
+
         $lead->delete();
 
         return redirect()
