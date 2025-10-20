@@ -118,22 +118,16 @@ Route::middleware(['auth', 'verified', 'permission:sales.view'])->prefix('sales'
     Route::delete('/lead-management/{lead}', [\App\Http\Controllers\LeadController::class, 'destroy'])->name('lead-management.destroy')->middleware('permission:sales.delete');
     Route::post('/lead-management/{id}/restore', [\App\Http\Controllers\LeadController::class, 'restore'])->name('lead-management.restore')->middleware('permission:sales.create');
     
-    // Test Drives Routes
-    Route::get('/test-drives', function () {
-        return Inertia::render('sales/test-drives');
-    })->name('test-drives');
-    
-    Route::get('/test-drives/create', function () {
-        return Inertia::render('sales/test-drive-create');
-    })->name('test-drives.create');
-    
-    Route::get('/test-drives/{id}/edit', function ($id) {
-        return Inertia::render('sales/test-drive-edit', ['id' => $id]);
-    })->name('test-drives.edit');
-    
-    Route::get('/test-drives/{id}', function ($id) {
-        return Inertia::render('sales/test-drive-view', ['id' => $id]);
-    })->name('test-drives.show');
+    // Test Drives Routes (Resource Controller)
+    Route::get('/test-drives', [\App\Http\Controllers\TestDriveController::class, 'index'])->name('test-drives');
+    Route::get('/test-drives/create', [\App\Http\Controllers\TestDriveController::class, 'create'])->name('test-drives.create')->middleware('permission:sales.create');
+    Route::post('/test-drives', [\App\Http\Controllers\TestDriveController::class, 'store'])->name('test-drives.store')->middleware('permission:sales.create');
+    Route::get('/test-drives/{testDrive}', [\App\Http\Controllers\TestDriveController::class, 'show'])->name('test-drives.show');
+    Route::get('/test-drives/{testDrive}/edit', [\App\Http\Controllers\TestDriveController::class, 'edit'])->name('test-drives.edit')->middleware('permission:sales.edit');
+    Route::put('/test-drives/{testDrive}', [\App\Http\Controllers\TestDriveController::class, 'update'])->name('test-drives.update')->middleware('permission:sales.edit');
+    Route::delete('/test-drives/{testDrive}', [\App\Http\Controllers\TestDriveController::class, 'destroy'])->name('test-drives.destroy')->middleware('permission:sales.delete');
+    Route::post('/test-drives/{id}/restore', [\App\Http\Controllers\TestDriveController::class, 'restore'])->name('test-drives.restore')->middleware('permission:sales.create');
+    Route::get('/test-drives-export', [\App\Http\Controllers\TestDriveController::class, 'export'])->name('test-drives.export')->middleware('permission:sales.view');
     
     // Pipeline Routes
     Route::get('/pipeline', function () {

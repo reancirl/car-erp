@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,28 +7,48 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { 
-    ArrowLeft, 
-    Car, 
-    Save, 
-    User,
-    Phone,
-    Mail,
-    MapPin,
-    Calendar,
-    Clock,
-    FileSignature,
-    Navigation,
-    Smartphone,
-    Shield,
-    CreditCard,
-    X,
-    CheckCircle,
-    AlertTriangle
-} from 'lucide-react';
+import { ArrowLeft, Save, X, AlertCircle } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
-import { useState } from 'react';
+import { FormEvent } from 'react';
+
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
+}
+
+interface SalesRep {
+    id: number;
+    name: string;
+    branch_id: number;
+}
+
+interface TestDrive {
+    id: number;
+    reservation_id: string;
+    customer_name: string;
+    customer_phone: string;
+    customer_email?: string;
+    vehicle_vin: string;
+    vehicle_details: string;
+    scheduled_date: string;
+    scheduled_time: string;
+    duration_minutes: number;
+    branch_id: number;
+    assigned_user_id?: number;
+    status: string;
+    reservation_type: string;
+    insurance_verified: boolean;
+    license_verified: boolean;
+    deposit_amount: number;
+    notes?: string;
+}
+
+interface Props {
+    testDrive: TestDrive;
+    branches?: Branch[] | null;
+    salesReps: SalesRep[];
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -40,120 +60,105 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/sales/test-drives',
     },
     {
-        title: 'Edit Reservation',
-        href: '/sales/test-drives/1/edit',
+        title: 'Edit',
+        href: '#',
     },
 ];
 
-export default function TestDriveEdit() {
-    const mockTestDrive = {
-        id: 1,
-        reservation_id: 'TD-2025-001',
-        customer_name: 'John Smith',
-        customer_phone: '+1-555-0123',
-        customer_email: 'john.smith@email.com',
-        vehicle_vin: 'JH4KA8260MC123456',
-        vehicle_details: '2024 Honda Civic LX',
-        scheduled_date: '2025-01-14',
-        scheduled_time: '10:00',
-        duration_minutes: 30,
-        sales_rep: 'Sarah Sales Rep',
-        status: 'confirmed',
-        reservation_type: 'scheduled',
-        created_at: '2025-01-13 09:15:00',
-        esignature_status: 'signed',
-        esignature_timestamp: '2025-01-13 09:20:00',
-        esignature_device: 'iPad Pro',
-        gps_start_coords: '40.7128,-74.0060',
-        gps_end_coords: '40.7589,-73.9851',
-        gps_start_timestamp: '2025-01-14 10:00:00',
-        gps_end_timestamp: '2025-01-14 10:30:00',
-        route_distance_km: 12.5,
-        max_speed_kmh: 65,
-        insurance_verified: true,
-        license_verified: true,
-        deposit_amount: 0,
-        notes: 'Customer interested in financing options'
+export default function TestDriveEdit({ testDrive, branches, salesReps }: Props) {
+    const { data, setData, put, processing, errors } = useForm({
+        customer_name: testDrive.customer_name,
+        customer_phone: testDrive.customer_phone,
+        customer_email: testDrive.customer_email || '',
+        vehicle_vin: testDrive.vehicle_vin,
+        vehicle_details: testDrive.vehicle_details,
+        scheduled_date: testDrive.scheduled_date,
+        scheduled_time: testDrive.scheduled_time,
+        duration_minutes: testDrive.duration_minutes,
+        branch_id: String(testDrive.branch_id),
+        assigned_user_id: testDrive.assigned_user_id ? String(testDrive.assigned_user_id) : '',
+        status: testDrive.status,
+        reservation_type: testDrive.reservation_type,
+        insurance_verified: testDrive.insurance_verified,
+        license_verified: testDrive.license_verified,
+        deposit_amount: testDrive.deposit_amount,
+        notes: testDrive.notes || '',
+    });
+
+    const handleSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        put(`/sales/test-drives/${testDrive.id}`, {
+            preserveScroll: true,
+        });
     };
 
-    const [selectedStatus, setSelectedStatus] = useState(mockTestDrive.status);
-    const [selectedType, setSelectedType] = useState(mockTestDrive.reservation_type);
-    const [insuranceVerified, setInsuranceVerified] = useState(mockTestDrive.insurance_verified);
-    const [licenseVerified, setLicenseVerified] = useState(mockTestDrive.license_verified);
-
-    const statuses = [
-        { value: 'confirmed', label: 'Confirmed', description: 'Ready for test drive' },
-        { value: 'pending_signature', label: 'Pending Signature', description: 'Awaiting e-signature' },
-        { value: 'completed', label: 'Completed', description: 'Test drive finished' },
-        { value: 'cancelled', label: 'Cancelled', description: 'Reservation cancelled' },
-        { value: 'no_show', label: 'No Show', description: 'Customer did not arrive' },
-    ];
-
-    const reservationTypes = [
-        { value: 'scheduled', label: 'Scheduled', description: 'Pre-booked appointment' },
-        { value: 'walk_in', label: 'Walk-in', description: 'Unscheduled visit' },
-    ];
-
-    const salesReps = [
-        { id: '1', name: 'Sarah Sales Rep', specialties: ['Honda', 'Toyota'], availability: 'Available' },
-        { id: '2', name: 'Mike Sales Rep', specialties: ['BMW', 'Mercedes'], availability: 'Busy' },
-        { id: '3', name: 'Lisa Sales Rep', specialties: ['Hyundai', 'Kia'], availability: 'Available' },
-        { id: '4', name: 'Tom Sales Rep', specialties: ['Ford', 'Chevrolet'], availability: 'Available' },
-    ];
-
-    const vehicles = [
-        { vin: 'JH4KA8260MC123456', details: '2024 Honda Civic LX', status: 'Available' },
-        { vin: 'WVWZZZ1JZ3W123789', details: '2023 Toyota Camry SE', status: 'In Use' },
-        { vin: 'KMHD84LF5EU456123', details: '2024 BMW X3 xDrive30i', status: 'Available' },
-        { vin: 'JF1VA1C60M9876543', details: '2024 Hyundai Elantra SEL', status: 'Maintenance' },
-    ];
-
-    const getStatusBadge = (status: string) => {
-        const colors = {
-            confirmed: 'bg-green-100 text-green-800',
-            pending_signature: 'bg-yellow-100 text-yellow-800',
-            completed: 'bg-blue-100 text-blue-800',
-            cancelled: 'bg-red-100 text-red-800',
-            no_show: 'bg-gray-100 text-gray-800',
-        };
-        return <Badge className={colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>{status.replace('_', ' ')}</Badge>;
+    const handleInsuranceChange = () => {
+        setData('insurance_verified', !data.insurance_verified as any);
     };
 
-    const getTypeBadge = (type: string) => {
-        const colors = {
-            scheduled: 'bg-blue-100 text-blue-800',
-            walk_in: 'bg-purple-100 text-purple-800',
-        };
-        return <Badge className={colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>{type.replace('_', ' ')}</Badge>;
+    const handleLicenseChange = () => {
+        setData('license_verified', !data.license_verified as any);
     };
+
+    const timeSlots = [
+        '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+        '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+        '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
+    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Edit Reservation - ${mockTestDrive.reservation_id}`} />
+            <Head title={`Edit Test Drive - ${testDrive.reservation_id}`} />
             
-            <div className="space-y-6 p-6">
+            <form onSubmit={handleSubmit} className="space-y-6 p-6">
+                {/* Validation Error Banner */}
+                {Object.keys(errors).length > 0 && (
+                    <Card className="border-red-200 bg-red-50">
+                        <CardContent className="pt-6">
+                            <div className="flex items-start space-x-3">
+                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-red-900">Validation Error</h3>
+                                    <p className="text-sm text-red-800 mt-1">
+                                        Please correct the following errors before submitting:
+                                    </p>
+                                    <ul className="list-disc list-inside text-sm text-red-700 mt-2 space-y-1">
+                                        {Object.entries(errors).map(([field, message]) => (
+                                            <li key={field}>
+                                                <strong className="capitalize">{field.replace(/_/g, ' ')}</strong>: {message}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         <Link href="/sales/test-drives">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" type="button">
                                 <ArrowLeft className="h-4 w-4 mr-2" />
-                                Back to Test Drives
+                                Back
                             </Button>
                         </Link>
                         <div>
-                            <h1 className="text-2xl font-bold">Edit Test Drive Reservation</h1>
-                            <p className="text-muted-foreground">Reservation ID: {mockTestDrive.reservation_id}</p>
+                            <h1 className="text-2xl font-bold">Edit Test Drive - {testDrive.reservation_id}</h1>
+                            <p className="text-muted-foreground">Update test drive reservation details</p>
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline">
-                            <X className="h-4 w-4 mr-2" />
-                            Cancel
-                        </Button>
-                        <Button>
+                        <Link href="/sales/test-drives">
+                            <Button variant="outline" type="button">
+                                <X className="h-4 w-4 mr-2" />
+                                Cancel
+                            </Button>
+                        </Link>
+                        <Button type="submit" disabled={processing}>
                             <Save className="h-4 w-4 mr-2" />
-                            Save Changes
+                            {processing ? 'Saving...' : 'Save Changes'}
                         </Button>
                     </div>
                 </div>
@@ -161,270 +166,271 @@ export default function TestDriveEdit() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Form */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Reservation Details */}
+                        {/* Reservation Type */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Car className="h-5 w-5 mr-2" />
-                                    Reservation Details
-                                </CardTitle>
-                                <CardDescription>
-                                    Basic reservation information and identification
-                                </CardDescription>
+                                <CardTitle>Reservation Details</CardTitle>
+                                <CardDescription>Basic reservation information</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="reservation-id">Reservation ID</Label>
-                                        <Input 
-                                            id="reservation-id" 
-                                            value={mockTestDrive.reservation_id}
-                                            disabled
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="created-date">Created Date</Label>
-                                        <Input 
-                                            id="created-date" 
-                                            value={mockTestDrive.created_at.split(' ')[0]}
-                                            disabled
-                                        />
-                                    </div>
+                                <div className="space-y-2">
+                                    <Label>Reservation ID</Label>
+                                    <Input value={testDrive.reservation_id} disabled />
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="status">Status *</Label>
+                                    <Select value={data.status} onValueChange={(value) => setData('status', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="pending_signature">Pending Signature</SelectItem>
+                                            <SelectItem value="confirmed">Confirmed</SelectItem>
+                                            <SelectItem value="in_progress">In Progress</SelectItem>
+                                            <SelectItem value="completed">Completed</SelectItem>
+                                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                                            <SelectItem value="no_show">No Show</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.status && <p className="text-sm text-red-600">{errors.status}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="reservation_type">Reservation Type *</Label>
+                                    <Select value={data.reservation_type} onValueChange={(value) => setData('reservation_type', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="scheduled">Scheduled</SelectItem>
+                                            <SelectItem value="walk_in">Walk-in</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.reservation_type && <p className="text-sm text-red-600">{errors.reservation_type}</p>}
+                                </div>
+
+                                {branches && branches.length > 0 && (
                                     <div className="space-y-2">
-                                        <Label htmlFor="status">Status</Label>
-                                        <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                                        <Label htmlFor="branch_id">Branch *</Label>
+                                        <Select value={data.branch_id} onValueChange={(value) => setData('branch_id', value)}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select status" />
+                                                <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {statuses.map((status) => (
-                                                    <SelectItem key={status.value} value={status.value}>
-                                                        <div>
-                                                            <div className="font-medium">{status.label}</div>
-                                                            <div className="text-xs text-muted-foreground">{status.description}</div>
-                                                        </div>
+                                                {branches.map((branch) => (
+                                                    <SelectItem key={branch.id} value={String(branch.id)}>
+                                                        {branch.name} ({branch.code})
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                        {errors.branch_id && <p className="text-sm text-red-600">{errors.branch_id}</p>}
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="type">Reservation Type</Label>
-                                        <Select value={selectedType} onValueChange={setSelectedType}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {reservationTypes.map((type) => (
-                                                    <SelectItem key={type.value} value={type.value}>
-                                                        <div>
-                                                            <div className="font-medium">{type.label}</div>
-                                                            <div className="text-xs text-muted-foreground">{type.description}</div>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
+                                )}
                             </CardContent>
                         </Card>
 
                         {/* Customer Information */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <User className="h-5 w-5 mr-2" />
-                                    Customer Information
-                                </CardTitle>
-                                <CardDescription>
-                                    Customer contact and identification details
-                                </CardDescription>
+                                <CardTitle>Customer Information</CardTitle>
+                                <CardDescription>Customer contact details</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="customer-name">Full Name *</Label>
+                                    <Label htmlFor="customer_name">Full Name *</Label>
                                     <Input 
-                                        id="customer-name" 
-                                        defaultValue={mockTestDrive.customer_name}
+                                        id="customer_name" 
+                                        value={data.customer_name}
+                                        onChange={(e) => setData('customer_name', e.target.value)}
                                         required
                                     />
+                                    {errors.customer_name && <p className="text-sm text-red-600">{errors.customer_name}</p>}
                                 </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="customer-phone">Phone Number *</Label>
+                                        <Label htmlFor="customer_phone">Phone Number *</Label>
                                         <Input 
-                                            id="customer-phone" 
-                                            defaultValue={mockTestDrive.customer_phone}
+                                            id="customer_phone" 
+                                            value={data.customer_phone}
+                                            onChange={(e) => setData('customer_phone', e.target.value)}
                                             required
                                         />
+                                        {errors.customer_phone && <p className="text-sm text-red-600">{errors.customer_phone}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="customer-email">Email Address</Label>
+                                        <Label htmlFor="customer_email">Email Address</Label>
                                         <Input 
-                                            id="customer-email" 
+                                            id="customer_email" 
                                             type="email"
-                                            defaultValue={mockTestDrive.customer_email}
+                                            value={data.customer_email}
+                                            onChange={(e) => setData('customer_email', e.target.value)}
                                         />
+                                        {errors.customer_email && <p className="text-sm text-red-600">{errors.customer_email}</p>}
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Vehicle & Schedule */}
+                        {/* Vehicle Information */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Calendar className="h-5 w-5 mr-2" />
-                                    Vehicle & Schedule
-                                </CardTitle>
-                                <CardDescription>
-                                    Vehicle selection and appointment scheduling
-                                </CardDescription>
+                                <CardTitle>Vehicle Information</CardTitle>
+                                <CardDescription>Vehicle details for test drive</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="vehicle">Vehicle</Label>
-                                    <Select defaultValue={mockTestDrive.vehicle_vin}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select vehicle" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {vehicles.map((vehicle) => (
-                                                <SelectItem key={vehicle.vin} value={vehicle.vin} disabled={vehicle.status !== 'Available'}>
-                                                    <div>
-                                                        <div className="font-medium">{vehicle.details}</div>
-                                                        <div className="text-xs text-muted-foreground">
-                                                            VIN: {vehicle.vin.slice(-6)} • {vehicle.status}
-                                                        </div>
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Label htmlFor="vehicle_vin">Vehicle VIN *</Label>
+                                    <Input 
+                                        id="vehicle_vin" 
+                                        value={data.vehicle_vin}
+                                        onChange={(e) => setData('vehicle_vin', e.target.value)}
+                                        placeholder="Enter 17-character VIN"
+                                        required
+                                    />
+                                    {errors.vehicle_vin && <p className="text-sm text-red-600">{errors.vehicle_vin}</p>}
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="vehicle_details">Vehicle Details *</Label>
+                                    <Input 
+                                        id="vehicle_details" 
+                                        value={data.vehicle_details}
+                                        onChange={(e) => setData('vehicle_details', e.target.value)}
+                                        placeholder="e.g., 2024 Honda Civic LX - Silver"
+                                        required
+                                    />
+                                    {errors.vehicle_details && <p className="text-sm text-red-600">{errors.vehicle_details}</p>}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Schedule */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Schedule & Duration</CardTitle>
+                                <CardDescription>Appointment date and time</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="scheduled-date">Date</Label>
+                                        <Label htmlFor="scheduled_date">Date *</Label>
                                         <Input 
-                                            id="scheduled-date" 
+                                            id="scheduled_date" 
                                             type="date"
-                                            defaultValue={mockTestDrive.scheduled_date}
+                                            value={data.scheduled_date}
+                                            onChange={(e) => setData('scheduled_date', e.target.value)}
+                                            required
                                         />
+                                        {errors.scheduled_date && <p className="text-sm text-red-600">{errors.scheduled_date}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="scheduled-time">Time</Label>
-                                        <Input 
-                                            id="scheduled-time" 
-                                            type="time"
-                                            defaultValue={mockTestDrive.scheduled_time}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="duration">Duration (minutes)</Label>
-                                        <Select defaultValue={mockTestDrive.duration_minutes.toString()}>
+                                        <Label htmlFor="scheduled_time">Time *</Label>
+                                        <Select value={data.scheduled_time} onValueChange={(value) => setData('scheduled_time', value)}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Duration" />
+                                                <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="15">15 minutes</SelectItem>
-                                                <SelectItem value="30">30 minutes</SelectItem>
-                                                <SelectItem value="45">45 minutes</SelectItem>
-                                                <SelectItem value="60">60 minutes</SelectItem>
+                                                {timeSlots.map((time) => (
+                                                    <SelectItem key={time} value={time}>
+                                                        {time}
+                                                    </SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
+                                        {errors.scheduled_time && <p className="text-sm text-red-600">{errors.scheduled_time}</p>}
                                     </div>
                                 </div>
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="sales-rep">Assigned Sales Rep</Label>
-                                    <Select defaultValue="1">
+                                    <Label htmlFor="duration_minutes">Duration (minutes) *</Label>
+                                    <Select value={String(data.duration_minutes)} onValueChange={(value) => setData('duration_minutes', parseInt(value))}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select sales rep" />
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="15">15 minutes</SelectItem>
+                                            <SelectItem value="30">30 minutes</SelectItem>
+                                            <SelectItem value="45">45 minutes</SelectItem>
+                                            <SelectItem value="60">60 minutes</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.duration_minutes && <p className="text-sm text-red-600">{errors.duration_minutes}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="assigned_user_id">Assign Sales Rep (Optional)</Label>
+                                    <Select value={data.assigned_user_id || undefined} onValueChange={(value) => setData('assigned_user_id', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Unassigned - Select to assign" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {salesReps.map((rep) => (
-                                                <SelectItem key={rep.id} value={rep.id}>
-                                                    <div>
-                                                        <div className="font-medium">{rep.name}</div>
-                                                        <div className="text-xs text-muted-foreground">
-                                                            {rep.specialties.join(', ')} • {rep.availability}
-                                                        </div>
-                                                    </div>
+                                                <SelectItem key={rep.id} value={String(rep.id)}>
+                                                    {rep.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    {errors.assigned_user_id && <p className="text-sm text-red-600">{errors.assigned_user_id}</p>}
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Verification & Deposit */}
+                        {/* Verification */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Shield className="h-5 w-5 mr-2" />
-                                    Verification & Deposit
-                                </CardTitle>
-                                <CardDescription>
-                                    Document verification and deposit requirements
-                                </CardDescription>
+                                <CardTitle>Verification & Requirements</CardTitle>
+                                <CardDescription>Document verification and deposit</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox 
-                                                id="insurance-verified"
-                                                checked={insuranceVerified}
-                                                onCheckedChange={(checked) => setInsuranceVerified(checked === true)}
-                                            />
-                                            <Label htmlFor="insurance-verified" className="cursor-pointer">
-                                                Insurance Verified
-                                            </Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox 
-                                                id="license-verified"
-                                                checked={licenseVerified}
-                                                onCheckedChange={(checked) => setLicenseVerified(checked === true)}
-                                            />
-                                            <Label htmlFor="license-verified" className="cursor-pointer">
-                                                Driver's License Verified
-                                            </Label>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="deposit-amount">Deposit Amount ($)</Label>
-                                        <Input 
-                                            id="deposit-amount" 
-                                            type="number"
-                                            defaultValue={mockTestDrive.deposit_amount}
-                                            placeholder="0"
-                                        />
-                                    </div>
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                        id="insurance_verified"
+                                        checked={data.insurance_verified}
+                                        onCheckedChange={handleInsuranceChange}
+                                    />
+                                    <Label htmlFor="insurance_verified" className="cursor-pointer">
+                                        Insurance Verified
+                                    </Label>
                                 </div>
-                            </CardContent>
-                        </Card>
 
-                        {/* Notes & Additional Information */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Notes & Additional Information</CardTitle>
-                                <CardDescription>
-                                    Special instructions and notes about the reservation
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox 
+                                        id="license_verified"
+                                        checked={data.license_verified}
+                                        onCheckedChange={handleLicenseChange}
+                                    />
+                                    <Label htmlFor="license_verified" className="cursor-pointer">
+                                        Driver's License Verified
+                                    </Label>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="deposit_amount">Deposit Amount (₱)</Label>
+                                    <Input 
+                                        id="deposit_amount" 
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={data.deposit_amount}
+                                        onChange={(e) => setData('deposit_amount', parseFloat(e.target.value) || 0)}
+                                    />
+                                    {errors.deposit_amount && <p className="text-sm text-red-600">{errors.deposit_amount}</p>}
+                                </div>
+
                                 <div className="space-y-2">
                                     <Label htmlFor="notes">Notes</Label>
                                     <Textarea 
                                         id="notes" 
-                                        defaultValue={mockTestDrive.notes}
-                                        placeholder="Any special instructions, customer preferences, or additional information"
-                                        rows={4}
+                                        value={data.notes}
+                                        onChange={(e) => setData('notes', e.target.value)}
+                                        placeholder="Additional notes or special requirements"
+                                        rows={3}
                                     />
+                                    {errors.notes && <p className="text-sm text-red-600">{errors.notes}</p>}
                                 </div>
                             </CardContent>
                         </Card>
@@ -432,150 +438,21 @@ export default function TestDriveEdit() {
 
                     {/* Sidebar */}
                     <div className="space-y-6">
-                        {/* Current Status */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-sm">Current Status</CardTitle>
+                                <CardTitle>Quick Tips</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Reservation Status</p>
-                                    {getStatusBadge(selectedStatus)}
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Type</p>
-                                    {getTypeBadge(selectedType)}
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Created</p>
-                                    <p className="text-sm font-medium">{mockTestDrive.created_at}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* E-Signature Status */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm flex items-center">
-                                    <FileSignature className="h-4 w-4 mr-2" />
-                                    E-Signature Status
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Status</p>
-                                    <Badge className="bg-green-100 text-green-800">
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        Signed
-                                    </Badge>
-                                </div>
-                                {mockTestDrive.esignature_device && (
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Device</p>
-                                        <div className="flex items-center space-x-1">
-                                            <Smartphone className="h-3 w-3" />
-                                            <span className="text-sm">{mockTestDrive.esignature_device}</span>
-                                        </div>
-                                    </div>
-                                )}
-                                {mockTestDrive.esignature_timestamp && (
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Signed At</p>
-                                        <p className="text-sm">{mockTestDrive.esignature_timestamp}</p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* GPS Tracking */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm flex items-center">
-                                    <Navigation className="h-4 w-4 mr-2" />
-                                    GPS Tracking
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                {mockTestDrive.gps_start_coords ? (
-                                    <>
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Route Distance</p>
-                                            <p className="text-sm font-medium">{mockTestDrive.route_distance_km} km</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Max Speed</p>
-                                            <p className="text-sm font-medium">{mockTestDrive.max_speed_kmh} km/h</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Duration</p>
-                                            <p className="text-sm font-medium">
-                                                {mockTestDrive.gps_start_timestamp?.split(' ')[1]} - {mockTestDrive.gps_end_timestamp?.split(' ')[1]}
-                                            </p>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div>
-                                        <Badge variant="outline" className="bg-gray-100 text-gray-800">
-                                            No GPS Data
-                                        </Badge>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            GPS tracking will begin when test drive starts
-                                        </p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* Verification Status */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Verification Status</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Insurance</span>
-                                    <div className="flex items-center space-x-1">
-                                        <div className={`w-2 h-2 rounded-full ${insuranceVerified ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                        <span className="text-xs">{insuranceVerified ? 'Verified' : 'Not Verified'}</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Driver's License</span>
-                                    <div className="flex items-center space-x-1">
-                                        <div className={`w-2 h-2 rounded-full ${licenseVerified ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                        <span className="text-xs">{licenseVerified ? 'Verified' : 'Not Verified'}</span>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Quick Actions */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Quick Actions</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <FileSignature className="h-4 w-4 mr-2" />
-                                    Request E-Signature
-                                </Button>
-                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <Phone className="h-4 w-4 mr-2" />
-                                    Call Customer
-                                </Button>
-                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <Mail className="h-4 w-4 mr-2" />
-                                    Send Email
-                                </Button>
-                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <Calendar className="h-4 w-4 mr-2" />
-                                    Reschedule
-                                </Button>
+                            <CardContent className="space-y-2 text-sm text-muted-foreground">
+                                <p>• Verify customer's driver's license and insurance</p>
+                                <p>• E-signature required before test drive</p>
+                                <p>• GPS tracking automatically enabled</p>
+                                <p>• Sales rep should accompany customer</p>
+                                <p>• Return vehicle with same fuel level</p>
                             </CardContent>
                         </Card>
                     </div>
                 </div>
-            </div>
+            </form>
         </AppLayout>
     );
 }

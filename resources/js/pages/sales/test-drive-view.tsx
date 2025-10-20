@@ -26,6 +26,52 @@ import {
 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
+interface TestDrive {
+    id: number;
+    reservation_id: string;
+    customer_name: string;
+    customer_phone: string;
+    customer_email?: string;
+    vehicle_vin: string;
+    vehicle_details: string;
+    scheduled_date: string;
+    scheduled_time: string;
+    duration_minutes: number;
+    status: string;
+    reservation_type: string;
+    esignature_status: string;
+    esignature_timestamp?: string;
+    esignature_device?: string;
+    gps_start_coords?: string;
+    gps_end_coords?: string;
+    gps_start_timestamp?: string;
+    gps_end_timestamp?: string;
+    route_distance_km?: number;
+    max_speed_kmh?: number;
+    insurance_verified: boolean;
+    license_verified: boolean;
+    deposit_amount: number;
+    notes?: string;
+    created_at: string;
+    assigned_user?: {
+        id: number;
+        name: string;
+    };
+    branch?: {
+        id: number;
+        name: string;
+        code: string;
+    };
+}
+
+interface Props {
+    testDrive: TestDrive;
+    can?: {
+        edit?: boolean;
+        delete?: boolean;
+    };
+}
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Sales & Customer',
@@ -36,48 +82,18 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/sales/test-drives',
     },
     {
-        title: 'Reservation Details',
-        href: '/sales/test-drives/1',
+        title: 'View',
+        href: '#',
     },
 ];
 
-export default function TestDriveView() {
-    const mockTestDrive = {
-        id: 1,
-        reservation_id: 'TD-2025-001',
-        customer_name: 'John Smith',
-        customer_phone: '+1-555-0123',
-        customer_email: 'john.smith@email.com',
-        vehicle_vin: 'JH4KA8260MC123456',
-        vehicle_details: '2024 Honda Civic LX',
-        scheduled_date: '2025-01-14',
-        scheduled_time: '10:00 AM',
-        duration_minutes: 30,
-        sales_rep: 'Sarah Sales Rep',
-        status: 'confirmed',
-        reservation_type: 'scheduled',
-        created_at: '2025-01-13 09:15:00',
-        esignature_status: 'signed',
-        esignature_timestamp: '2025-01-13 09:20:00',
-        esignature_device: 'iPad Pro',
-        gps_start_coords: '40.7128,-74.0060',
-        gps_end_coords: '40.7589,-73.9851',
-        gps_start_timestamp: '2025-01-14 10:00:00',
-        gps_end_timestamp: '2025-01-14 10:30:00',
-        route_distance_km: 12.5,
-        max_speed_kmh: 65,
-        insurance_verified: true,
-        license_verified: true,
-        deposit_amount: 0,
-        notes: 'Customer interested in financing options'
-    };
-
+export default function TestDriveView({ testDrive }: Props) {
     const activityLog = [
         {
             id: 1,
-            timestamp: '2025-01-14 10:30:00',
-            action: 'Test Drive Completed',
-            details: 'GPS tracking ended. Route: 12.5km, Max speed: 65km/h',
+            timestamp: testDrive.created_at,
+            action: 'Reservation Created',
+            details: `Test drive reservation created for ${testDrive.customer_name}`,
             user: 'System',
             type: 'completion'
         },
@@ -207,7 +223,7 @@ export default function TestDriveView() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Test Drive Details - ${mockTestDrive.reservation_id}`} />
+            <Head title={`Test Drive Details - ${testDrive.reservation_id}`} />
             
             <div className="space-y-6 p-6">
                 {/* Header */}
@@ -221,7 +237,7 @@ export default function TestDriveView() {
                         </Link>
                         <div>
                             <h1 className="text-2xl font-bold">Test Drive Reservation</h1>
-                            <p className="text-muted-foreground">Reservation ID: {mockTestDrive.reservation_id}</p>
+                            <p className="text-muted-foreground">Reservation ID: {testDrive.reservation_id}</p>
                         </div>
                     </div>
                     <div className="flex space-x-2">
@@ -229,7 +245,7 @@ export default function TestDriveView() {
                             <Download className="h-4 w-4 mr-2" />
                             Export Report
                         </Button>
-                        <Link href={`/sales/test-drives/${mockTestDrive.id}/edit`}>
+                        <Link href={`/sales/test-drives/${testDrive.id}/edit`}>
                             <Button size="sm">
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit Reservation
@@ -250,8 +266,8 @@ export default function TestDriveView() {
                                         Reservation Overview
                                     </div>
                                     <div className="flex space-x-2">
-                                        {getStatusBadge(mockTestDrive.status)}
-                                        {getReservationTypeBadge(mockTestDrive.reservation_type)}
+                                        {getStatusBadge(testDrive.status)}
+                                        {getReservationTypeBadge(testDrive.reservation_type)}
                                     </div>
                                 </CardTitle>
                             </CardHeader>
@@ -261,7 +277,7 @@ export default function TestDriveView() {
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Reservation ID</p>
                                             <div className="flex items-center space-x-2">
-                                                <p className="text-lg font-semibold">{mockTestDrive.reservation_id}</p>
+                                                <p className="text-lg font-semibold">{testDrive.reservation_id}</p>
                                                 <Button variant="ghost" size="sm">
                                                     <Copy className="h-4 w-4" />
                                                 </Button>
@@ -269,27 +285,27 @@ export default function TestDriveView() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Created</p>
-                                            <p className="text-sm">{mockTestDrive.created_at}</p>
+                                            <p className="text-sm">{testDrive.created_at}</p>
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Duration</p>
-                                            <p className="text-sm">{mockTestDrive.duration_minutes} minutes</p>
+                                            <p className="text-sm">{testDrive.duration_minutes} minutes</p>
                                         </div>
                                     </div>
                                     <div className="space-y-4">
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Scheduled Date & Time</p>
-                                            <p className="text-lg font-semibold">{mockTestDrive.scheduled_date}</p>
-                                            <p className="text-sm text-muted-foreground">{mockTestDrive.scheduled_time}</p>
+                                            <p className="text-lg font-semibold">{testDrive.scheduled_date}</p>
+                                            <p className="text-sm text-muted-foreground">{testDrive.scheduled_time}</p>
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Sales Representative</p>
-                                            <p className="text-sm">{mockTestDrive.sales_rep}</p>
+                                            <p className="text-sm">{testDrive.assigned_user?.name || 'Unassigned'}</p>
                                         </div>
-                                        {mockTestDrive.deposit_amount > 0 && (
+                                        {testDrive.deposit_amount > 0 && (
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Deposit</p>
-                                                <p className="text-sm font-semibold text-green-600">${mockTestDrive.deposit_amount}</p>
+                                                <p className="text-sm font-semibold text-green-600">${testDrive.deposit_amount}</p>
                                             </div>
                                         )}
                                     </div>
@@ -310,12 +326,12 @@ export default function TestDriveView() {
                                     <div className="space-y-4">
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Full Name</p>
-                                            <p className="text-lg font-semibold">{mockTestDrive.customer_name}</p>
+                                            <p className="text-lg font-semibold">{testDrive.customer_name}</p>
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Phone Number</p>
                                             <div className="flex items-center space-x-2">
-                                                <p className="text-sm">{mockTestDrive.customer_phone}</p>
+                                                <p className="text-sm">{testDrive.customer_phone}</p>
                                                 <Button variant="ghost" size="sm">
                                                     <Phone className="h-4 w-4" />
                                                 </Button>
@@ -326,7 +342,7 @@ export default function TestDriveView() {
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Email Address</p>
                                             <div className="flex items-center space-x-2">
-                                                <p className="text-sm">{mockTestDrive.customer_email}</p>
+                                                <p className="text-sm">{testDrive.customer_email}</p>
                                                 <Button variant="ghost" size="sm">
                                                     <Mail className="h-4 w-4" />
                                                 </Button>
@@ -349,12 +365,12 @@ export default function TestDriveView() {
                                 <div className="space-y-4">
                                     <div>
                                         <p className="text-sm font-medium text-muted-foreground">Vehicle</p>
-                                        <p className="text-lg font-semibold">{mockTestDrive.vehicle_details}</p>
+                                        <p className="text-lg font-semibold">{testDrive.vehicle_details}</p>
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-muted-foreground">VIN</p>
                                         <div className="flex items-center space-x-2">
-                                            <p className="text-sm font-mono">{mockTestDrive.vehicle_vin}</p>
+                                            <p className="text-sm font-mono">{testDrive.vehicle_vin}</p>
                                             <Button variant="ghost" size="sm">
                                                 <Copy className="h-4 w-4" />
                                             </Button>
@@ -365,7 +381,7 @@ export default function TestDriveView() {
                         </Card>
 
                         {/* GPS Tracking Data */}
-                        {mockTestDrive.gps_start_coords && (
+                        {testDrive.gps_start_coords && (
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center">
@@ -381,29 +397,29 @@ export default function TestDriveView() {
                                         <div className="space-y-4">
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Start Coordinates</p>
-                                                <p className="text-sm font-mono">{mockTestDrive.gps_start_coords}</p>
+                                                <p className="text-sm font-mono">{testDrive.gps_start_coords}</p>
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">End Coordinates</p>
-                                                <p className="text-sm font-mono">{mockTestDrive.gps_end_coords}</p>
+                                                <p className="text-sm font-mono">{testDrive.gps_end_coords}</p>
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Route Distance</p>
-                                                <p className="text-lg font-semibold text-blue-600">{mockTestDrive.route_distance_km} km</p>
+                                                <p className="text-lg font-semibold text-blue-600">{testDrive.route_distance_km} km</p>
                                             </div>
                                         </div>
                                         <div className="space-y-4">
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Start Time</p>
-                                                <p className="text-sm">{mockTestDrive.gps_start_timestamp}</p>
+                                                <p className="text-sm">{testDrive.gps_start_timestamp}</p>
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">End Time</p>
-                                                <p className="text-sm">{mockTestDrive.gps_end_timestamp}</p>
+                                                <p className="text-sm">{testDrive.gps_end_timestamp}</p>
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Maximum Speed</p>
-                                                <p className="text-lg font-semibold text-orange-600">{mockTestDrive.max_speed_kmh} km/h</p>
+                                                <p className="text-lg font-semibold text-orange-600">{testDrive.max_speed_kmh} km/h</p>
                                             </div>
                                         </div>
                                     </div>
@@ -460,21 +476,21 @@ export default function TestDriveView() {
                             <CardContent className="space-y-3">
                                 <div>
                                     <p className="text-xs text-muted-foreground">Status</p>
-                                    {getESignatureBadge(mockTestDrive.esignature_status)}
+                                    {getESignatureBadge(testDrive.esignature_status)}
                                 </div>
-                                {mockTestDrive.esignature_device && (
+                                {testDrive.esignature_device && (
                                     <div>
                                         <p className="text-xs text-muted-foreground">Device</p>
                                         <div className="flex items-center space-x-1">
                                             <Smartphone className="h-3 w-3" />
-                                            <span className="text-sm">{mockTestDrive.esignature_device}</span>
+                                            <span className="text-sm">{testDrive.esignature_device}</span>
                                         </div>
                                     </div>
                                 )}
-                                {mockTestDrive.esignature_timestamp && (
+                                {testDrive.esignature_timestamp && (
                                     <div>
                                         <p className="text-xs text-muted-foreground">Signed At</p>
-                                        <p className="text-sm">{mockTestDrive.esignature_timestamp}</p>
+                                        <p className="text-sm">{testDrive.esignature_timestamp}</p>
                                     </div>
                                 )}
                                 <Button variant="outline" size="sm" className="w-full">
@@ -496,15 +512,15 @@ export default function TestDriveView() {
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm">Insurance</span>
                                     <div className="flex items-center space-x-1">
-                                        <div className={`w-2 h-2 rounded-full ${mockTestDrive.insurance_verified ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                        <span className="text-xs">{mockTestDrive.insurance_verified ? 'Verified' : 'Not Verified'}</span>
+                                        <div className={`w-2 h-2 rounded-full ${testDrive.insurance_verified ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                        <span className="text-xs">{testDrive.insurance_verified ? 'Verified' : 'Not Verified'}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm">Driver's License</span>
                                     <div className="flex items-center space-x-1">
-                                        <div className={`w-2 h-2 rounded-full ${mockTestDrive.license_verified ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                        <span className="text-xs">{mockTestDrive.license_verified ? 'Verified' : 'Not Verified'}</span>
+                                        <div className={`w-2 h-2 rounded-full ${testDrive.license_verified ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                        <span className="text-xs">{testDrive.license_verified ? 'Verified' : 'Not Verified'}</span>
                                     </div>
                                 </div>
                             </CardContent>
@@ -536,13 +552,13 @@ export default function TestDriveView() {
                         </Card>
 
                         {/* Notes */}
-                        {mockTestDrive.notes && (
+                        {testDrive.notes && (
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="text-sm">Notes</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-sm text-muted-foreground">{mockTestDrive.notes}</p>
+                                    <p className="text-sm text-muted-foreground">{testDrive.notes}</p>
                                 </CardContent>
                             </Card>
                         )}

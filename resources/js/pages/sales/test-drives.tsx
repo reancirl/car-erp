@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,8 +6,76 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Car, Search, Filter, Download, Plus, Eye, Edit, CheckCircle, Clock, MapPin, FileSignature, Calendar, Smartphone, Navigation, User } from 'lucide-react';
+import { Car, Search, Filter, Download, Plus, Eye, Edit, CheckCircle, Clock, MapPin, FileSignature, Calendar, Smartphone, Navigation, User, Trash2 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+import { useState } from 'react';
+
+interface TestDrive {
+    id: number;
+    reservation_id: string;
+    customer_name: string;
+    customer_phone: string;
+    customer_email?: string;
+    vehicle_vin: string;
+    vehicle_details: string;
+    scheduled_date: string;
+    scheduled_time: string;
+    duration_minutes: number;
+    status: string;
+    reservation_type: string;
+    esignature_status: string;
+    esignature_timestamp?: string;
+    esignature_device?: string;
+    gps_start_coords?: string;
+    gps_end_coords?: string;
+    gps_start_timestamp?: string;
+    gps_end_timestamp?: string;
+    route_distance_km?: number;
+    max_speed_kmh?: number;
+    insurance_verified: boolean;
+    license_verified: boolean;
+    deposit_amount: number;
+    assigned_user?: {
+        id: number;
+        name: string;
+    };
+    branch?: {
+        id: number;
+        name: string;
+        code: string;
+    };
+    created_at: string;
+}
+
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
+}
+
+interface Props {
+    testDrives: {
+        data: TestDrive[];
+        links: any[];
+        meta: any;
+    };
+    stats: {
+        total: number;
+        completed: number;
+        walk_in_rate: number;
+        esignature_rate: number;
+    };
+    filters: {
+        search?: string;
+        status?: string;
+        reservation_type?: string;
+        esignature_status?: string;
+        date_range?: string;
+        branch_id?: string;
+        include_deleted?: boolean;
+    };
+    branches?: Branch[] | null;
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -20,126 +88,75 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function TestDrives() {
-    // Mock data for demonstration
-    const mockTestDrives = [
-        {
-            id: 1,
-            reservation_id: 'TD-2025-001',
-            customer_name: 'John Smith',
-            customer_phone: '+1-555-0123',
-            customer_email: 'john.smith@email.com',
-            vehicle_vin: 'JH4KA8260MC123456',
-            vehicle_details: '2024 Honda Civic LX',
-            scheduled_date: '2025-01-14',
-            scheduled_time: '10:00 AM',
-            duration_minutes: 30,
-            sales_rep: 'Sarah Sales Rep',
-            status: 'confirmed',
-            reservation_type: 'scheduled',
-            created_at: '2025-01-13 09:15:00',
-            esignature_status: 'signed',
-            esignature_timestamp: '2025-01-13 09:20:00',
-            esignature_device: 'iPad Pro',
-            gps_start_coords: '40.7128,-74.0060',
-            gps_end_coords: '40.7589,-73.9851',
-            gps_start_timestamp: '2025-01-14 10:00:00',
-            gps_end_timestamp: '2025-01-14 10:30:00',
-            route_distance_km: 12.5,
-            max_speed_kmh: 65,
-            insurance_verified: true,
-            license_verified: true,
-            deposit_amount: 0,
-            notes: 'Customer interested in financing options'
-        },
-        {
-            id: 2,
-            reservation_id: 'TD-2025-002',
-            customer_name: 'Maria Rodriguez',
-            customer_phone: '+1-555-0124',
-            customer_email: 'maria.r@email.com',
-            vehicle_vin: 'WVWZZZ1JZ3W123789',
-            vehicle_details: '2023 Toyota Camry SE',
-            scheduled_date: '2025-01-14',
-            scheduled_time: '2:00 PM',
-            duration_minutes: 45,
-            sales_rep: 'Mike Sales Rep',
-            status: 'pending_signature',
-            reservation_type: 'scheduled',
-            created_at: '2025-01-13 11:30:00',
-            esignature_status: 'pending',
-            esignature_timestamp: null,
-            esignature_device: null,
-            gps_start_coords: null,
-            gps_end_coords: null,
-            gps_start_timestamp: null,
-            gps_end_timestamp: null,
-            route_distance_km: null,
-            max_speed_kmh: null,
-            insurance_verified: true,
-            license_verified: false,
-            deposit_amount: 100,
-            notes: 'Trade-in evaluation needed'
-        },
-        {
-            id: 3,
-            reservation_id: 'TD-2025-003',
-            customer_name: 'Robert Johnson',
-            customer_phone: '+1-555-0125',
-            customer_email: 'robert.j@email.com',
-            vehicle_vin: 'KMHD84LF5EU456123',
-            vehicle_details: '2024 BMW X3 xDrive30i',
-            scheduled_date: '2025-01-13',
-            scheduled_time: '4:30 PM',
-            duration_minutes: 60,
-            sales_rep: 'Lisa Sales Rep',
-            status: 'completed',
-            reservation_type: 'walk_in',
-            created_at: '2025-01-13 16:25:00',
-            esignature_status: 'signed',
-            esignature_timestamp: '2025-01-13 16:30:00',
-            esignature_device: 'Samsung Tablet',
-            gps_start_coords: '41.8781,-87.6298',
-            gps_end_coords: '41.9028,-87.6317',
-            gps_start_timestamp: '2025-01-13 16:35:00',
-            gps_end_timestamp: '2025-01-13 17:35:00',
-            route_distance_km: 18.2,
-            max_speed_kmh: 72,
-            insurance_verified: true,
-            license_verified: true,
-            deposit_amount: 0,
-            notes: 'Walk-in customer, very interested in premium features'
-        },
-        {
-            id: 4,
-            reservation_id: 'TD-2025-004',
-            customer_name: 'Emily Davis',
-            customer_phone: '+1-555-0126',
-            customer_email: 'emily.davis@company.com',
-            vehicle_vin: 'JF1VA1C60M9876543',
-            vehicle_details: '2024 Hyundai Elantra SEL',
-            scheduled_date: '2025-01-15',
-            scheduled_time: '11:30 AM',
-            duration_minutes: 30,
-            sales_rep: 'Tom Sales Rep',
-            status: 'cancelled',
-            reservation_type: 'scheduled',
-            created_at: '2025-01-12 14:45:00',
-            esignature_status: 'not_required',
-            esignature_timestamp: null,
-            esignature_device: null,
-            gps_start_coords: null,
-            gps_end_coords: null,
-            gps_start_timestamp: null,
-            gps_end_timestamp: null,
-            route_distance_km: null,
-            max_speed_kmh: null,
-            insurance_verified: false,
-            license_verified: false,
-            deposit_amount: 0,
-            notes: 'Customer cancelled due to scheduling conflict'
+export default function TestDrives({ testDrives, stats, filters, branches }: Props) {
+    const [search, setSearch] = useState(filters.search || '');
+    const [status, setStatus] = useState(filters.status || '');
+    const [reservationType, setReservationType] = useState(filters.reservation_type || '');
+    const [dateRange, setDateRange] = useState(filters.date_range || '');
+
+    const handleSearch = (value: string) => {
+        setSearch(value);
+        router.get('/sales/test-drives', { 
+            search: value, 
+            status, 
+            reservation_type: reservationType,
+            date_range: dateRange 
+        }, { 
+            preserveState: true, 
+            replace: true 
+        });
+    };
+
+    const handleStatusFilter = (value: string) => {
+        setStatus(value);
+        router.get('/sales/test-drives', { 
+            search, 
+            status: value === 'all' ? '' : value,
+            reservation_type: reservationType,
+            date_range: dateRange 
+        }, { 
+            preserveState: true, 
+            replace: true 
+        });
+    };
+
+    const handleTypeFilter = (value: string) => {
+        setReservationType(value);
+        router.get('/sales/test-drives', { 
+            search, 
+            status,
+            reservation_type: value === 'all' ? '' : value,
+            date_range: dateRange 
+        }, { 
+            preserveState: true, 
+            replace: true 
+        });
+    };
+
+    const handleDateRangeFilter = (value: string) => {
+        setDateRange(value);
+        router.get('/sales/test-drives', { 
+            search, 
+            status,
+            reservation_type: reservationType,
+            date_range: value === 'all' ? '' : value 
+        }, { 
+            preserveState: true, 
+            replace: true 
+        });
+    };
+
+    const handleDelete = (id: number, reservationId: string) => {
+        if (confirm(`Are you sure you want to delete test drive ${reservationId}?`)) {
+            router.delete(`/sales/test-drives/${id}`, {
+                preserveScroll: true,
+            });
         }
-    ];
+    };
+
+    const handleExport = () => {
+        window.location.href = `/sales/test-drives-export?${new URLSearchParams(filters as any).toString()}`;
+    };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -240,7 +257,7 @@ export default function TestDrives() {
                             <Calendar className="h-4 w-4 mr-2" />
                             Calendar View
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={handleExport}>
                             <Download className="h-4 w-4 mr-2" />
                             Export Report
                         </Button>
@@ -260,8 +277,8 @@ export default function TestDrives() {
                             <CardTitle className="text-sm font-medium">Total Reservations</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">4</div>
-                            <p className="text-xs text-muted-foreground">This week</p>
+                            <div className="text-2xl font-bold">{stats.total}</div>
+                            <p className="text-xs text-muted-foreground">Total reservations</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -269,7 +286,7 @@ export default function TestDrives() {
                             <CardTitle className="text-sm font-medium">Completed Drives</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">1</div>
+                            <div className="text-2xl font-bold">{stats.completed}</div>
                             <p className="text-xs text-muted-foreground">Successfully completed</p>
                         </CardContent>
                     </Card>
@@ -278,7 +295,7 @@ export default function TestDrives() {
                             <CardTitle className="text-sm font-medium">Walk-in Rate</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">25%</div>
+                            <div className="text-2xl font-bold">{stats.walk_in_rate}%</div>
                             <p className="text-xs text-muted-foreground">Unscheduled visits</p>
                         </CardContent>
                     </Card>
@@ -287,7 +304,7 @@ export default function TestDrives() {
                             <CardTitle className="text-sm font-medium">E-Signature Rate</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">75%</div>
+                            <div className="text-2xl font-bold">{stats.esignature_rate}%</div>
                             <p className="text-xs text-muted-foreground">Digital signatures</p>
                         </CardContent>
                     </Card>
@@ -304,22 +321,29 @@ export default function TestDrives() {
                             <div className="flex-1">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input placeholder="Search by customer name, phone, or reservation ID..." className="pl-10" />
+                                    <Input 
+                                        placeholder="Search by customer name, phone, or reservation ID..." 
+                                        className="pl-10"
+                                        value={search}
+                                        onChange={(e) => handleSearch(e.target.value)}
+                                    />
                                 </div>
                             </div>
-                            <Select>
+                            <Select value={status || 'all'} onValueChange={handleStatusFilter}>
                                 <SelectTrigger className="w-full md:w-[180px]">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="confirmed">Confirmed</SelectItem>
                                     <SelectItem value="pending_signature">Pending Signature</SelectItem>
+                                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                                    <SelectItem value="in_progress">In Progress</SelectItem>
                                     <SelectItem value="completed">Completed</SelectItem>
                                     <SelectItem value="cancelled">Cancelled</SelectItem>
+                                    <SelectItem value="no_show">No Show</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Select>
+                            <Select value={reservationType || 'all'} onValueChange={handleTypeFilter}>
                                 <SelectTrigger className="w-full md:w-[180px]">
                                     <SelectValue placeholder="Type" />
                                 </SelectTrigger>
@@ -329,21 +353,17 @@ export default function TestDrives() {
                                     <SelectItem value="walk_in">Walk-in</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Select>
+                            <Select value={dateRange || 'all'} onValueChange={handleDateRangeFilter}>
                                 <SelectTrigger className="w-full md:w-[180px]">
                                     <SelectValue placeholder="Date Range" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value="all">All Time</SelectItem>
                                     <SelectItem value="today">Today</SelectItem>
                                     <SelectItem value="this_week">This Week</SelectItem>
                                     <SelectItem value="this_month">This Month</SelectItem>
-                                    <SelectItem value="custom">Custom Range</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button variant="outline">
-                                <Filter className="h-4 w-4 mr-2" />
-                                Apply
-                            </Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -370,44 +390,55 @@ export default function TestDrives() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {mockTestDrives.map((drive) => (
-                                    <TableRow key={drive.id}>
-                                        <TableCell className="font-medium">
-                                            <div>
-                                                <div className="font-medium">{drive.reservation_id}</div>
-                                                <div className="text-xs text-muted-foreground">{drive.created_at}</div>
-                                                {getReservationTypeBadge(drive.reservation_type)}
-                                                {drive.deposit_amount > 0 && (
-                                                    <Badge variant="outline" className="text-xs mt-1 bg-green-100 text-green-800">
-                                                        Deposit: ${drive.deposit_amount}
-                                                    </Badge>
-                                                )}
-                                            </div>
+                                {testDrives.data.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                                            No test drives found. <Link href="/sales/test-drives/create" className="text-primary hover:underline">Create your first reservation</Link>
                                         </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <div className="font-medium">{drive.customer_name}</div>
-                                                <div className="text-xs text-muted-foreground">{drive.customer_phone}</div>
-                                                <div className="text-xs text-muted-foreground">{drive.customer_email}</div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <div className="font-medium">{drive.vehicle_details}</div>
-                                                <div className="text-xs text-muted-foreground font-mono">VIN: {drive.vehicle_vin.slice(-6)}</div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <div className="font-medium">{drive.scheduled_date}</div>
-                                                <div className="text-sm">{drive.scheduled_time}</div>
-                                                <div className="text-xs text-muted-foreground">{drive.duration_minutes} minutes</div>
-                                                <div className="flex items-center space-x-1 mt-1">
-                                                    <User className="h-3 w-3" />
-                                                    <span className="text-xs">{drive.sales_rep}</span>
+                                    </TableRow>
+                                ) : (
+                                    testDrives.data.map((drive) => (
+                                        <TableRow key={drive.id}>
+                                            <TableCell className="font-medium">
+                                                <div>
+                                                    <div className="font-medium">{drive.reservation_id}</div>
+                                                    <div className="text-xs text-muted-foreground">{drive.created_at}</div>
+                                                    {getReservationTypeBadge(drive.reservation_type)}
+                                                    {drive.deposit_amount > 0 && (
+                                                        <Badge variant="outline" className="text-xs mt-1 bg-green-100 text-green-800">
+                                                            Deposit: ${drive.deposit_amount}
+                                                        </Badge>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        </TableCell>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    <div className="font-medium">{drive.customer_name}</div>
+                                                    <div className="text-xs text-muted-foreground">{drive.customer_phone}</div>
+                                                    {drive.customer_email && (
+                                                        <div className="text-xs text-muted-foreground">{drive.customer_email}</div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    <div className="font-medium">{drive.vehicle_details}</div>
+                                                    <div className="text-xs text-muted-foreground font-mono">VIN: {drive.vehicle_vin.slice(-6)}</div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    <div className="font-medium">{drive.scheduled_date}</div>
+                                                    <div className="text-sm">{drive.scheduled_time}</div>
+                                                    <div className="text-xs text-muted-foreground">{drive.duration_minutes} minutes</div>
+                                                    {drive.assigned_user && (
+                                                        <div className="flex items-center space-x-1 mt-1">
+                                                            <User className="h-3 w-3" />
+                                                            <span className="text-xs">{drive.assigned_user.name}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
                                         <TableCell>
                                             <div>
                                                 {getESignatureBadge(drive.esignature_status)}
@@ -472,120 +503,69 @@ export default function TestDrives() {
                                                         <Edit className="h-4 w-4" />
                                                     </Button>
                                                 </Link>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    onClick={() => handleDelete(drive.id, drive.reservation_id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                                </Button>
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                )))}
                             </TableBody>
                         </Table>
                     </CardContent>
                 </Card>
 
-                {/* E-Signature & GPS Features */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>E-Signature Capture</CardTitle>
-                            <CardDescription>Mobile and tablet signature collection</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">iPad Pro Integration</div>
-                                        <div className="text-sm text-muted-foreground">High-resolution signature capture</div>
-                                    </div>
-                                    <Badge variant="default" className="bg-green-100 text-green-800">Active</Badge>
-                                </div>
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Android Tablet Support</div>
-                                        <div className="text-sm text-muted-foreground">Samsung Galaxy Tab compatibility</div>
-                                    </div>
-                                    <Badge variant="default" className="bg-green-100 text-green-800">Active</Badge>
-                                </div>
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Timestamp Verification</div>
-                                        <div className="text-sm text-muted-foreground">Cryptographic signature timestamps</div>
-                                    </div>
-                                    <Badge variant="default" className="bg-blue-100 text-blue-800">Enabled</Badge>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>GPS Tracking System</CardTitle>
-                            <CardDescription>Raw coordinate logging and route analysis</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Start/End Coordinates</div>
-                                        <div className="text-sm text-muted-foreground">Precise GPS location capture</div>
-                                    </div>
-                                    <Badge variant="default" className="bg-green-100 text-green-800">Logging</Badge>
-                                </div>
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Route Distance</div>
-                                        <div className="text-sm text-muted-foreground">Total kilometers traveled</div>
-                                    </div>
-                                    <Badge variant="default" className="bg-blue-100 text-blue-800">Calculated</Badge>
-                                </div>
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Speed Monitoring</div>
-                                        <div className="text-sm text-muted-foreground">Maximum speed tracking</div>
-                                    </div>
-                                    <Badge variant="outline" className="bg-orange-100 text-orange-800">Safety Alert</Badge>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
                 {/* Availability Calendar & Walk-in Management */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Availability Calendar & Walk-in Management</CardTitle>
-                        <CardDescription>Booking system with walk-in tagging and real-time availability</CardDescription>
+                        <CardTitle>Quick Stats</CardTitle>
+                        <CardDescription>Real-time reservation overview</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="p-4 border rounded-lg">
                                 <div className="flex items-center space-x-2 mb-2">
                                     <Calendar className="h-5 w-5 text-blue-600" />
-                                    <h4 className="font-medium">Today's Schedule</h4>
+                                    <h4 className="font-medium">Today's Reservations</h4>
                                 </div>
-                                <p className="text-sm text-muted-foreground mb-2">Available time slots</p>
-                                <div className="space-y-1">
-                                    <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">9:00 AM - Available</div>
-                                    <div className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">10:00 AM - Booked</div>
-                                    <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">11:30 AM - Available</div>
-                                    <div className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">2:00 PM - Booked</div>
+                                <p className="text-sm text-muted-foreground mb-2">Scheduled for today</p>
+                                <div className="text-2xl font-bold">
+                                    {testDrives.data.filter(drive => drive.scheduled_date === new Date().toISOString().split('T')[0]).length}
                                 </div>
+                                <p className="text-xs text-muted-foreground">
+                                    {testDrives.data.filter(drive => 
+                                        drive.scheduled_date === new Date().toISOString().split('T')[0] && 
+                                        drive.status === 'confirmed'
+                                    ).length} confirmed
+                                </p>
                             </div>
                             <div className="p-4 border rounded-lg">
                                 <div className="flex items-center space-x-2 mb-2">
                                     <MapPin className="h-5 w-5 text-purple-600" />
-                                    <h4 className="font-medium">Walk-in Queue</h4>
+                                    <h4 className="font-medium">Walk-in Reservations</h4>
                                 </div>
-                                <p className="text-sm text-muted-foreground mb-2">Current walk-in customers</p>
-                                <div className="text-2xl font-bold">0</div>
-                                <p className="text-xs text-muted-foreground">Waiting for test drive</p>
+                                <p className="text-sm text-muted-foreground mb-2">Total walk-in type</p>
+                                <div className="text-2xl font-bold">
+                                    {testDrives.data.filter(drive => drive.reservation_type === 'walk_in').length}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    {Math.round((testDrives.data.filter(drive => drive.reservation_type === 'walk_in').length / (testDrives.data.length || 1)) * 100)}% of total
+                                </p>
                             </div>
                             <div className="p-4 border rounded-lg">
                                 <div className="flex items-center space-x-2 mb-2">
-                                    <Car className="h-5 w-5 text-green-600" />
-                                    <h4 className="font-medium">Vehicle Availability</h4>
+                                    <CheckCircle className="h-5 w-5 text-green-600" />
+                                    <h4 className="font-medium">Pending Signatures</h4>
                                 </div>
-                                <p className="text-sm text-muted-foreground mb-2">Test drive fleet status</p>
-                                <div className="text-2xl font-bold">8/10</div>
-                                <p className="text-xs text-muted-foreground">Vehicles available</p>
+                                <p className="text-sm text-muted-foreground mb-2">Awaiting e-signature</p>
+                                <div className="text-2xl font-bold">
+                                    {testDrives.data.filter(drive => drive.esignature_status === 'pending').length}
+                                </div>
+                                <p className="text-xs text-muted-foreground">Require attention</p>
                             </div>
                         </div>
                     </CardContent>
