@@ -415,4 +415,90 @@ class TestDriveController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * Save e-signature for test drive
+     */
+    public function saveSignature(Request $request, TestDrive $testDrive): RedirectResponse
+    {
+        // Validate signature data
+        $validated = $request->validate([
+            'esignature_data' => 'required|string',
+            'esignature_device' => 'required|string|max:255',
+            'esignature_status' => 'required|in:pending,signed,not_required',
+            'customer_acknowledgment' => 'required|string|max:1000',
+        ]);
+
+        // Update test drive with signature data
+        $testDrive->update([
+            'esignature_data' => $validated['esignature_data'],
+            'esignature_device' => $validated['esignature_device'],
+            'esignature_status' => $validated['esignature_status'],
+            'esignature_timestamp' => now(),
+        ]);
+
+        // Update status to confirmed if it was pending_signature
+        if ($testDrive->status === 'pending_signature') {
+            $testDrive->update(['status' => 'confirmed']);
+        }
+
+        // Log signature capture activity
+        $this->logActivity(
+            action: 'sales.signature_captured',
+            module: 'Sales',
+            subject: $testDrive,
+            description: "E-signature captured for test drive {$testDrive->reservation_id}",
+            properties: [
+                'reservation_id' => $testDrive->reservation_id,
+                'customer_name' => $testDrive->customer_name,
+                'device' => $validated['esignature_device'],
+                'acknowledgment' => $validated['customer_acknowledgment'],
+            ]
+        );
+
+        return redirect()->back()->with('success', 'E-signature captured successfully!');
+    }
+
+    /**
+     * Display calendar view of test drives
+     */
+    public function calendar(Request $request): Response
+    {
+        $user = $request->user();
+
+        // Get all test drives for calendar view
+        $testDrives = TestDrive::with(['branch', 'assignedUser'])
+            ->when(!$user->hasRole('admin'), function ($q) use ($user) {
+                // Non-admin: Only see test drives from their branch
+                $q->where('branch_id', $user->branch_id);
+            })
+            ->when($request->branch_id && $user->hasRole('admin'), function ($q) use ($request) {
+                // Admin: Can filter by branch
+                $q->where('branch_id', $request->branch_id);
+            })
+            ->where('scheduled_date', '>=', now()->subMonths(1)->format('Y-m-d'))
+            ->where('scheduled_date', '<=', now()->addMonths(2)->format('Y-m-d'))
+            ->orderBy('scheduled_date')
+            ->orderBy('scheduled_time')
+            ->get();
+
+        // Get branches for admin filter
+        $branches = null;
+        if ($user->hasRole('admin')) {
+            $branches = Branch::select('id', 'name', 'code')
+                ->where('status', 'active')
+                ->orderBy('name')
+                ->get();
+        }
+
+        return Inertia::render('sales/test-drive-calendar', [
+            'testDrives' => $testDrives,
+            'currentDate' => $request->date ?? now()->format('Y-m-d'),
+            'view' => $request->view ?? 'month',
+            'branches' => $branches,
+            'filters' => [
+                'branch_id' => $request->branch_id,
+            ],
+        ]);
+    }
 }

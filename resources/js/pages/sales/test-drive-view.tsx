@@ -1,4 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import {
     ExternalLink
 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+import ESignatureModal, { type SignatureData } from '@/components/e-signature-modal';
 
 interface TestDrive {
     id: number;
@@ -88,6 +90,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function TestDriveView({ testDrive }: Props) {
+    const [showSignatureModal, setShowSignatureModal] = useState(false);
     const activityLog = [
         {
             id: 1,
@@ -221,6 +224,21 @@ export default function TestDriveView({ testDrive }: Props) {
         }
     };
 
+    const handleSignatureSave = (signatureData: SignatureData) => {
+        // Submit signature data to backend
+        router.post(`/sales/test-drives/${testDrive.id}/signature`, {
+            esignature_data: signatureData.signature_data,
+            esignature_device: signatureData.device_info,
+            esignature_status: 'signed',
+            customer_acknowledgment: signatureData.customer_acknowledgment,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                // Signature saved successfully
+            },
+        });
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Test Drive Details - ${testDrive.reservation_id}`} />
@@ -241,10 +259,6 @@ export default function TestDriveView({ testDrive }: Props) {
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export Report
-                        </Button>
                         <Link href={`/sales/test-drives/${testDrive.id}/edit`}>
                             <Button size="sm">
                                 <Edit className="h-4 w-4 mr-2" />
@@ -493,10 +507,22 @@ export default function TestDriveView({ testDrive }: Props) {
                                         <p className="text-sm">{testDrive.esignature_timestamp}</p>
                                     </div>
                                 )}
-                                <Button variant="outline" size="sm" className="w-full">
-                                    <Download className="h-4 w-4 mr-2" />
-                                    Download Signature
-                                </Button>
+                                {testDrive.esignature_status === 'pending' ? (
+                                    <Button 
+                                        variant="default" 
+                                        size="sm" 
+                                        className="w-full"
+                                        onClick={() => setShowSignatureModal(true)}
+                                    >
+                                        <FileSignature className="h-4 w-4 mr-2" />
+                                        Capture Signature
+                                    </Button>
+                                ) : testDrive.esignature_status === 'signed' ? (
+                                    <Button variant="outline" size="sm" className="w-full">
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Download Signature
+                                    </Button>
+                                ) : null}
                             </CardContent>
                         </Card>
 
@@ -585,6 +611,15 @@ export default function TestDriveView({ testDrive }: Props) {
                         </Card>
                     </div>
                 </div>
+
+                {/* E-Signature Modal */}
+                <ESignatureModal
+                    open={showSignatureModal}
+                    onClose={() => setShowSignatureModal(false)}
+                    onSave={handleSignatureSave}
+                    customerName={testDrive.customer_name}
+                    reservationId={testDrive.reservation_id}
+                />
             </div>
         </AppLayout>
     );

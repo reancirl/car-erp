@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Car, Search, Filter, Download, Plus, Eye, Edit, CheckCircle, Clock, MapPin, FileSignature, Calendar, Smartphone, Navigation, User, Trash2 } from 'lucide-react';
+import { Car, Search, Filter, Plus, Eye, Edit, CheckCircle, Clock, MapPin, FileSignature, Calendar, Smartphone, Navigation, User, Trash2 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 
@@ -93,6 +93,7 @@ export default function TestDrives({ testDrives, stats, filters, branches }: Pro
     const [status, setStatus] = useState(filters.status || '');
     const [reservationType, setReservationType] = useState(filters.reservation_type || '');
     const [dateRange, setDateRange] = useState(filters.date_range || '');
+    const [branchId, setBranchId] = useState(filters.branch_id || '');
 
     const handleSearch = (value: string) => {
         setSearch(value);
@@ -100,7 +101,8 @@ export default function TestDrives({ testDrives, stats, filters, branches }: Pro
             search: value, 
             status, 
             reservation_type: reservationType,
-            date_range: dateRange 
+            date_range: dateRange,
+            branch_id: branchId 
         }, { 
             preserveState: true, 
             replace: true 
@@ -113,7 +115,8 @@ export default function TestDrives({ testDrives, stats, filters, branches }: Pro
             search, 
             status: value === 'all' ? '' : value,
             reservation_type: reservationType,
-            date_range: dateRange 
+            date_range: dateRange,
+            branch_id: branchId 
         }, { 
             preserveState: true, 
             replace: true 
@@ -126,7 +129,8 @@ export default function TestDrives({ testDrives, stats, filters, branches }: Pro
             search, 
             status,
             reservation_type: value === 'all' ? '' : value,
-            date_range: dateRange 
+            date_range: dateRange,
+            branch_id: branchId 
         }, { 
             preserveState: true, 
             replace: true 
@@ -139,7 +143,22 @@ export default function TestDrives({ testDrives, stats, filters, branches }: Pro
             search, 
             status,
             reservation_type: reservationType,
-            date_range: value === 'all' ? '' : value 
+            date_range: value === 'all' ? '' : value,
+            branch_id: branchId 
+        }, { 
+            preserveState: true, 
+            replace: true 
+        });
+    };
+
+    const handleBranchFilter = (value: string) => {
+        setBranchId(value);
+        router.get('/sales/test-drives', { 
+            search, 
+            status,
+            reservation_type: reservationType,
+            date_range: dateRange,
+            branch_id: value === 'all' ? '' : value 
         }, { 
             preserveState: true, 
             replace: true 
@@ -154,9 +173,6 @@ export default function TestDrives({ testDrives, stats, filters, branches }: Pro
         }
     };
 
-    const handleExport = () => {
-        window.location.href = `/sales/test-drives-export?${new URLSearchParams(filters as any).toString()}`;
-    };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -253,14 +269,12 @@ export default function TestDrives({ testDrives, stats, filters, branches }: Pro
                         <h1 className="text-2xl font-bold">Test Drives & Reservations</h1>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            Calendar View
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={handleExport}>
-                            <Download className="h-4 w-4 mr-2" />
-                            Export Report
-                        </Button>
+                        <Link href="/sales/test-drives/calendar">
+                            <Button variant="outline" size="sm">
+                                <Calendar className="h-4 w-4 mr-2" />
+                                Calendar View
+                            </Button>
+                        </Link>
                         <Link href="/sales/test-drives/create">
                             <Button size="sm">
                                 <Plus className="h-4 w-4 mr-2" />
@@ -364,6 +378,21 @@ export default function TestDrives({ testDrives, stats, filters, branches }: Pro
                                     <SelectItem value="this_month">This Month</SelectItem>
                                 </SelectContent>
                             </Select>
+                            {branches && branches.length > 0 && (
+                                <Select value={branchId || 'all'} onValueChange={handleBranchFilter}>
+                                    <SelectTrigger className="w-full md:w-[200px]">
+                                        <SelectValue placeholder="Branch" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Branches</SelectItem>
+                                        {branches.map((branch) => (
+                                            <SelectItem key={branch.id} value={branch.id.toString()}>
+                                                {branch.name} ({branch.code})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
