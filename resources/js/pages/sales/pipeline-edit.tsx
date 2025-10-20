@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,27 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { 
-    ArrowLeft, 
-    TrendingUp, 
-    Save, 
-    User,
-    Phone,
-    Mail,
-    Calendar,
-    Clock,
-    DollarSign,
-    Target,
-    FileText,
-    X,
-    CheckCircle,
-    AlertTriangle,
-    ArrowRight,
-    TrendingDown
-} from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowLeft, Save, User, TrendingUp, AlertCircle } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
-import { useState } from 'react';
+import { FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -39,471 +22,451 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
     {
         title: 'Edit Opportunity',
-        href: '/sales/pipeline/1/edit',
+        href: '#',
     },
 ];
 
-export default function PipelineEdit() {
-    const mockPipelineEntry = {
-        id: 1,
-        customer_name: 'John Smith',
-        lead_id: 'LD-2025-001',
-        current_stage: 'quote_sent',
-        previous_stage: 'qualified',
-        stage_entry_timestamp: '2025-01-13 14:30:00',
-        stage_duration_hours: 5.5,
-        sales_rep: 'Sarah Sales Rep',
-        vehicle_interest: '2024 Honda Civic',
-        quote_amount: 28500,
-        probability: 78,
-        next_action: 'Follow up on quote',
-        next_action_due: '2025-01-14 10:00:00',
-        auto_logged_events: [
-            { event: 'Lead Created', timestamp: '2025-01-13 09:15:00', system: 'Lead Management' },
-            { event: 'Lead Qualified', timestamp: '2025-01-13 09:45:00', system: 'CRM Auto-Scoring' },
-            { event: 'Quote Generated', timestamp: '2025-01-13 14:30:00', system: 'Pricing Engine' }
-        ],
-        manual_notes: 2,
-        attachments: 1,
-        customer_phone: '+1-555-0123',
-        customer_email: 'john.smith@email.com',
-        created_at: '2025-01-13 09:15:00'
+interface Pipeline {
+    id: number;
+    pipeline_id: string;
+    customer_name: string;
+    customer_phone: string;
+    customer_email: string | null;
+    sales_rep_id: number | null;
+    vehicle_interest: string | null;
+    vehicle_year: string | null;
+    vehicle_make: string | null;
+    vehicle_model: string | null;
+    quote_amount: number | null;
+    probability: number;
+    current_stage: string;
+    priority: string;
+    next_action: string | null;
+    next_action_due: string | null;
+    auto_progression_enabled: boolean;
+    auto_loss_rule_enabled: boolean;
+    follow_up_frequency: string;
+    notes: string | null;
+    branch: {
+        id: number;
+        name: string;
+        code: string;
     };
+    sales_rep: {
+        id: number;
+        name: string;
+    } | null;
+}
 
-    const [selectedStage, setSelectedStage] = useState(mockPipelineEntry.current_stage);
-    const [selectedProbability, setSelectedProbability] = useState(mockPipelineEntry.probability);
-    const [selectedSalesRep, setSelectedSalesRep] = useState('1');
+interface SalesRep {
+    id: number;
+    name: string;
+}
 
-    const stages = [
-        { value: 'lead', label: 'Lead', description: 'Initial lead capture', progress: 16 },
-        { value: 'qualified', label: 'Qualified', description: 'Lead meets criteria', progress: 33 },
-        { value: 'quote_sent', label: 'Quote Sent', description: 'Pricing provided', progress: 50 },
-        { value: 'test_drive_scheduled', label: 'Test Drive Scheduled', description: 'Appointment booked', progress: 66 },
-        { value: 'test_drive_completed', label: 'Test Drive Completed', description: 'Vehicle tested', progress: 83 },
-        { value: 'reservation_made', label: 'Reservation Made', description: 'Purchase commitment', progress: 100 },
-        { value: 'lost', label: 'Lost', description: 'Opportunity closed', progress: 0 },
-    ];
+interface Props {
+    pipeline: Pipeline;
+    salesReps: SalesRep[];
+}
 
-    const salesReps = [
-        { id: '1', name: 'Sarah Sales Rep', specialties: ['Honda', 'Toyota'], performance: 'High' },
-        { id: '2', name: 'Mike Sales Rep', specialties: ['BMW', 'Mercedes'], performance: 'Medium' },
-        { id: '3', name: 'Lisa Sales Rep', specialties: ['Hyundai', 'Kia'], performance: 'High' },
-        { id: '4', name: 'Tom Sales Rep', specialties: ['Ford', 'Chevrolet'], performance: 'Medium' },
-    ];
+export default function PipelineEdit({ pipeline, salesReps }: Props) {
+    const { data, setData, put, processing, errors } = useForm({
+        customer_name: pipeline.customer_name || '',
+        customer_phone: pipeline.customer_phone || '',
+        customer_email: pipeline.customer_email || '',
+        sales_rep_id: pipeline.sales_rep_id?.toString() || '',
+        vehicle_interest: pipeline.vehicle_interest || '',
+        vehicle_year: pipeline.vehicle_year || '',
+        vehicle_make: pipeline.vehicle_make || '',
+        vehicle_model: pipeline.vehicle_model || '',
+        quote_amount: pipeline.quote_amount?.toString() || '',
+        probability: pipeline.probability || 50,
+        current_stage: pipeline.current_stage || 'lead',
+        priority: pipeline.priority || 'medium',
+        next_action: pipeline.next_action || '',
+        next_action_due: pipeline.next_action_due ? pipeline.next_action_due.slice(0, 16) : '',
+        auto_progression_enabled: pipeline.auto_progression_enabled ?? true,
+        auto_loss_rule_enabled: pipeline.auto_loss_rule_enabled ?? true,
+        follow_up_frequency: pipeline.follow_up_frequency || 'weekly',
+        notes: pipeline.notes || '',
+    });
 
-    const getStageBadge = (stage: string) => {
-        const colors = {
-            lead: 'bg-blue-100 text-blue-800',
-            qualified: 'bg-green-100 text-green-800',
-            quote_sent: 'bg-yellow-100 text-yellow-800',
-            test_drive_scheduled: 'bg-purple-100 text-purple-800',
-            test_drive_completed: 'bg-indigo-100 text-indigo-800',
-            reservation_made: 'bg-green-100 text-green-800',
-            lost: 'bg-red-100 text-red-800',
-        };
-        return <Badge className={colors[stage as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>{stage.replace('_', ' ')}</Badge>;
-    };
-
-    const getProbabilityBadge = (probability: number) => {
-        if (probability >= 80) {
-            return <Badge className="bg-green-100 text-green-800">High ({probability}%)</Badge>;
-        } else if (probability >= 50) {
-            return <Badge className="bg-yellow-100 text-yellow-800">Medium ({probability}%)</Badge>;
-        } else if (probability > 0) {
-            return <Badge className="bg-red-100 text-red-800">Low ({probability}%)</Badge>;
-        } else {
-            return <Badge className="bg-gray-100 text-gray-800">Lost (0%)</Badge>;
-        }
-    };
-
-    const getStageProgress = (stage: string) => {
-        const stageData = stages.find(s => s.value === stage);
-        return stageData ? stageData.progress : 0;
+    const handleSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        put(`/sales/pipeline/${pipeline.id}`);
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Edit Pipeline - ${mockPipelineEntry.lead_id}`} />
+            <Head title={`Edit Pipeline - ${pipeline.pipeline_id}`} />
             
-            <div className="space-y-6 p-6">
+            <form onSubmit={handleSubmit} className="space-y-6 p-6">
+                {/* Validation Error Banner */}
+                {Object.keys(errors).length > 0 && (
+                    <Card className="border-red-200 bg-red-50">
+                        <CardContent className="pt-6">
+                            <div className="flex items-start space-x-3">
+                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-red-900">Validation Error</h3>
+                                    <p className="text-sm text-red-800 mt-1">
+                                        Please correct the following errors before submitting:
+                                    </p>
+                                    <ul className="list-disc list-inside text-sm text-red-700 mt-2 space-y-1">
+                                        {Object.entries(errors).map(([field, message]) => (
+                                            <li key={field}>
+                                                <strong className="capitalize">{field.replace(/_/g, ' ')}</strong>: {message}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         <Link href="/sales/pipeline">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" type="button">
                                 <ArrowLeft className="h-4 w-4 mr-2" />
-                                Back to Pipeline
+                                Back
                             </Button>
                         </Link>
                         <div>
-                            <h1 className="text-2xl font-bold">Edit Pipeline Opportunity</h1>
-                            <p className="text-muted-foreground">Lead ID: {mockPipelineEntry.lead_id}</p>
+                            <h1 className="text-2xl font-bold flex items-center">
+                                <TrendingUp className="h-6 w-6 mr-2" />
+                                Edit Pipeline - {pipeline.pipeline_id}
+                            </h1>
+                            <p className="text-muted-foreground">Update pipeline opportunity details</p>
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline">
-                            <X className="h-4 w-4 mr-2" />
-                            Cancel
-                        </Button>
-                        <Button>
+                        <Link href="/sales/pipeline">
+                            <Button variant="outline" type="button">
+                                Cancel
+                            </Button>
+                        </Link>
+                        <Button type="submit" disabled={processing}>
                             <Save className="h-4 w-4 mr-2" />
-                            Save Changes
+                            {processing ? 'Updating...' : 'Update Opportunity'}
                         </Button>
                     </div>
                 </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Form */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Opportunity Details */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <TrendingUp className="h-5 w-5 mr-2" />
-                                    Opportunity Details
-                                </CardTitle>
-                                <CardDescription>
-                                    Basic opportunity information and identification
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="lead-id">Lead ID</Label>
-                                        <Input 
-                                            id="lead-id" 
-                                            value={mockPipelineEntry.lead_id}
-                                            disabled
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="created-date">Created Date</Label>
-                                        <Input 
-                                            id="created-date" 
-                                            value={mockPipelineEntry.created_at.split(' ')[0]}
-                                            disabled
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="current-stage">Current Stage</Label>
-                                        <Select value={selectedStage} onValueChange={setSelectedStage}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select stage" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {stages.map((stage) => (
-                                                    <SelectItem key={stage.value} value={stage.value}>
-                                                        <div>
-                                                            <div className="font-medium">{stage.label}</div>
-                                                            <div className="text-xs text-muted-foreground">{stage.description}</div>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="probability">Win Probability (%)</Label>
-                                        <Input 
-                                            id="probability" 
-                                            type="number"
-                                            min="0"
-                                            max="100"
-                                            value={selectedProbability}
-                                            onChange={(e) => setSelectedProbability(parseInt(e.target.value) || 0)}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Customer Information */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <User className="h-5 w-5 mr-2" />
-                                    Customer Information
-                                </CardTitle>
-                                <CardDescription>
-                                    Customer contact and identification details
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
+                    {/* Customer Information */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center">
+                                <User className="h-5 w-5 mr-2" />
+                                Customer Information
+                            </CardTitle>
+                            <CardDescription>Basic contact details for the opportunity</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="customer-name">Customer Name</Label>
-                                    <Input 
-                                        id="customer-name" 
-                                        defaultValue={mockPipelineEntry.customer_name}
+                                    <Label htmlFor="customer_name">Customer Name *</Label>
+                                    <Input
+                                        id="customer_name"
+                                        value={data.customer_name}
+                                        onChange={(e) => setData('customer_name', e.target.value)}
+                                        placeholder="Enter customer name"
+                                    />
+                                    {errors.customer_name && (
+                                        <p className="text-sm text-red-600 flex items-center">
+                                            <AlertCircle className="h-4 w-4 mr-1" />
+                                            {errors.customer_name}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="customer_phone">Phone Number *</Label>
+                                    <Input
+                                        id="customer_phone"
+                                        value={data.customer_phone}
+                                        onChange={(e) => setData('customer_phone', e.target.value)}
+                                        placeholder="e.g., +63-917-123-4567 or 09171234567"
+                                    />
+                                    {errors.customer_phone && (
+                                        <p className="text-sm text-red-600 flex items-center">
+                                            <AlertCircle className="h-4 w-4 mr-1" />
+                                            {errors.customer_phone}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="customer_email">Email Address</Label>
+                                <Input
+                                    id="customer_email"
+                                    type="email"
+                                    value={data.customer_email}
+                                    onChange={(e) => setData('customer_email', e.target.value)}
+                                    placeholder="customer@example.com"
+                                />
+                                {errors.customer_email && (
+                                    <p className="text-sm text-red-600 flex items-center">
+                                        <AlertCircle className="h-4 w-4 mr-1" />
+                                        {errors.customer_email}
+                                    </p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Vehicle Information */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Vehicle Interest</CardTitle>
+                            <CardDescription>Details about the vehicle the customer is interested in</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="vehicle_year">Year</Label>
+                                    <Input
+                                        id="vehicle_year"
+                                        value={data.vehicle_year}
+                                        onChange={(e) => setData('vehicle_year', e.target.value)}
+                                        placeholder="2024"
                                     />
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="customer-phone">Phone Number</Label>
-                                        <Input 
-                                            id="customer-phone" 
-                                            defaultValue={mockPipelineEntry.customer_phone}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="customer-email">Email Address</Label>
-                                        <Input 
-                                            id="customer-email" 
-                                            type="email"
-                                            defaultValue={mockPipelineEntry.customer_email}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Vehicle & Quote Information */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Target className="h-5 w-5 mr-2" />
-                                    Vehicle & Quote Information
-                                </CardTitle>
-                                <CardDescription>
-                                    Vehicle interest and pricing details
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="vehicle-interest">Vehicle of Interest</Label>
-                                    <Input 
-                                        id="vehicle-interest" 
-                                        defaultValue={mockPipelineEntry.vehicle_interest}
+                                    <Label htmlFor="vehicle_make">Make</Label>
+                                    <Input
+                                        id="vehicle_make"
+                                        value={data.vehicle_make}
+                                        onChange={(e) => setData('vehicle_make', e.target.value)}
+                                        placeholder="Toyota"
                                     />
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="quote-amount">Quote Amount ($)</Label>
-                                        <Input 
-                                            id="quote-amount" 
-                                            type="number"
-                                            defaultValue={mockPipelineEntry.quote_amount}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="sales-rep">Assigned Sales Rep</Label>
-                                        <Select value={selectedSalesRep} onValueChange={setSelectedSalesRep}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select sales rep" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {salesReps.map((rep) => (
-                                                    <SelectItem key={rep.id} value={rep.id}>
-                                                        <div>
-                                                            <div className="font-medium">{rep.name}</div>
-                                                            <div className="text-xs text-muted-foreground">
-                                                                {rep.specialties.join(', ')} • {rep.performance} Performance
-                                                            </div>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Next Actions */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Calendar className="h-5 w-5 mr-2" />
-                                    Next Actions
-                                </CardTitle>
-                                <CardDescription>
-                                    Planned follow-up actions and scheduling
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="next-action">Next Action</Label>
-                                    <Input 
-                                        id="next-action" 
-                                        defaultValue={mockPipelineEntry.next_action}
-                                        placeholder="Describe the next action to take"
+                                    <Label htmlFor="vehicle_model">Model</Label>
+                                    <Input
+                                        id="vehicle_model"
+                                        value={data.vehicle_model}
+                                        onChange={(e) => setData('vehicle_model', e.target.value)}
+                                        placeholder="Camry"
                                     />
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="action-due-date">Due Date</Label>
-                                        <Input 
-                                            id="action-due-date" 
-                                            type="date"
-                                            defaultValue={mockPipelineEntry.next_action_due?.split(' ')[0]}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="action-due-time">Due Time</Label>
-                                        <Input 
-                                            id="action-due-time" 
-                                            type="time"
-                                            defaultValue={mockPipelineEntry.next_action_due?.split(' ')[1]}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="vehicle_interest">Vehicle Interest (Summary)</Label>
+                                <Input
+                                    id="vehicle_interest"
+                                    value={data.vehicle_interest}
+                                    onChange={(e) => setData('vehicle_interest', e.target.value)}
+                                    placeholder="e.g., 2024 Toyota Camry"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="quote_amount">Quote Amount (₱)</Label>
+                                <Input
+                                    id="quote_amount"
+                                    type="number"
+                                    step="0.01"
+                                    value={data.quote_amount}
+                                    onChange={(e) => setData('quote_amount', e.target.value)}
+                                    placeholder="1500000.00"
+                                />
+                                {errors.quote_amount && (
+                                    <p className="text-sm text-red-600 flex items-center">
+                                        <AlertCircle className="h-4 w-4 mr-1" />
+                                        {errors.quote_amount}
+                                    </p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                        {/* Notes & Comments */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <FileText className="h-5 w-5 mr-2" />
-                                    Notes & Comments
-                                </CardTitle>
-                                <CardDescription>
-                                    Additional information and manual notes
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
+                    {/* Pipeline Details */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Pipeline Details</CardTitle>
+                            <CardDescription>Stage, priority, and probability settings</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="notes">Manual Notes</Label>
-                                    <Textarea 
-                                        id="notes" 
-                                        placeholder="Add any additional notes, observations, or important details about this opportunity"
-                                        rows={4}
+                                    <Label htmlFor="current_stage">Current Stage *</Label>
+                                    <Select value={data.current_stage} onValueChange={(value) => setData('current_stage', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="lead">Lead</SelectItem>
+                                            <SelectItem value="qualified">Qualified</SelectItem>
+                                            <SelectItem value="quote_sent">Quote Sent</SelectItem>
+                                            <SelectItem value="test_drive_scheduled">Test Drive Scheduled</SelectItem>
+                                            <SelectItem value="test_drive_completed">Test Drive Completed</SelectItem>
+                                            <SelectItem value="reservation_made">Reservation Made</SelectItem>
+                                            <SelectItem value="lost">Lost</SelectItem>
+                                            <SelectItem value="won">Won</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.current_stage && (
+                                        <p className="text-sm text-red-600 flex items-center">
+                                            <AlertCircle className="h-4 w-4 mr-1" />
+                                            {errors.current_stage}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="priority">Priority *</Label>
+                                    <Select value={data.priority} onValueChange={(value) => setData('priority', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="low">Low</SelectItem>
+                                            <SelectItem value="medium">Medium</SelectItem>
+                                            <SelectItem value="high">High</SelectItem>
+                                            <SelectItem value="urgent">Urgent</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.priority && (
+                                        <p className="text-sm text-red-600 flex items-center">
+                                            <AlertCircle className="h-4 w-4 mr-1" />
+                                            {errors.priority}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="probability">Probability (%) *</Label>
+                                    <Input
+                                        id="probability"
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        value={data.probability}
+                                        onChange={(e) => setData('probability', parseInt(e.target.value) || 0)}
                                     />
+                                    {errors.probability && (
+                                        <p className="text-sm text-red-600 flex items-center">
+                                            <AlertCircle className="h-4 w-4 mr-1" />
+                                            {errors.probability}
+                                        </p>
+                                    )}
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="sales_rep_id">Assign Sales Rep</Label>
+                                <Select value={data.sales_rep_id || undefined} onValueChange={(value) => setData('sales_rep_id', value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Unassigned" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {salesReps.map((rep) => (
+                                            <SelectItem key={rep.id} value={rep.id.toString()}>
+                                                {rep.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                    {/* Sidebar */}
-                    <div className="space-y-6">
-                        {/* Current Status */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Current Status</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Stage</p>
-                                    {getStageBadge(selectedStage)}
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Win Probability</p>
-                                    {getProbabilityBadge(selectedProbability)}
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Stage Progress</p>
-                                    <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                                        <div 
-                                            className="bg-blue-600 h-2 rounded-full" 
-                                            style={{ width: `${getStageProgress(selectedStage)}%` }}
-                                        ></div>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground mt-1">{getStageProgress(selectedStage)}% complete</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Time in Current Stage</p>
-                                    <p className="text-sm font-medium">{mockPipelineEntry.stage_duration_hours}h</p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                    {/* Next Actions */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Next Actions</CardTitle>
+                            <CardDescription>Plan follow-up activities</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="next_action">Next Action</Label>
+                                <Input
+                                    id="next_action"
+                                    value={data.next_action}
+                                    onChange={(e) => setData('next_action', e.target.value)}
+                                    placeholder="e.g., Follow up on quote"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="next_action_due">Next Action Due Date</Label>
+                                <Input
+                                    id="next_action_due"
+                                    type="datetime-local"
+                                    value={data.next_action_due}
+                                    onChange={(e) => setData('next_action_due', e.target.value)}
+                                />
+                                {errors.next_action_due && (
+                                    <p className="text-sm text-red-600 flex items-center">
+                                        <AlertCircle className="h-4 w-4 mr-1" />
+                                        {errors.next_action_due}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="follow_up_frequency">Follow-up Frequency</Label>
+                                <Select value={data.follow_up_frequency} onValueChange={(value) => setData('follow_up_frequency', value)}>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="daily">Daily</SelectItem>
+                                        <SelectItem value="weekly">Weekly</SelectItem>
+                                        <SelectItem value="biweekly">Biweekly</SelectItem>
+                                        <SelectItem value="monthly">Monthly</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                        {/* Auto-Logged Events */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Auto-Logged Events</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Total Events</p>
-                                    <Badge className="bg-blue-100 text-blue-800">
-                                        {mockPipelineEntry.auto_logged_events.length} Events
-                                    </Badge>
-                                </div>
-                                <div className="space-y-2">
-                                    {mockPipelineEntry.auto_logged_events.map((event, index) => (
-                                        <div key={index} className="p-2 border rounded text-xs">
-                                            <div className="font-medium">{event.event}</div>
-                                            <div className="text-muted-foreground">{event.system}</div>
-                                            <div className="text-muted-foreground">{event.timestamp}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
+                    {/* Automation Settings */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Automation Settings</CardTitle>
+                            <CardDescription>Configure auto-logging and progression rules</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="auto_progression_enabled"
+                                    checked={data.auto_progression_enabled}
+                                    onCheckedChange={(checked) => setData('auto_progression_enabled', checked === true)}
+                                />
+                                <Label htmlFor="auto_progression_enabled" className="cursor-pointer">
+                                    Enable auto-progression (automatically advance stages based on triggers)
+                                </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="auto_loss_rule_enabled"
+                                    checked={data.auto_loss_rule_enabled}
+                                    onCheckedChange={(checked) => setData('auto_loss_rule_enabled', checked === true)}
+                                />
+                                <Label htmlFor="auto_loss_rule_enabled" className="cursor-pointer">
+                                    Enable auto-loss detection (mark as lost after 7 days of inactivity)
+                                </Label>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                        {/* Stage Transition */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Stage Transition</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Previous Stage</p>
-                                    {getStageBadge(mockPipelineEntry.previous_stage)}
-                                </div>
-                                <div className="flex items-center justify-center py-2">
-                                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Current Stage</p>
-                                    {getStageBadge(selectedStage)}
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Stage Entry</p>
-                                    <p className="text-sm">{mockPipelineEntry.stage_entry_timestamp}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Quick Actions */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Quick Actions</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <Phone className="h-4 w-4 mr-2" />
-                                    Call Customer
-                                </Button>
-                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <Mail className="h-4 w-4 mr-2" />
-                                    Send Email
-                                </Button>
-                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <Calendar className="h-4 w-4 mr-2" />
-                                    Schedule Follow-up
-                                </Button>
-                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <DollarSign className="h-4 w-4 mr-2" />
-                                    Generate Quote
-                                </Button>
-                            </CardContent>
-                        </Card>
-
-                        {/* Performance Metrics */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Performance Metrics</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Manual Notes</span>
-                                    <Badge variant="outline">{mockPipelineEntry.manual_notes}</Badge>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Attachments</span>
-                                    <Badge variant="outline">{mockPipelineEntry.attachments}</Badge>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Auto Events</span>
-                                    <Badge variant="outline">{mockPipelineEntry.auto_logged_events.length}</Badge>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            </div>
+                    {/* Notes */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Notes</CardTitle>
+                            <CardDescription>Additional information about this opportunity</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Textarea
+                                value={data.notes}
+                                onChange={(e) => setData('notes', e.target.value)}
+                                placeholder="Enter any additional notes..."
+                                rows={4}
+                            />
+                            {errors.notes && (
+                                <p className="text-sm text-red-600 flex items-center mt-1">
+                                    <AlertCircle className="h-4 w-4 mr-1" />
+                                    {errors.notes}
+                                </p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </form>
         </AppLayout>
     );
 }

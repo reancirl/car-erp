@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,8 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, Search, Filter, Download, Plus, Eye, Edit, ArrowRight, CheckCircle, Clock, DollarSign, User, Calendar, FileText } from 'lucide-react';
+import { TrendingUp, Search, Filter, Download, Plus, Eye, Edit, ArrowRight, CheckCircle, Clock, DollarSign, User, Calendar, FileText, Trash2, AlertTriangle, Play, ChevronDown, ChevronUp } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+import { useState, FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -20,98 +21,134 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Pipeline() {
-    // Mock data for demonstration
-    const mockPipelineEntries = [
-        {
-            id: 1,
-            customer_name: 'John Smith',
-            lead_id: 'LD-2025-001',
-            current_stage: 'quote_sent',
-            previous_stage: 'qualified',
-            stage_entry_timestamp: '2025-01-13 14:30:00',
-            stage_duration_hours: 5.5,
-            sales_rep: 'Sarah Sales Rep',
-            vehicle_interest: '2024 Honda Civic',
-            quote_amount: 28500,
-            probability: 78,
-            next_action: 'Follow up on quote',
-            next_action_due: '2025-01-14 10:00:00',
-            auto_logged_events: [
-                { event: 'Lead Created', timestamp: '2025-01-13 09:15:00', system: 'Lead Management' },
-                { event: 'Lead Qualified', timestamp: '2025-01-13 09:45:00', system: 'CRM Auto-Scoring' },
-                { event: 'Quote Generated', timestamp: '2025-01-13 14:30:00', system: 'Pricing Engine' }
-            ],
-            manual_notes: 2,
-            attachments: 1
-        },
-        {
-            id: 2,
-            customer_name: 'Maria Rodriguez',
-            lead_id: 'LD-2025-002',
-            current_stage: 'test_drive_scheduled',
-            previous_stage: 'quote_sent',
-            stage_entry_timestamp: '2025-01-13 16:20:00',
-            stage_duration_hours: 1.8,
-            sales_rep: 'Mike Sales Rep',
-            vehicle_interest: '2023 Toyota Camry',
-            quote_amount: 23750,
-            probability: 65,
-            next_action: 'Conduct test drive',
-            next_action_due: '2025-01-14 14:00:00',
-            auto_logged_events: [
-                { event: 'Lead Created', timestamp: '2025-01-12 16:45:00', system: 'Phone System' },
-                { event: 'Quote Sent', timestamp: '2025-01-13 11:20:00', system: 'CRM' },
-                { event: 'Test Drive Booked', timestamp: '2025-01-13 16:20:00', system: 'Reservation System' }
-            ],
-            manual_notes: 3,
-            attachments: 0
-        },
-        {
-            id: 3,
-            customer_name: 'Robert Johnson',
-            lead_id: 'LD-2025-003',
-            current_stage: 'lost',
-            previous_stage: 'contacted',
-            stage_entry_timestamp: '2025-01-11 17:00:00',
-            stage_duration_hours: 48.5,
-            sales_rep: 'Lisa Sales Rep',
-            vehicle_interest: '2024 BMW X3',
-            quote_amount: 0,
-            probability: 0,
-            next_action: null,
-            next_action_due: null,
-            auto_logged_events: [
-                { event: 'Lead Created', timestamp: '2025-01-11 13:30:00', system: 'Walk-in System' },
-                { event: 'Initial Contact', timestamp: '2025-01-11 13:30:00', system: 'CRM' },
-                { event: 'Lead Marked Lost', timestamp: '2025-01-11 17:00:00', system: 'CRM Auto-Rules' }
-            ],
-            manual_notes: 1,
-            attachments: 0
-        },
-        {
-            id: 4,
-            customer_name: 'Emily Davis',
-            lead_id: 'LD-2025-004',
-            current_stage: 'reservation_made',
-            previous_stage: 'test_drive_completed',
-            stage_entry_timestamp: '2025-01-13 17:30:00',
-            stage_duration_hours: 0.5,
-            sales_rep: 'Tom Sales Rep',
-            vehicle_interest: '2024 Hyundai Elantra',
-            quote_amount: 21200,
-            probability: 89,
-            next_action: 'Prepare delivery paperwork',
-            next_action_due: '2025-01-15 09:00:00',
-            auto_logged_events: [
-                { event: 'Lead Created', timestamp: '2025-01-13 11:00:00', system: 'Web Form' },
-                { event: 'Test Drive Completed', timestamp: '2025-01-13 16:45:00', system: 'GPS Tracking' },
-                { event: 'Reservation Created', timestamp: '2025-01-13 17:30:00', system: 'Sales System' }
-            ],
-            manual_notes: 4,
-            attachments: 2
+interface Pipeline {
+    id: number;
+    pipeline_id: string;
+    customer_name: string;
+    customer_phone: string;
+    customer_email: string | null;
+    current_stage: string;
+    previous_stage: string | null;
+    stage_entry_timestamp: string | null;
+    stage_duration_hours: number | null;
+    sales_rep_id: number | null;
+    vehicle_interest: string | null;
+    quote_amount: number | null;
+    probability: number;
+    priority: string;
+    next_action: string | null;
+    next_action_due: string | null;
+    auto_logged_events_count: number;
+    manual_notes_count: number;
+    attachments_count: number;
+    created_at: string;
+    branch: {
+        id: number;
+        name: string;
+        code: string;
+    };
+    sales_rep: {
+        id: number;
+        name: string;
+    } | null;
+    lead: {
+        id: number;
+        lead_id: string;
+        name: string;
+    } | null;
+}
+
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
+}
+
+interface SalesRep {
+    id: number;
+    name: string;
+}
+
+interface Stats {
+    active_pipeline: number;
+    auto_logged_events: number;
+    avg_stage_duration: number;
+    pipeline_value: number;
+}
+
+interface AutoLoggingStats {
+    lead_events_today: number;
+    quotes_generated: number;
+    activities_tracked: number;
+}
+
+interface Props {
+    pipelines: {
+        data: Pipeline[];
+        links: any;
+        meta: any;
+    };
+    stats: Stats;
+    autoLoggingStats: AutoLoggingStats;
+    filters: {
+        search?: string;
+        current_stage?: string;
+        priority?: string;
+        sales_rep_id?: number;
+        branch_id?: number;
+        probability?: string;
+    };
+    branches: Branch[] | null;
+    salesReps: SalesRep[];
+}
+
+export default function Pipeline({ pipelines, stats, autoLoggingStats, filters, branches, salesReps }: Props) {
+    const [search, setSearch] = useState(filters.search || '');
+    const [currentStage, setCurrentStage] = useState(filters.current_stage || 'all');
+    const [priority, setPriority] = useState(filters.priority || 'all');
+    const [salesRepId, setSalesRepId] = useState<string>(filters.sales_rep_id?.toString() || 'all');
+    const [branchId, setBranchId] = useState<string>(filters.branch_id?.toString() || 'all');
+    const [probabilityFilter, setProbabilityFilter] = useState(filters.probability || 'all');
+    const [isRulesExpanded, setIsRulesExpanded] = useState(false);
+
+    const handleFilter = (e: FormEvent) => {
+        e.preventDefault();
+        router.get('/sales/pipeline', {
+            search: search || undefined,
+            current_stage: currentStage !== 'all' ? currentStage : undefined,
+            priority: priority !== 'all' ? priority : undefined,
+            sales_rep_id: salesRepId !== 'all' ? salesRepId : undefined,
+            branch_id: branchId !== 'all' ? branchId : undefined,
+            probability: probabilityFilter !== 'all' ? probabilityFilter : undefined,
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const handleDelete = (pipeline: Pipeline) => {
+        if (confirm(`Are you sure you want to delete pipeline ${pipeline.pipeline_id}?`)) {
+            router.delete(`/sales/pipeline/${pipeline.id}`);
         }
-    ];
+    };
+
+    const handleExport = () => {
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        if (currentStage !== 'all') params.append('current_stage', currentStage);
+        if (priority !== 'all') params.append('priority', priority);
+        if (salesRepId !== 'all') params.append('sales_rep_id', salesRepId);
+        if (branchId !== 'all') params.append('branch_id', branchId);
+        if (probabilityFilter !== 'all') params.append('probability', probabilityFilter);
+        
+        window.location.href = `/sales/pipeline-export?${params.toString()}`;
+    };
+
+    const handleAutoLossDetection = () => {
+        if (confirm('This will mark all pipelines inactive for 7+ days as lost. Continue?')) {
+            router.post('/sales/pipeline-auto-loss-detection');
+        }
+    };
 
     const getStageBadge = (stage: string) => {
         switch (stage) {
@@ -194,7 +231,7 @@ export default function Pipeline() {
                         <h1 className="text-2xl font-bold">Pipeline Auto-Logging</h1>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={handleExport}>
                             <Download className="h-4 w-4 mr-2" />
                             Export Pipeline
                         </Button>
@@ -214,7 +251,7 @@ export default function Pipeline() {
                             <CardTitle className="text-sm font-medium">Active Pipeline</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">3</div>
+                            <div className="text-2xl font-bold">{stats.active_pipeline}</div>
                             <p className="text-xs text-muted-foreground">Active opportunities</p>
                         </CardContent>
                     </Card>
@@ -223,8 +260,8 @@ export default function Pipeline() {
                             <CardTitle className="text-sm font-medium">Auto-Logged Events</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">12</div>
-                            <p className="text-xs text-muted-foreground">This week</p>
+                            <div className="text-2xl font-bold">{stats.auto_logged_events}</div>
+                            <p className="text-xs text-muted-foreground">Total events</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -232,7 +269,7 @@ export default function Pipeline() {
                             <CardTitle className="text-sm font-medium">Avg. Stage Duration</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">14h</div>
+                            <div className="text-2xl font-bold">{stats.avg_stage_duration}h</div>
                             <p className="text-xs text-muted-foreground">Per stage</p>
                         </CardContent>
                     </Card>
@@ -241,11 +278,76 @@ export default function Pipeline() {
                             <CardTitle className="text-sm font-medium">Pipeline Value</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">$73,450</div>
+                            <div className="text-2xl font-bold">₱{stats.pipeline_value?.toLocaleString('en-PH') || 0}</div>
                             <p className="text-xs text-muted-foreground">Total potential</p>
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Stage Transition Rules */}
+                <Card>
+                    <CardHeader className="cursor-pointer" onClick={() => setIsRulesExpanded(!isRulesExpanded)}>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Stage Transition Rules</CardTitle>
+                                <CardDescription>Automated rules for moving opportunities through the pipeline</CardDescription>
+                            </div>
+                            <Button variant="ghost" size="sm">
+                                {isRulesExpanded ? (
+                                    <ChevronUp className="h-5 w-5" />
+                                ) : (
+                                    <ChevronDown className="h-5 w-5" />
+                                )}
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    {isRulesExpanded && (
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50">
+                                <div className="flex-1">
+                                    <div className="font-semibold">Lead → Qualified</div>
+                                    <div className="text-sm text-muted-foreground">Auto-advance when lead score ≥ 70</div>
+                                </div>
+                                <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
+                            </div>
+                            
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50">
+                                <div className="flex-1">
+                                    <div className="font-semibold">Qualified → Quote Sent</div>
+                                    <div className="text-sm text-muted-foreground">Auto-advance when quote is generated</div>
+                                </div>
+                                <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
+                            </div>
+                            
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50">
+                                <div className="flex-1">
+                                    <div className="font-semibold">Test Drive → Reservation</div>
+                                    <div className="text-sm text-muted-foreground">Auto-advance when reservation is created</div>
+                                </div>
+                                <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
+                            </div>
+                            
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-orange-50">
+                                <div className="flex-1">
+                                    <div className="font-semibold flex items-center space-x-2">
+                                        <AlertTriangle className="h-4 w-4 text-orange-600" />
+                                        <span>Auto-Loss Detection</span>
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">Mark as lost after 7 days of inactivity</div>
+                                </div>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={handleAutoLossDetection}
+                                    className="bg-orange-100 text-orange-800 hover:bg-orange-200"
+                                >
+                                    <Play className="h-4 w-4 mr-2" />
+                                    Run Now
+                                </Button>
+                            </div>
+                        </CardContent>
+                    )}
+                </Card>
 
                 {/* Filters */}
                 <Card>
@@ -254,16 +356,38 @@ export default function Pipeline() {
                         <CardDescription>Auto-log every step from lead → quote → reservation → walk-in in CRM</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex flex-col md:flex-row gap-4">
+                        <form onSubmit={handleFilter} className="flex flex-col md:flex-row gap-4">
                             <div className="flex-1">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input placeholder="Search by customer name, lead ID, or vehicle..." className="pl-10" />
+                                    <Input 
+                                        placeholder="Search by customer name, pipeline ID, or vehicle..." 
+                                        className="pl-10"
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                    />
                                 </div>
                             </div>
-                            <Select>
+                            
+                            {branches && (
+                                <Select value={branchId} onValueChange={setBranchId}>
+                                    <SelectTrigger className="w-full md:w-[180px]">
+                                        <SelectValue placeholder="All Branches" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Branches</SelectItem>
+                                        {branches.map((branch) => (
+                                            <SelectItem key={branch.id} value={branch.id.toString()}>
+                                                {branch.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                            
+                            <Select value={currentStage} onValueChange={setCurrentStage}>
                                 <SelectTrigger className="w-full md:w-[180px]">
-                                    <SelectValue placeholder="Stage" />
+                                    <SelectValue placeholder="All Stages" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Stages</SelectItem>
@@ -276,21 +400,24 @@ export default function Pipeline() {
                                     <SelectItem value="lost">Lost</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Select>
+                            
+                            <Select value={salesRepId} onValueChange={setSalesRepId}>
                                 <SelectTrigger className="w-full md:w-[180px]">
-                                    <SelectValue placeholder="Sales Rep" />
+                                    <SelectValue placeholder="All Sales Reps" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Reps</SelectItem>
-                                    <SelectItem value="sarah">Sarah Sales Rep</SelectItem>
-                                    <SelectItem value="mike">Mike Sales Rep</SelectItem>
-                                    <SelectItem value="lisa">Lisa Sales Rep</SelectItem>
-                                    <SelectItem value="tom">Tom Sales Rep</SelectItem>
+                                    <SelectItem value="all">All Sales Reps</SelectItem>
+                                    {salesReps.map((rep) => (
+                                        <SelectItem key={rep.id} value={rep.id.toString()}>
+                                            {rep.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
-                            <Select>
+                            
+                            <Select value={probabilityFilter} onValueChange={setProbabilityFilter}>
                                 <SelectTrigger className="w-full md:w-[180px]">
-                                    <SelectValue placeholder="Probability" />
+                                    <SelectValue placeholder="All Probabilities" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Probabilities</SelectItem>
@@ -299,11 +426,12 @@ export default function Pipeline() {
                                     <SelectItem value="low">Low (&lt;50%)</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button variant="outline">
+                            
+                            <Button type="submit">
                                 <Filter className="h-4 w-4 mr-2" />
                                 Apply
                             </Button>
-                        </div>
+                        </form>
                     </CardContent>
                 </Card>
 
@@ -329,109 +457,143 @@ export default function Pipeline() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {mockPipelineEntries.map((entry) => (
-                                    <TableRow key={entry.id}>
-                                        <TableCell className="font-medium">
-                                            <div>
-                                                <div className="font-medium">{entry.customer_name}</div>
-                                                <div className="text-xs text-muted-foreground">{entry.lead_id}</div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    In stage: {entry.stage_duration_hours}h
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                {getStageBadge(entry.current_stage)}
-                                                {entry.previous_stage && (
-                                                    <div className="flex items-center space-x-1 mt-1">
-                                                        <span className="text-xs text-muted-foreground">From:</span>
-                                                        {getStageBadge(entry.previous_stage)}
-                                                    </div>
-                                                )}
-                                                <div className="text-xs text-muted-foreground mt-1">
-                                                    {entry.stage_entry_timestamp}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="w-full">
-                                                <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                                                    <div 
-                                                        className="bg-blue-600 h-2 rounded-full" 
-                                                        style={{ width: `${getStageProgress(entry.current_stage)}%` }}
-                                                    ></div>
-                                                </div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {Math.round(getStageProgress(entry.current_stage))}% complete
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <div className="font-medium">{entry.vehicle_interest}</div>
-                                                {entry.quote_amount > 0 && (
-                                                    <div className="flex items-center space-x-1">
-                                                        <DollarSign className="h-3 w-3" />
-                                                        <span className="text-sm font-medium">${entry.quote_amount.toLocaleString()}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>{getProbabilityBadge(entry.probability)}</TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center space-x-1">
-                                                <User className="h-3 w-3" />
-                                                <span className="text-sm">{entry.sales_rep}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            {entry.next_action ? (
-                                                <div>
-                                                    <div className="text-sm font-medium">{entry.next_action}</div>
-                                                    <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                                                        <Calendar className="h-3 w-3" />
-                                                        <span>{entry.next_action_due}</span>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <Badge variant="outline" className="bg-gray-100 text-gray-800">No Action</Badge>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                                                    {entry.auto_logged_events.length} Events
-                                                </Badge>
-                                                {entry.manual_notes > 0 && (
-                                                    <div className="flex items-center space-x-1 mt-1">
-                                                        <FileText className="h-3 w-3" />
-                                                        <span className="text-xs">{entry.manual_notes} notes</span>
-                                                    </div>
-                                                )}
-                                                {entry.attachments > 0 && (
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {entry.attachments} attachments
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex space-x-1">
-                                                <Link href={`/sales/pipeline/${entry.id}`}>
-                                                    <Button variant="ghost" size="sm">
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                                <Link href={`/sales/pipeline/${entry.id}/edit`}>
-                                                    <Button variant="ghost" size="sm">
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                            </div>
+                                {pipelines.data.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={9} className="text-center py-12">
+                                            <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                            <h3 className="text-lg font-medium mb-2">No pipeline opportunities yet</h3>
+                                            <p className="text-muted-foreground mb-4">Get started by creating your first pipeline entry</p>
+                                            <Link href="/sales/pipeline/create">
+                                                <Button>
+                                                    <Plus className="h-4 w-4 mr-2" />
+                                                    Manual Entry
+                                                </Button>
+                                            </Link>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                ) : (
+                                    pipelines.data.map((pipeline) => (
+                                        <TableRow key={pipeline.id}>
+                                            <TableCell className="font-medium">
+                                                <div>
+                                                    <div className="font-medium">{pipeline.customer_name}</div>
+                                                    <div className="text-xs text-muted-foreground">{pipeline.pipeline_id}</div>
+                                                    {pipeline.lead && (
+                                                        <div className="text-xs text-muted-foreground">Lead: {pipeline.lead.lead_id}</div>
+                                                    )}
+                                                    <div className="text-xs text-muted-foreground">
+                                                        In stage: {pipeline.stage_duration_hours || 0}h
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    {getStageBadge(pipeline.current_stage)}
+                                                    {pipeline.previous_stage && (
+                                                        <div className="flex items-center space-x-1 mt-1">
+                                                            <span className="text-xs text-muted-foreground">From:</span>
+                                                            {getStageBadge(pipeline.previous_stage)}
+                                                        </div>
+                                                    )}
+                                                    {pipeline.stage_entry_timestamp && (
+                                                        <div className="text-xs text-muted-foreground mt-1">
+                                                            {new Date(pipeline.stage_entry_timestamp).toLocaleString()}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="w-full">
+                                                    <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                                                        <div 
+                                                            className="bg-blue-600 h-2 rounded-full" 
+                                                            style={{ width: `${getStageProgress(pipeline.current_stage)}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {Math.round(getStageProgress(pipeline.current_stage))}% complete
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    <div className="font-medium">{pipeline.vehicle_interest || 'Not specified'}</div>
+                                                    {pipeline.quote_amount && pipeline.quote_amount > 0 && (
+                                                        <div className="flex items-center space-x-1">
+                                                            <DollarSign className="h-3 w-3" />
+                                                            <span className="text-sm font-medium">₱{pipeline.quote_amount.toLocaleString('en-PH')}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>{getProbabilityBadge(pipeline.probability)}</TableCell>
+                                            <TableCell>
+                                                {pipeline.sales_rep ? (
+                                                    <div className="flex items-center space-x-1">
+                                                        <User className="h-3 w-3" />
+                                                        <span className="text-sm">{pipeline.sales_rep.name}</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-muted-foreground">Unassigned</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                {pipeline.next_action ? (
+                                                    <div>
+                                                        <div className="text-sm font-medium">{pipeline.next_action}</div>
+                                                        {pipeline.next_action_due && (
+                                                            <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                                                                <Calendar className="h-3 w-3" />
+                                                                <span>{new Date(pipeline.next_action_due).toLocaleString()}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <Badge variant="outline" className="bg-gray-100 text-gray-800">No Action</Badge>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                                                        {pipeline.auto_logged_events_count} Events
+                                                    </Badge>
+                                                    {pipeline.manual_notes_count > 0 && (
+                                                        <div className="flex items-center space-x-1 mt-1">
+                                                            <FileText className="h-3 w-3" />
+                                                            <span className="text-xs">{pipeline.manual_notes_count} notes</span>
+                                                        </div>
+                                                    )}
+                                                    {pipeline.attachments_count > 0 && (
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {pipeline.attachments_count} attachments
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex space-x-1">
+                                                    <Link href={`/sales/pipeline/${pipeline.id}`}>
+                                                        <Button variant="ghost" size="sm">
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                    </Link>
+                                                    <Link href={`/sales/pipeline/${pipeline.id}/edit`}>
+                                                        <Button variant="ghost" size="sm">
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                    </Link>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm"
+                                                        onClick={() => handleDelete(pipeline)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 text-red-600" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
                             </TableBody>
                         </Table>
                     </CardContent>
@@ -451,7 +613,7 @@ export default function Pipeline() {
                                     <h4 className="font-medium">Lead Management</h4>
                                 </div>
                                 <p className="text-sm text-muted-foreground mb-2">Auto-logs lead creation, qualification, and scoring</p>
-                                <div className="text-2xl font-bold">4</div>
+                                <div className="text-2xl font-bold">{autoLoggingStats.lead_events_today}</div>
                                 <p className="text-xs text-muted-foreground">Events logged today</p>
                             </div>
                             <div className="p-4 border rounded-lg">
@@ -460,7 +622,7 @@ export default function Pipeline() {
                                     <h4 className="font-medium">Quote System</h4>
                                 </div>
                                 <p className="text-sm text-muted-foreground mb-2">Tracks quote generation, updates, and acceptance</p>
-                                <div className="text-2xl font-bold">3</div>
+                                <div className="text-2xl font-bold">{autoLoggingStats.quotes_generated}</div>
                                 <p className="text-xs text-muted-foreground">Quotes generated</p>
                             </div>
                             <div className="p-4 border rounded-lg">
@@ -469,64 +631,33 @@ export default function Pipeline() {
                                     <h4 className="font-medium">Reservation System</h4>
                                 </div>
                                 <p className="text-sm text-muted-foreground mb-2">Auto-logs test drives, reservations, and walk-ins</p>
-                                <div className="text-2xl font-bold">5</div>
+                                <div className="text-2xl font-bold">{autoLoggingStats.activities_tracked}</div>
                                 <p className="text-xs text-muted-foreground">Activities tracked</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Stage Transition Rules */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Stage Transition Rules</CardTitle>
-                        <CardDescription>Automated rules for moving opportunities through the pipeline</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <div>
-                                    <div className="font-medium">Lead → Qualified</div>
-                                    <div className="text-sm text-muted-foreground">Auto-advance when lead score ≥ 70</div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Badge variant="default" className="bg-green-100 text-green-800">Active</Badge>
-                                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <div>
-                                    <div className="font-medium">Qualified → Quote Sent</div>
-                                    <div className="text-sm text-muted-foreground">Auto-advance when quote is generated</div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Badge variant="default" className="bg-green-100 text-green-800">Active</Badge>
-                                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <div>
-                                    <div className="font-medium">Test Drive → Reservation</div>
-                                    <div className="text-sm text-muted-foreground">Auto-advance when reservation is created</div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Badge variant="default" className="bg-green-100 text-green-800">Active</Badge>
-                                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <div>
-                                    <div className="font-medium">Auto-Loss Detection</div>
-                                    <div className="text-sm text-muted-foreground">Mark as lost after 7 days of inactivity</div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Badge variant="outline" className="bg-orange-100 text-orange-800">Monitoring</Badge>
-                                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                </div>
-                            </div>
+                {/* Pagination */}
+                {pipelines.meta && pipelines.meta.last_page > 1 && (
+                    <div className="flex items-center justify-between">
+                        <div className="text-sm text-muted-foreground">
+                            Showing {pipelines.meta.from} to {pipelines.meta.to} of {pipelines.meta.total} opportunities
                         </div>
-                    </CardContent>
-                </Card>
+                        <div className="flex space-x-2">
+                            {pipelines.links.map((link: any, index: number) => (
+                                <Button
+                                    key={index}
+                                    variant={link.active ? "default" : "outline"}
+                                    size="sm"
+                                    disabled={!link.url}
+                                    onClick={() => link.url && router.visit(link.url)}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </AppLayout>
     );

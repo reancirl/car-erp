@@ -131,22 +131,17 @@ Route::middleware(['auth', 'verified', 'permission:sales.view'])->prefix('sales'
     Route::post('/test-drives/{testDrive}/signature', [\App\Http\Controllers\TestDriveController::class, 'saveSignature'])->name('test-drives.signature')->middleware('permission:sales.edit');
     Route::get('/test-drives-export', [\App\Http\Controllers\TestDriveController::class, 'export'])->name('test-drives.export')->middleware('permission:sales.view');
     
-    // Pipeline Routes
-    Route::get('/pipeline', function () {
-        return Inertia::render('sales/pipeline');
-    })->name('pipeline');
-    
-    Route::get('/pipeline/create', function () {
-        return Inertia::render('sales/pipeline-create');
-    })->name('pipeline.create');
-    
-    Route::get('/pipeline/{id}/edit', function ($id) {
-        return Inertia::render('sales/pipeline-edit', ['id' => $id]);
-    })->name('pipeline.edit');
-    
-    Route::get('/pipeline/{id}', function ($id) {
-        return Inertia::render('sales/pipeline-view', ['id' => $id]);
-    })->name('pipeline.show');
+    // Pipeline Routes (Resource Controller)
+    Route::get('/pipeline', [\App\Http\Controllers\PipelineController::class, 'index'])->name('pipeline');
+    Route::get('/pipeline/create', [\App\Http\Controllers\PipelineController::class, 'create'])->name('pipeline.create')->middleware('permission:sales.create');
+    Route::post('/pipeline', [\App\Http\Controllers\PipelineController::class, 'store'])->name('pipeline.store')->middleware('permission:sales.create');
+    Route::get('/pipeline/{pipeline}', [\App\Http\Controllers\PipelineController::class, 'show'])->name('pipeline.show');
+    Route::get('/pipeline/{pipeline}/edit', [\App\Http\Controllers\PipelineController::class, 'edit'])->name('pipeline.edit')->middleware('permission:sales.edit');
+    Route::put('/pipeline/{pipeline}', [\App\Http\Controllers\PipelineController::class, 'update'])->name('pipeline.update')->middleware('permission:sales.edit');
+    Route::delete('/pipeline/{pipeline}', [\App\Http\Controllers\PipelineController::class, 'destroy'])->name('pipeline.destroy')->middleware('permission:sales.delete');
+    Route::post('/pipeline/{id}/restore', [\App\Http\Controllers\PipelineController::class, 'restore'])->name('pipeline.restore')->middleware('permission:sales.create');
+    Route::get('/pipeline-export', [\App\Http\Controllers\PipelineController::class, 'export'])->name('pipeline.export')->middleware('permission:sales.view');
+    Route::post('/pipeline-auto-loss-detection', [\App\Http\Controllers\PipelineController::class, 'runAutoLossDetection'])->name('pipeline.auto-loss-detection')->middleware('permission:sales.edit');
     
     Route::get('/performance-metrics', function () {
         return Inertia::render('sales/performance-metrics');

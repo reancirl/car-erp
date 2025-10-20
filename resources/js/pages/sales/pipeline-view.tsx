@@ -58,7 +58,7 @@ export default function PipelineView() {
         auto_logged_events: [
             { event: 'Lead Created', timestamp: '2025-01-13 09:15:00', system: 'Lead Management', details: 'New lead captured from web form' },
             { event: 'Lead Qualified', timestamp: '2025-01-13 09:45:00', system: 'CRM Auto-Scoring', details: 'Auto-qualified with score 78/100' },
-            { event: 'Quote Generated', timestamp: '2025-01-13 14:30:00', system: 'Pricing Engine', details: 'Quote #Q-2025-001 generated for $28,500' }
+            { event: 'Quote Generated', timestamp: '2025-01-13 14:30:00', system: 'Pricing Engine', details: 'Quote #Q-2025-001 generated for ₱28,500' }
         ],
         manual_notes: 2,
         attachments: 1,
@@ -227,10 +227,6 @@ export default function PipelineView() {
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export Report
-                        </Button>
                         <Link href={`/sales/pipeline/${mockPipelineEntry.id}/edit`}>
                             <Button size="sm">
                                 <Edit className="h-4 w-4 mr-2" />
@@ -285,7 +281,7 @@ export default function PipelineView() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Quote Amount</p>
-                                            <p className="text-lg font-semibold text-green-600">${mockPipelineEntry.quote_amount.toLocaleString()}</p>
+                                            <p className="text-lg font-semibold text-green-600">₱{mockPipelineEntry.quote_amount.toLocaleString('en-PH')}</p>
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">Time in Current Stage</p>

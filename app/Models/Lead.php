@@ -76,7 +76,7 @@ class Lead extends Model
     }
 
     /**
-     * Boot method to auto-generate lead_id
+     * Boot method to auto-generate lead_id and handle auto-progression
      */
     protected static function boot()
     {
@@ -85,6 +85,14 @@ class Lead extends Model
         static::creating(function ($lead) {
             if (!$lead->lead_id) {
                 $lead->lead_id = self::generateLeadId();
+            }
+        });
+
+        static::updated(function ($lead) {
+            // Auto-create pipeline when lead status changes to 'qualified' and lead_score >= 70
+            if ($lead->wasChanged('status') && $lead->status === 'qualified' && $lead->lead_score >= 70) {
+                $service = app(\App\Services\PipelineAutoProgressionService::class);
+                $service->createPipelineFromQualifiedLead($lead);
             }
         });
     }

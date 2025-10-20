@@ -81,7 +81,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function TestDriveCalendar({ testDrives, currentDate, view = 'month', branches, filters }: Props) {
     const [currentView, setCurrentView] = useState<'month' | 'week' | 'day'>(view);
     const [selectedDate, setSelectedDate] = useState(currentDate ? new Date(currentDate) : new Date());
-    const [branchFilter, setBranchFilter] = useState(filters?.branch_id || '');
+    const [branchFilter, setBranchFilter] = useState(filters?.branch_id || 'all');
 
     // Helper functions
     const formatDate = (date: Date) => {
@@ -185,7 +185,7 @@ export default function TestDriveCalendar({ testDrives, currentDate, view = 'mon
     const handleBranchFilter = (value: string) => {
         setBranchFilter(value);
         router.get('/sales/test-drives/calendar', {
-            branch_id: value || undefined,
+            branch_id: value === 'all' ? undefined : value,
         }, {
             preserveState: true,
             preserveScroll: true,
@@ -586,7 +586,7 @@ export default function TestDriveCalendar({ testDrives, currentDate, view = 'mon
                                                 <SelectValue placeholder="All Branches" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="">All Branches</SelectItem>
+                                                <SelectItem value="all">All Branches</SelectItem>
                                                 {branches.map((branch) => (
                                                     <SelectItem key={branch.id} value={branch.id.toString()}>
                                                         {branch.name} ({branch.code})

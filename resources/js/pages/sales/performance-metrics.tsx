@@ -272,10 +272,6 @@ export default function PerformanceMetrics() {
                     </div>
                     <div className="flex space-x-2">
                         <Button variant="outline" size="sm">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export Report
-                        </Button>
-                        <Button variant="outline" size="sm">
                             <Calendar className="h-4 w-4 mr-2" />
                             Date Range
                         </Button>
@@ -289,7 +285,7 @@ export default function PerformanceMetrics() {
                             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">$306,100</div>
+                            <div className="text-2xl font-bold">₱306,100</div>
                             <p className="text-xs text-muted-foreground">This month</p>
                         </CardContent>
                     </Card>
@@ -307,7 +303,7 @@ export default function PerformanceMetrics() {
                             <CardTitle className="text-sm font-medium">Active Pipeline</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">$279,500</div>
+                            <div className="text-2xl font-bold">₱279,500</div>
                             <p className="text-xs text-muted-foreground">Potential revenue</p>
                         </CardContent>
                     </Card>
@@ -464,9 +460,9 @@ export default function PerformanceMetrics() {
                                             <div>
                                                 <div className="flex items-center space-x-1">
                                                     <DollarSign className="h-3 w-3" />
-                                                    <span className="text-sm font-medium">${rep.total_sales_value.toLocaleString()}</span>
+                                                    <span className="text-sm font-medium">₱{rep.total_sales_value.toLocaleString('en-PH')}</span>
                                                 </div>
-                                                <div className="text-xs text-muted-foreground">Avg: ${rep.avg_deal_size.toLocaleString()}</div>
+                                                <div className="text-xs text-muted-foreground">Avg: ₱{rep.avg_deal_size.toLocaleString('en-PH')}</div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
@@ -484,7 +480,7 @@ export default function PerformanceMetrics() {
                                         <TableCell>
                                             <div className="flex items-center space-x-1">
                                                 <DollarSign className="h-3 w-3" />
-                                                <span className="text-sm font-medium">${rep.pipeline_value.toLocaleString()}</span>
+                                                <span className="text-sm font-medium">₱{rep.pipeline_value.toLocaleString('en-PH')}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>

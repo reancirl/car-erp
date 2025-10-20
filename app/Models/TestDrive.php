@@ -55,7 +55,7 @@ class TestDrive extends Model
     ];
 
     /**
-     * Boot method to generate reservation ID
+     * Boot method to generate reservation ID and handle auto-progression
      */
     protected static function boot()
     {
@@ -64,6 +64,43 @@ class TestDrive extends Model
         static::creating(function ($testDrive) {
             if (! $testDrive->reservation_id) {
                 $testDrive->reservation_id = self::generateReservationId();
+            }
+        });
+
+        static::created(function ($testDrive) {
+            // Auto-advance pipeline when test drive is created (scheduled)
+            if ($testDrive->status === 'confirmed') {
+                $pipeline = Pipeline::where('customer_phone', $testDrive->customer_phone)
+                    ->orWhere('customer_email', $testDrive->customer_email)
+                    ->whereNotIn('current_stage', ['lost', 'won'])
+                    ->first();
+
+                if ($pipeline) {
+                    $service = app(\App\Services\PipelineAutoProgressionService::class);
+                    $service->advanceToTestDriveScheduled($pipeline, [
+                        'test_drive_id' => $testDrive->reservation_id,
+                        'scheduled_date' => $testDrive->scheduled_date->toDateString(),
+                        'scheduled_time' => $testDrive->scheduled_time,
+                    ]);
+                }
+            }
+        });
+
+        static::updated(function ($testDrive) {
+            // Auto-advance pipeline when test drive status changes to reservation type
+            if ($testDrive->wasChanged('reservation_type') && $testDrive->reservation_type === 'reservation') {
+                $pipeline = Pipeline::where('customer_phone', $testDrive->customer_phone)
+                    ->orWhere('customer_email', $testDrive->customer_email)
+                    ->whereNotIn('current_stage', ['lost', 'won', 'reservation_made'])
+                    ->first();
+
+                if ($pipeline) {
+                    $service = app(\App\Services\PipelineAutoProgressionService::class);
+                    $service->advanceToReservation($pipeline, [
+                        'test_drive_id' => $testDrive->reservation_id,
+                        'reservation_created_at' => now()->toDateTimeString(),
+                    ]);
+                }
             }
         });
     }

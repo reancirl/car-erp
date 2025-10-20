@@ -238,10 +238,6 @@ export default function CustomerExperienceView() {
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export Report
-                        </Button>
                         <Link href={`/sales/customer-experience/${mockSurvey.id}/edit`}>
                             <Button size="sm">
                                 <Edit className="h-4 w-4 mr-2" />
