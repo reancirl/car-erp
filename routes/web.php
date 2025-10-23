@@ -107,10 +107,6 @@ Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->gr
     Route::get('/warranty-claims', function () {
         return Inertia::render('service/warranty-claims');
     })->name('warranty-claims');
-    
-    Route::get('/parts-inventory', function () {
-        return Inertia::render('service/parts-inventory');
-    })->name('parts-inventory');
 });
 
 // Sales & Customer Lifecycle Routes
@@ -260,6 +256,11 @@ Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->gr
 
 // Vehicle Inventory Management Routes
 Route::middleware(['auth', 'verified'])->prefix('inventory')->group(function () {
+    // Parts & Accessories Inventory
+    Route::get('/parts-inventory', function () {
+        return Inertia::render('inventory/parts-inventory');
+    })->name('inventory.parts-inventory')->middleware('permission:inventory.view');
+    
     // Vehicle Models (Master Data) - Inertia Routes
     Route::get('/models', [\App\Http\Controllers\VehicleModelController::class, 'indexPage'])->name('inventory.models.index')->middleware('permission:vehicle_model.view');
     Route::get('/models/create', [\App\Http\Controllers\VehicleModelController::class, 'create'])->name('inventory.models.create')->middleware('permission:vehicle_model.create');
@@ -282,9 +283,7 @@ Route::middleware(['auth', 'verified'])->prefix('inventory')->group(function () 
 
     Route::get('/vehicles/{id}/edit', [\App\Http\Controllers\VehicleUnitController::class, 'edit'])->name('inventory.vehicles.edit')->middleware('permission:inventory.edit');
 
-    Route::get('/vehicles/{id}', function ($id) {
-        return Inertia::render('inventory/vehicle-view', ['id' => $id]);
-    })->name('inventory.vehicles.show');
+    Route::get('/vehicles/{id}', [\App\Http\Controllers\VehicleUnitController::class, 'showPage'])->name('inventory.vehicles.show')->middleware('permission:inventory.view');
     
     // Vehicle Masters API Routes
     Route::middleware(['permission:inventory.view'])->group(function () {

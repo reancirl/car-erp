@@ -8,81 +8,132 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Car, Edit, ArrowLeft, Share2, Printer, Download, MapPin, Calendar, User, DollarSign, Fuel, Gauge, Palette, Settings, History, Camera, FileText, CheckCircle, Clock, AlertTriangle, Star, TestTube, Globe } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Inventory Management',
-        href: '/inventory',
-    },
-    {
-        title: 'Vehicle Inventory',
-        href: '/inventory/vehicles',
-    },
-    {
-        title: '2024 Honda Civic Sport',
-        href: '/inventory/vehicles/1',
-    },
-];
+interface VehicleUnit {
+    id: number;
+    vehicle_master_id: number;
+    vehicle_model_id: number | null;
+    branch_id: number;
+    assigned_user_id: number | null;
+    vin: string;
+    stock_number: string;
+    status: string;
+    purchase_price: number;
+    sale_price: number | null;
+    currency: string;
+    acquisition_date: string | null;
+    sold_date: string | null;
+    color_exterior: string | null;
+    color_interior: string | null;
+    odometer: number | null;
+    notes: string | null;
+    images: string[] | null;
+    specs: {
+        features?: string[];
+        documents?: Array<{
+            name: string;
+            url: string;
+        }>;
+        [key: string]: any;
+    } | null;
+    created_at: string;
+    deleted_at: string | null;
+    master: {
+        id: number;
+        make: string;
+        model: string;
+        year: number;
+        trim?: string | null;
+        body_type: string | null;
+        transmission: string | null;
+        fuel_type: string | null;
+    };
+    vehicle_model: {
+        id: number;
+        make: string;
+        model: string;
+        year: number;
+        trim?: string | null;
+        body_type: string | null;
+        transmission: string | null;
+        fuel_type: string | null;
+    } | null;
+    branch: {
+        id: number;
+        name: string;
+        code: string;
+    };
+    assigned_user: {
+        id: number;
+        name: string;
+        email: string;
+    } | null;
+}
 
-export default function VehicleView() {
-    // Mock vehicle data
+interface ActivityLog {
+    id: number;
+    action: string;
+    user: string;
+    timestamp: string;
+    event: string;
+    module: string;
+}
+
+interface Props {
+    vehicle: VehicleUnit;
+    activityLogs: ActivityLog[];
+}
+
+export default function VehicleView({ vehicle, activityLogs }: Props) {
+    const vehicleDisplay = vehicle.vehicle_model || vehicle.master;
+    const vehicleTitle = `${vehicleDisplay.year} ${vehicleDisplay.make} ${vehicleDisplay.model}${vehicleDisplay.trim ? ' ' + vehicleDisplay.trim : ''}`;
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Inventory Management',
+            href: '/inventory',
+        },
+        {
+            title: 'Vehicle Inventory',
+            href: '/inventory/vehicles',
+        },
+        {
+            title: vehicleTitle,
+            href: `/inventory/vehicles/${vehicle.id}`,
+        },
+    ];
+
+    // Calculate days in inventory
+    const daysInInventory = vehicle.acquisition_date 
+        ? Math.floor((new Date().getTime() - new Date(vehicle.acquisition_date).getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+
+    // Mock data for features not yet in database
     const mockVehicle = {
-        id: 1,
-        vin: 'JH4KA8260MC123456',
-        stock_number: 'NEW-2024-001',
-        year: 2024,
-        make: 'Honda',
-        model: 'Civic',
-        trim: 'Sport',
-        body_type: 'Sedan',
-        exterior_color: 'Crystal Black Pearl',
-        interior_color: 'Black Cloth',
-        engine: '2.0L 4-Cylinder',
-        transmission: 'CVT Automatic',
-        fuel_type: 'Gasoline',
-        mileage: 12,
-        msrp: 1250000,
-        dealer_cost: 1100000,
-        current_price: 1200000,
-        status: 'available',
-        location: 'Showroom A-1',
-        date_received: '2024-01-10',
-        days_in_inventory: 15,
-        assigned_sales_rep: 'Maria Santos',
-        priority: 'high',
-        vehicle_type: 'new',
-        featured: true,
+        priority: 'medium',
+        featured: false,
         allow_test_drive: true,
         online_listing: true,
-        notes: 'Popular model with high demand. Consider for featured listing.',
-        features: ['Apple CarPlay', 'Honda Sensing', 'Sunroof', 'Alloy Wheels', 'Heated Seats', 'Backup Camera'],
-        photos: ['front.jpg', 'rear.jpg', 'interior.jpg', 'engine.jpg'],
-        documents: ['title.pdf', 'inspection.pdf', 'warranty.pdf']
     };
 
-    const mockActivity = [
-        { id: 1, action: 'Price updated to ₱1,200,000', user: 'Maria Santos', timestamp: '2024-01-25 14:30', type: 'price' },
-        { id: 2, action: 'Test drive scheduled with Juan Dela Cruz', user: 'Carlos Rodriguez', timestamp: '2024-01-24 10:15', type: 'test_drive' },
-        { id: 3, action: 'Photos uploaded (4 images)', user: 'System', timestamp: '2024-01-23 16:45', type: 'photos' },
-        { id: 4, action: 'Vehicle moved to Showroom A-1', user: 'Pedro Martinez', timestamp: '2024-01-22 09:00', type: 'location' },
-        { id: 5, action: 'Vehicle added to inventory', user: 'Admin', timestamp: '2024-01-10 08:30', type: 'created' }
-    ];
-
-    const mockInterest = [
-        { id: 1, customer: 'Juan Dela Cruz', phone: '+63 917 123 4567', email: 'juan@email.com', interest_date: '2024-01-24', status: 'test_drive_scheduled', notes: 'Interested in financing options' },
-        { id: 2, customer: 'Maria Garcia', phone: '+63 918 234 5678', email: 'maria.g@email.com', interest_date: '2024-01-23', status: 'inquiry', notes: 'Comparing with other models' },
-        { id: 3, customer: 'Robert Santos', phone: '+63 919 345 6789', email: 'robert@email.com', interest_date: '2024-01-22', status: 'follow_up', notes: 'Waiting for trade-in appraisal' }
-    ];
+    // Parse images from vehicle data
+    const vehicleImages = vehicle.images || [];
+    
+    // Parse features from vehicle specs
+    const vehicleFeatures = vehicle.specs?.features || [];
 
     const getStatusBadge = (status: string) => {
         const statusConfig = {
+            in_stock: { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'In Stock' },
             available: { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'Available' },
             sold: { color: 'bg-blue-100 text-blue-800', icon: CheckCircle, label: 'Sold' },
             reserved: { color: 'bg-yellow-100 text-yellow-800', icon: Clock, label: 'Reserved' },
             demo: { color: 'bg-purple-100 text-purple-800', icon: Car, label: 'Demo' },
             in_transit: { color: 'bg-orange-100 text-orange-800', icon: Clock, label: 'In Transit' },
+            transferred: { color: 'bg-purple-100 text-purple-800', icon: Clock, label: 'Transferred' },
+            disposed: { color: 'bg-gray-100 text-gray-800', icon: AlertTriangle, label: 'Disposed' },
         };
         
-        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.available;
+        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.in_stock;
         const IconComponent = config.icon;
         
         return (
@@ -91,16 +142,6 @@ export default function VehicleView() {
                 {config.label}
             </Badge>
         );
-    };
-
-    const getVehicleTypeBadge = (type: string) => {
-        const colors = {
-            new: 'bg-green-100 text-green-800',
-            used: 'bg-blue-100 text-blue-800',
-            demo: 'bg-purple-100 text-purple-800',
-            certified: 'bg-yellow-100 text-yellow-800',
-        };
-        return <Badge className={colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>{type.toUpperCase()}</Badge>;
     };
 
     const getPriorityBadge = (priority: string) => {
@@ -112,33 +153,26 @@ export default function VehicleView() {
         return <Badge variant="outline" className={colors[priority as keyof typeof colors]}>{priority.toUpperCase()}</Badge>;
     };
 
-    const getInterestStatusBadge = (status: string) => {
-        const colors = {
-            inquiry: 'bg-blue-100 text-blue-800',
-            test_drive_scheduled: 'bg-green-100 text-green-800',
-            follow_up: 'bg-yellow-100 text-yellow-800',
-            not_interested: 'bg-red-100 text-red-800',
-        };
-        const labels = {
-            inquiry: 'Inquiry',
-            test_drive_scheduled: 'Test Drive Scheduled',
-            follow_up: 'Follow Up',
-            not_interested: 'Not Interested',
-        };
-        return <Badge className={colors[status as keyof typeof colors]}>{labels[status as keyof typeof labels]}</Badge>;
-    };
-
     const calculateMargin = () => {
-        return mockVehicle.current_price - mockVehicle.dealer_cost;
+        if (!vehicle.sale_price) return 0;
+        return vehicle.sale_price - vehicle.purchase_price;
     };
 
     const calculateMarginPercentage = () => {
-        return ((calculateMargin() / mockVehicle.current_price) * 100).toFixed(1);
+        if (!vehicle.sale_price) return '0.0';
+        return ((calculateMargin() / vehicle.sale_price) * 100).toFixed(1);
+    };
+
+    const formatCurrency = (amount: number, currency: string = 'PHP') => {
+        return new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: currency,
+        }).format(amount);
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`${mockVehicle.year} ${mockVehicle.make} ${mockVehicle.model} ${mockVehicle.trim}`} />
+            <Head title={vehicleTitle} />
             
             <div className="space-y-6 p-6">
                 {/* Header */}
@@ -153,7 +187,7 @@ export default function VehicleView() {
                         <div>
                             <div className="flex items-center space-x-2">
                                 <Car className="h-6 w-6" />
-                                <h1 className="text-2xl font-bold">{mockVehicle.year} {mockVehicle.make} {mockVehicle.model}</h1>
+                                <h1 className="text-2xl font-bold">{vehicleDisplay.year} {vehicleDisplay.make} {vehicleDisplay.model}</h1>
                                 {mockVehicle.featured && (
                                     <Badge className="bg-yellow-100 text-yellow-800">
                                         <Star className="h-3 w-3 mr-1" />
@@ -161,19 +195,11 @@ export default function VehicleView() {
                                     </Badge>
                                 )}
                             </div>
-                            <p className="text-muted-foreground">{mockVehicle.trim} • {mockVehicle.body_type} • Stock: {mockVehicle.stock_number}</p>
+                            <p className="text-muted-foreground">{vehicleDisplay.trim || 'Standard'} • {vehicleDisplay.body_type} • Stock: {vehicle.stock_number}</p>
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                            <Share2 className="h-4 w-4 mr-2" />
-                            Share
-                        </Button>
-                        <Button variant="outline" size="sm">
-                            <Printer className="h-4 w-4 mr-2" />
-                            Print
-                        </Button>
-                        <Link href={`/inventory/vehicles/${mockVehicle.id}/edit`}>
+                        <Link href={`/inventory/vehicles/${vehicle.id}/edit`}>
                             <Button size="sm">
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit Vehicle
@@ -189,7 +215,7 @@ export default function VehicleView() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <div className="text-sm font-medium text-muted-foreground">Status</div>
-                                    <div className="mt-1">{getStatusBadge(mockVehicle.status)}</div>
+                                    <div className="mt-1">{getStatusBadge(vehicle.status)}</div>
                                 </div>
                                 <CheckCircle className="h-8 w-8 text-green-500" />
                             </div>
@@ -200,7 +226,7 @@ export default function VehicleView() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <div className="text-sm font-medium text-muted-foreground">Days in Inventory</div>
-                                    <div className="text-2xl font-bold">{mockVehicle.days_in_inventory}</div>
+                                    <div className="text-2xl font-bold">{daysInInventory}</div>
                                 </div>
                                 <Calendar className="h-8 w-8 text-blue-500" />
                             </div>
@@ -210,8 +236,8 @@ export default function VehicleView() {
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <div className="text-sm font-medium text-muted-foreground">Current Price</div>
-                                    <div className="text-2xl font-bold">₱{mockVehicle.current_price.toLocaleString()}</div>
+                                    <div className="text-sm font-medium text-muted-foreground">Purchase Price</div>
+                                    <div className="text-2xl font-bold">{formatCurrency(vehicle.purchase_price, vehicle.currency)}</div>
                                 </div>
                                 <DollarSign className="h-8 w-8 text-green-500" />
                             </div>
@@ -221,10 +247,10 @@ export default function VehicleView() {
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <div className="text-sm font-medium text-muted-foreground">Customer Interest</div>
-                                    <div className="text-2xl font-bold">{mockInterest.length}</div>
+                                    <div className="text-sm font-medium text-muted-foreground">Activity Logs</div>
+                                    <div className="text-2xl font-bold">{activityLogs.length}</div>
                                 </div>
-                                <User className="h-8 w-8 text-purple-500" />
+                                <History className="h-8 w-8 text-purple-500" />
                             </div>
                         </CardContent>
                     </Card>
@@ -250,31 +276,33 @@ export default function VehicleView() {
                                             <div className="mt-2 space-y-2">
                                                 <div className="flex justify-between">
                                                     <span>VIN:</span>
-                                                    <span className="font-mono text-sm">{mockVehicle.vin}</span>
+                                                    <span className="font-mono text-sm">{vehicle.vin}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>Stock Number:</span>
+                                                    <span>{vehicle.stock_number}</span>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span>Year:</span>
-                                                    <span>{mockVehicle.year}</span>
+                                                    <span>{vehicleDisplay.year}</span>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span>Make:</span>
-                                                    <span>{mockVehicle.make}</span>
+                                                    <span>{vehicleDisplay.make}</span>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span>Model:</span>
-                                                    <span>{mockVehicle.model}</span>
+                                                    <span>{vehicleDisplay.model}</span>
                                                 </div>
-                                                <div className="flex justify-between">
-                                                    <span>Trim:</span>
-                                                    <span>{mockVehicle.trim}</span>
-                                                </div>
+                                                {vehicleDisplay.trim && (
+                                                    <div className="flex justify-between">
+                                                        <span>Trim:</span>
+                                                        <span>{vehicleDisplay.trim}</span>
+                                                    </div>
+                                                )}
                                                 <div className="flex justify-between">
                                                     <span>Body Type:</span>
-                                                    <span>{mockVehicle.body_type}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Type:</span>
-                                                    <span>{getVehicleTypeBadge(mockVehicle.vehicle_type)}</span>
+                                                    <span>{vehicleDisplay.body_type || 'N/A'}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -284,38 +312,40 @@ export default function VehicleView() {
                                             <div className="text-sm font-medium text-muted-foreground">Specifications</div>
                                             <div className="mt-2 space-y-2">
                                                 <div className="flex justify-between">
+                                                    <span>Transmission:</span>
+                                                    <span>{vehicleDisplay.transmission || 'N/A'}</span>
+                                                </div>
+                                                <div className="flex justify-between">
                                                     <span className="flex items-center space-x-1">
                                                         <Fuel className="h-4 w-4" />
-                                                        <span>Engine:</span>
+                                                        <span>Fuel Type:</span>
                                                     </span>
-                                                    <span>{mockVehicle.engine}</span>
+                                                    <span>{vehicleDisplay.fuel_type || 'N/A'}</span>
                                                 </div>
-                                                <div className="flex justify-between">
-                                                    <span>Transmission:</span>
-                                                    <span>{mockVehicle.transmission}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Fuel Type:</span>
-                                                    <span>{mockVehicle.fuel_type}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="flex items-center space-x-1">
-                                                        <Gauge className="h-4 w-4" />
-                                                        <span>Mileage:</span>
-                                                    </span>
-                                                    <span>{mockVehicle.mileage.toLocaleString()} km</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="flex items-center space-x-1">
-                                                        <Palette className="h-4 w-4" />
-                                                        <span>Exterior:</span>
-                                                    </span>
-                                                    <span>{mockVehicle.exterior_color}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span>Interior:</span>
-                                                    <span>{mockVehicle.interior_color}</span>
-                                                </div>
+                                                {vehicle.odometer && (
+                                                    <div className="flex justify-between">
+                                                        <span className="flex items-center space-x-1">
+                                                            <Gauge className="h-4 w-4" />
+                                                            <span>Odometer:</span>
+                                                        </span>
+                                                        <span>{vehicle.odometer.toLocaleString()} km</span>
+                                                    </div>
+                                                )}
+                                                {vehicle.color_exterior && (
+                                                    <div className="flex justify-between">
+                                                        <span className="flex items-center space-x-1">
+                                                            <Palette className="h-4 w-4" />
+                                                            <span>Exterior:</span>
+                                                        </span>
+                                                        <span>{vehicle.color_exterior}</span>
+                                                    </div>
+                                                )}
+                                                {vehicle.color_interior && (
+                                                    <div className="flex justify-between">
+                                                        <span>Interior:</span>
+                                                        <span>{vehicle.color_interior}</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -324,86 +354,47 @@ export default function VehicleView() {
                         </Card>
 
                         {/* Features & Options */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Features & Options</CardTitle>
-                                <CardDescription>Standard and optional equipment included with this vehicle</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                    {mockVehicle.features.map((feature, index) => (
-                                        <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-                                            <CheckCircle className="h-4 w-4 text-green-500" />
-                                            <span className="text-sm">{feature}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
+                        {vehicleFeatures.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Features & Options</CardTitle>
+                                    <CardDescription>Standard and optional equipment included with this vehicle</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                        {vehicleFeatures.map((feature: string, index: number) => (
+                                            <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                <span className="text-sm">{feature}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Photos */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <Camera className="h-5 w-5" />
-                                    <span>Vehicle Photos ({mockVehicle.photos.length})</span>
-                                </CardTitle>
-                                <CardDescription>High-quality images of the vehicle</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    {mockVehicle.photos.map((photo, index) => (
-                                        <div key={index} className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-                                            <Camera className="h-8 w-8 text-gray-400" />
-                                        </div>
-                                    ))}
-                                </div>
-                                <Button variant="outline" size="sm" className="mt-4">
-                                    <Download className="h-4 w-4 mr-2" />
-                                    Download All Photos
-                                </Button>
-                            </CardContent>
-                        </Card>
-
-                        {/* Customer Interest */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <User className="h-5 w-5" />
-                                    <span>Customer Interest ({mockInterest.length})</span>
-                                </CardTitle>
-                                <CardDescription>Customers who have shown interest in this vehicle</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Customer</TableHead>
-                                            <TableHead>Contact</TableHead>
-                                            <TableHead>Date</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Notes</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {mockInterest.map((interest) => (
-                                            <TableRow key={interest.id}>
-                                                <TableCell className="font-medium">{interest.customer}</TableCell>
-                                                <TableCell>
-                                                    <div className="text-sm">
-                                                        <div>{interest.phone}</div>
-                                                        <div className="text-muted-foreground">{interest.email}</div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>{interest.interest_date}</TableCell>
-                                                <TableCell>{getInterestStatusBadge(interest.status)}</TableCell>
-                                                <TableCell className="text-sm text-muted-foreground">{interest.notes}</TableCell>
-                                            </TableRow>
+                        {vehicleImages.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center space-x-2">
+                                        <Camera className="h-5 w-5" />
+                                        <span>Vehicle Photos ({vehicleImages.length})</span>
+                                    </CardTitle>
+                                    <CardDescription>High-quality images of the vehicle</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        {vehicleImages.map((photo: string, index: number) => (
+                                            <a key={index} href={photo} target="_blank" rel="noopener noreferrer" className="aspect-video bg-gray-100 rounded-lg overflow-hidden hover:opacity-80 transition-opacity">
+                                                <img src={photo} alt={`Vehicle photo ${index + 1}`} className="w-full h-full object-cover" />
+                                            </a>
                                         ))}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
                     </div>
 
                     {/* Sidebar */}
@@ -419,27 +410,27 @@ export default function VehicleView() {
                             <CardContent className="space-y-4">
                                 <div className="space-y-3">
                                     <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">MSRP:</span>
-                                        <span className="font-medium">₱{mockVehicle.msrp.toLocaleString()}</span>
+                                        <span className="text-sm text-muted-foreground">Purchase Price:</span>
+                                        <span className="font-medium">{formatCurrency(vehicle.purchase_price, vehicle.currency)}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">Dealer Cost:</span>
-                                        <span className="font-medium">₱{mockVehicle.dealer_cost.toLocaleString()}</span>
-                                    </div>
-                                    <Separator />
-                                    <div className="flex justify-between">
-                                        <span className="font-medium">Current Price:</span>
-                                        <span className="font-bold text-lg">₱{mockVehicle.current_price.toLocaleString()}</span>
-                                    </div>
-                                    <div className="bg-green-50 p-3 rounded-lg">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm font-medium text-green-800">Profit Margin:</span>
-                                            <div className="text-right">
-                                                <div className="font-bold text-green-600">₱{calculateMargin().toLocaleString()}</div>
-                                                <div className="text-xs text-green-600">{calculateMarginPercentage()}%</div>
+                                    {vehicle.sale_price && (
+                                        <>
+                                            <Separator />
+                                            <div className="flex justify-between">
+                                                <span className="font-medium">Sale Price:</span>
+                                                <span className="font-bold text-lg">{formatCurrency(vehicle.sale_price, vehicle.currency)}</span>
                                             </div>
-                                        </div>
-                                    </div>
+                                            <div className="bg-green-50 p-3 rounded-lg">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm font-medium text-green-800">Profit Margin:</span>
+                                                    <div className="text-right">
+                                                        <div className="font-bold text-green-600">{formatCurrency(calculateMargin(), vehicle.currency)}</div>
+                                                        <div className="text-xs text-green-600">{calculateMarginPercentage()}%</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -455,21 +446,25 @@ export default function VehicleView() {
                             <CardContent className="space-y-4">
                                 <div className="space-y-3">
                                     <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">Location:</span>
-                                        <Badge variant="outline">{mockVehicle.location}</Badge>
+                                        <span className="text-sm text-muted-foreground">Branch:</span>
+                                        <Badge variant="outline">{vehicle.branch.name}</Badge>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">Sales Rep:</span>
-                                        <span className="font-medium">{mockVehicle.assigned_sales_rep}</span>
-                                    </div>
+                                    {vehicle.assigned_user && (
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-muted-foreground">Assigned To:</span>
+                                            <span className="font-medium">{vehicle.assigned_user.name}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between">
                                         <span className="text-sm text-muted-foreground">Priority:</span>
                                         <span>{getPriorityBadge(mockVehicle.priority)}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">Date Received:</span>
-                                        <span className="font-medium">{mockVehicle.date_received}</span>
-                                    </div>
+                                    {vehicle.acquisition_date && (
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-muted-foreground">Acquisition Date:</span>
+                                            <span className="font-medium">{new Date(vehicle.acquisition_date).toLocaleDateString()}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -513,29 +508,29 @@ export default function VehicleView() {
                         </Card>
 
                         {/* Documents */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <FileText className="h-5 w-5" />
-                                    <span>Documents ({mockVehicle.documents.length})</span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-2">
-                                    {mockVehicle.documents.map((doc, index) => (
-                                        <div key={index} className="flex items-center justify-between p-2 border rounded hover:bg-gray-50">
-                                            <div className="flex items-center space-x-2">
-                                                <FileText className="h-4 w-4" />
-                                                <span className="text-sm">{doc}</span>
-                                            </div>
-                                            <Button variant="ghost" size="sm">
+                        {vehicle.specs?.documents && vehicle.specs.documents.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center space-x-2">
+                                        <FileText className="h-5 w-5" />
+                                        <span>Documents ({vehicle.specs.documents.length})</span>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-2">
+                                        {vehicle.specs.documents.map((doc: any, index: number) => (
+                                            <a key={index} href={doc.url} download className="flex items-center justify-between p-2 border rounded hover:bg-gray-50">
+                                                <div className="flex items-center space-x-2">
+                                                    <FileText className="h-4 w-4" />
+                                                    <span className="text-sm">{doc.name || `Document ${index + 1}`}</span>
+                                                </div>
                                                 <Download className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Activity History */}
                         <Card>
@@ -546,42 +541,51 @@ export default function VehicleView() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-3">
-                                    {mockActivity.slice(0, 5).map((activity) => (
-                                        <div key={activity.id} className="flex items-start space-x-2">
-                                            <div className={`w-2 h-2 rounded-full mt-2 ${
-                                                activity.type === 'price' ? 'bg-blue-500' :
-                                                activity.type === 'test_drive' ? 'bg-green-500' :
-                                                activity.type === 'photos' ? 'bg-purple-500' :
-                                                activity.type === 'location' ? 'bg-orange-500' :
-                                                'bg-gray-500'
-                                            }`}></div>
-                                            <div className="flex-1">
-                                                <div className="text-sm font-medium">{activity.action}</div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {activity.user} • {new Date(activity.timestamp).toLocaleDateString()}
+                                {activityLogs.length > 0 ? (
+                                    <>
+                                        <div className="space-y-3">
+                                            {activityLogs.slice(0, 5).map((activity) => (
+                                                <div key={activity.id} className="flex items-start space-x-2">
+                                                    <div className={`w-2 h-2 rounded-full mt-2 ${
+                                                        activity.event === 'updated' ? 'bg-blue-500' :
+                                                        activity.event === 'created' ? 'bg-green-500' :
+                                                        activity.event === 'deleted' ? 'bg-red-500' :
+                                                        'bg-gray-500'
+                                                    }`}></div>
+                                                    <div className="flex-1">
+                                                        <div className="text-sm font-medium">{activity.action}</div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {activity.user} • {new Date(activity.timestamp).toLocaleDateString()} {new Date(activity.timestamp).toLocaleTimeString()}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                                <Button variant="outline" size="sm" className="w-full mt-4">
-                                    View Full History
-                                </Button>
+                                        {activityLogs.length > 5 && (
+                                            <Button variant="outline" size="sm" className="w-full mt-4">
+                                                View Full History ({activityLogs.length} total)
+                                            </Button>
+                                        )}
+                                    </>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground text-center py-4">No activity logs yet</p>
+                                )}
                             </CardContent>
                         </Card>
 
                         {/* Internal Notes */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Internal Notes</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="bg-gray-50 p-3 rounded text-sm">
-                                    {mockVehicle.notes}
-                                </div>
-                            </CardContent>
-                        </Card>
+                        {vehicle.notes && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Internal Notes</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="bg-gray-50 p-3 rounded text-sm">
+                                        {vehicle.notes}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 </div>
             </div>

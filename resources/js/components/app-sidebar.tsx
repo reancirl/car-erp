@@ -79,15 +79,15 @@ const operationsNavItems: NavItem[] = [
         href: '/service/warranty-claims',
         icon: FileText,
     },
-    {
-        title: 'Parts & Accessories',
-        href: '/service/parts-inventory',
-        icon: Package,
-    },
 ];
 
 // Inventory Management
 const inventoryNavItems: NavItem[] = [
+    {
+        title: 'Parts & Accessories',
+        href: '/inventory/parts-inventory',
+        icon: Package,
+    },
     {
         title: 'Vehicle Models',
         href: '/inventory/models',
@@ -174,7 +174,7 @@ const navPermissions: Record<string, string> = {
     '/service/service-types': 'service_types.view',
     '/service/common-services': 'common_services.view',
     '/service/warranty-claims': 'warranty.view',
-    '/service/parts-inventory': 'inventory.view',
+    '/inventory/parts-inventory': 'inventory.view',
     '/inventory/vehicles': 'inventory.view',
     '/sales/lead-management': 'sales.view',
     '/sales/test-drives': 'sales.view',

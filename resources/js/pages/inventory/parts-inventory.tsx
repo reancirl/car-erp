@@ -11,12 +11,12 @@ import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Service & Parts',
-        href: '/service',
+        title: 'Inventory Management',
+        href: '/inventory',
     },
     {
-        title: 'Parts & Inventory',
-        href: '/service/parts-inventory',
+        title: 'Parts & Accessories',
+        href: '/inventory/parts-inventory',
     },
 ];
 

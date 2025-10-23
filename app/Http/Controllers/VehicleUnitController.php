@@ -210,7 +210,45 @@ class VehicleUnitController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the vehicle view page (Inertia).
+     */
+    public function showPage(Request $request, $id): Response
+    {
+        $unit = VehicleUnit::with(['master', 'branch', 'assignedUser', 'vehicleModel'])
+            ->findOrFail($id);
+
+        // Verify user has access to this unit's branch
+        $user = $request->user();
+        if (!$user->hasRole(['admin', 'auditor']) && $unit->branch_id !== $user->branch_id) {
+            abort(403, 'Unauthorized to view this vehicle unit.');
+        }
+
+        // Get recent activity logs for this vehicle
+        $activityLogs = \App\Models\ActivityLog::where('subject_type', VehicleUnit::class)
+            ->where('subject_id', $unit->id)
+            ->with('causer')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'action' => $log->description,
+                    'user' => $log->causer ? $log->causer->name : 'System',
+                    'timestamp' => $log->created_at->toISOString(),
+                    'event' => $log->event,
+                    'module' => $log->module,
+                ];
+            });
+
+        return Inertia::render('inventory/vehicle-view', [
+            'vehicle' => $unit,
+            'activityLogs' => $activityLogs,
+        ]);
+    }
+
+    /**
+     * Display the specified resource (API).
      */
     public function show(VehicleUnit $unit): JsonResponse
     {

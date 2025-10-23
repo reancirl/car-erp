@@ -393,11 +393,10 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                             key={unit.id} 
                                             className={unit.deleted_at ? 'opacity-50' : ''}
                                         >
-                                            <TableCell>
-                                                <Badge variant="outline">{unit.stock_number}</Badge>
-                                            </TableCell>
+                                            {/* Vehicle Details */}
                                             <TableCell className="font-medium">
                                                 <div>
+                                                    <Badge variant="outline" className="mb-1">{unit.stock_number}</Badge>
                                                     <div className="font-medium">
                                                         {unit.vehicle_model ? (
                                                             `${unit.vehicle_model.year} ${unit.vehicle_model.make} ${unit.vehicle_model.model}`
@@ -405,17 +404,15 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                             `${unit.master.year} ${unit.master.make} ${unit.master.model}`
                                                         )}
                                                     </div>
-                                                    <div className="text-sm text-muted-foreground">
-                                                        {(unit.vehicle_model?.body_type || unit.master.body_type)}
-                                                    </div>
                                                     <div className="text-xs text-muted-foreground font-mono">{unit.vin}</div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>
-                                                {getStatusBadge(unit.status)}
-                                            </TableCell>
+                                            {/* Specifications */}
                                             <TableCell>
                                                 <div className="space-y-1">
+                                                    <div className="text-sm">
+                                                        {(unit.vehicle_model?.body_type || unit.master.body_type)}
+                                                    </div>
                                                     {(unit.vehicle_model?.transmission || unit.master.transmission) && (
                                                         <div className="text-sm">{unit.vehicle_model?.transmission || unit.master.transmission}</div>
                                                     )}
@@ -430,6 +427,7 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                     )}
                                                 </div>
                                             </TableCell>
+                                            {/* Pricing */}
                                             <TableCell>
                                                 <div>
                                                     <div className="text-sm font-medium">
@@ -447,6 +445,7 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                     )}
                                                 </div>
                                             </TableCell>
+                                            {/* Location */}
                                             <TableCell>
                                                 <div className="flex items-center space-x-1">
                                                     <MapPin className="h-3 w-3" />
@@ -454,6 +453,7 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">{unit.branch.code}</div>
                                             </TableCell>
+                                            {/* Sales Info */}
                                             <TableCell>
                                                 <div>
                                                     {unit.assigned_user ? (
@@ -476,6 +476,7 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                     )}
                                                 </div>
                                             </TableCell>
+                                            {/* Days in Inventory */}
                                             <TableCell>
                                                 <div className="text-center">
                                                     {unit.acquisition_date && (
@@ -488,7 +489,9 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                     )}
                                                 </div>
                                             </TableCell>
+                                            {/* Status */}
                                             <TableCell>{getStatusBadge(unit.status)}</TableCell>
+                                            {/* Actions */}
                                             <TableCell>
                                                 <div className="flex space-x-1">
                                                     <Link href={`/inventory/vehicles/${unit.id}`}>
