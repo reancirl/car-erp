@@ -22,6 +22,8 @@ class Lead extends Model
         'status',
         'priority',
         'vehicle_interest',
+        'vehicle_variant',
+        'vehicle_model_id',
         'budget_min',
         'budget_max',
         'purchase_timeline',
@@ -60,6 +62,11 @@ class Lead extends Model
     public function assignedUser()
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function vehicleModel()
+    {
+        return $this->belongsTo(VehicleModel::class, 'vehicle_model_id');
     }
 
     /**

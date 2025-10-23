@@ -6,6 +6,7 @@ use App\Models\Pipeline;
 use App\Models\Branch;
 use App\Models\User;
 use App\Models\Lead;
+use App\Models\VehicleModel;
 use App\Http\Requests\StorePipelineRequest;
 use App\Http\Requests\UpdatePipelineRequest;
 use App\Traits\LogsActivity;
@@ -132,12 +133,23 @@ class PipelineController extends Controller
                 $q->where('branch_id', $user->branch_id);
             })
             ->whereNotIn('status', ['lost'])
-            ->get(['id', 'lead_id', 'name', 'email', 'phone', 'branch_id']);
+            ->get([
+                'id', 'lead_id', 'name', 'email', 'phone', 'branch_id',
+                'vehicle_interest', 'vehicle_variant', 'vehicle_model_id'
+            ]);
+
+        // Get active vehicle models for dropdown
+        $vehicleModels = VehicleModel::where('is_active', true)
+            ->orderBy('make')
+            ->orderBy('model')
+            ->orderBy('year', 'desc')
+            ->get(['id', 'model_code', 'make', 'model', 'year', 'base_price']);
 
         return Inertia::render('sales/pipeline-create', [
             'branches' => $user->hasRole('admin') ? Branch::where('status', 'active')->get() : null,
             'salesReps' => $salesReps,
             'leads' => $leads,
+            'vehicleModels' => $vehicleModels,
         ]);
     }
 
@@ -212,9 +224,17 @@ class PipelineController extends Controller
             })
             ->get(['id', 'name', 'branch_id']);
 
+        // Get active vehicle models for dropdown
+        $vehicleModels = VehicleModel::where('is_active', true)
+            ->orderBy('make')
+            ->orderBy('model')
+            ->orderBy('year', 'desc')
+            ->get(['id', 'model_code', 'make', 'model', 'year', 'base_price']);
+
         return Inertia::render('sales/pipeline-edit', [
             'pipeline' => $pipeline,
             'salesReps' => $salesReps,
+            'vehicleModels' => $vehicleModels,
         ]);
     }
 

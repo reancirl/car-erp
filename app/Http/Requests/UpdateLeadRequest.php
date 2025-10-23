@@ -37,6 +37,13 @@ class UpdateLeadRequest extends FormRequest
                 'assigned_to' => null,
             ]);
         }
+        
+        // Convert empty string to null for vehicle_model_id
+        if ($this->vehicle_model_id === '') {
+            $this->merge([
+                'vehicle_model_id' => null,
+            ]);
+        }
     }
 
     /**
@@ -56,6 +63,8 @@ class UpdateLeadRequest extends FormRequest
             'status' => 'required|in:new,contacted,qualified,hot,unqualified,lost',
             'priority' => 'required|in:low,medium,high,urgent',
             'vehicle_interest' => 'nullable|string|max:255',
+            'vehicle_variant' => 'nullable|string|max:100',
+            'vehicle_model_id' => 'nullable|exists:vehicle_models,id',
             'budget_min' => 'nullable|numeric|min:0|max:99999999.99',
             'budget_max' => 'nullable|numeric|min:0|max:99999999.99|gte:budget_min',
             'purchase_timeline' => 'nullable|in:immediate,soon,month,quarter,exploring',

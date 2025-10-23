@@ -23,11 +23,16 @@ Implemented automated pipeline stage progression with intelligent rules to autom
 - **Note**: To be integrated with Quote generation system when implemented
 
 ### 3. **Test Drive → Reservation Auto-Advancement**
-- **Trigger**: When a test drive reservation type changes to 'reservation'
-- **Action**: Automatically advances pipeline to "Reservation Made" stage
+- **Trigger**: When a test drive status changes from 'pending_signature' to 'confirmed'
+- **Action**: 
+  - If pipeline exists: Advances to "Reservation Made" stage
+  - If no pipeline exists: Creates new pipeline directly in "Reservation Made" stage
 - **Implementation**: `TestDrive` model observer in `app/Models/TestDrive.php`
-- **Probability Update**: Increases to 85%
+- **Probability Update**: Sets to 85%
+- **Priority**: Sets to 'high' for new pipelines
 - **Matching**: Links via customer phone or email
+- **Data Transferred**: Customer info, vehicle details, sales rep, branch
+- **Note**: Triggers when customer signs and confirms the test drive, indicating serious purchase intent. Handles both scenarios - customers who went through earlier pipeline stages and walk-in customers who started with test drive
 
 ### 4. **Auto-Loss Detection**
 - **Trigger**: Manual button click (no cron job)

@@ -22,6 +22,8 @@ class DatabaseSeeder extends Seeder
         // Seed attribute definitions for inventory system
         $this->call(AttributeDefinitionsSeeder::class);
 
+        $this->call(VehicleModelPermissionsSeeder::class);
+
         // Create only admin user
         $admin = User::factory()->create([
             'name' => 'Admin User',

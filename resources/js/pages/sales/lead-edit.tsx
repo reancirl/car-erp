@@ -40,6 +40,7 @@ interface Lead {
     status: string;
     priority: string;
     vehicle_interest: string | null;
+    vehicle_model_id: number | null;
     budget_min: number | null;
     budget_max: number | null;
     purchase_timeline: string | null;
@@ -93,6 +94,7 @@ export default function LeadEdit({ lead, salesReps, vehicleModels }: Props) {
         status: lead.status || 'new',
         priority: lead.priority || 'medium',
         vehicle_interest: lead.vehicle_interest || '',
+        vehicle_model_id: lead.vehicle_model_id?.toString() || undefined,
         budget_min: lead.budget_min?.toString() || '',
         budget_max: lead.budget_max?.toString() || '',
         purchase_timeline: lead.purchase_timeline || '',
@@ -396,19 +398,31 @@ export default function LeadEdit({ lead, salesReps, vehicleModels }: Props) {
                                     <div className="space-y-2">
                                         <Label htmlFor="vehicle_interest">Vehicle of Interest</Label>
                                         <Select 
-                                            value={data.vehicle_interest} 
-                                            onValueChange={(value) => setData('vehicle_interest', value)}
+                                            value={data.vehicle_model_id} 
+                                            onValueChange={(value) => {
+                                                const selectedModel = vehicleModels.find(m => m.id.toString() === value);
+                                                if (selectedModel) {
+                                                    const vehicleText = `${selectedModel.year} ${selectedModel.make} ${selectedModel.model}`;
+                                                    setData((prevData) => ({
+                                                        ...prevData,
+                                                        vehicle_model_id: value,
+                                                        vehicle_interest: vehicleText,
+                                                    }));
+                                                }
+                                            }}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select vehicle model" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {vehicleModels && vehicleModels.length > 0 ? (
-                                                    vehicleModels.map((model) => (
-                                                        <SelectItem key={model.id} value={`${model.year} ${model.make} ${model.model}`}>
-                                                            {model.year} {model.make} {model.model} - {model.body_type}
-                                                        </SelectItem>
-                                                    ))
+                                                    vehicleModels
+                                                        .filter((model) => model.id && model.id.toString().trim() !== '' && !isNaN(Number(model.id)))
+                                                        .map((model) => (
+                                                            <SelectItem key={model.id} value={model.id.toString()}>
+                                                                {model.year} {model.make} {model.model} - {model.body_type}
+                                                            </SelectItem>
+                                                        ))
                                                 ) : (
                                                     <div className="p-2 text-sm text-muted-foreground">
                                                         No vehicle models available

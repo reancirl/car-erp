@@ -218,11 +218,13 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
                                         </SelectTrigger>
                                         <SelectContent>
                                             {vehicleModels && vehicleModels.length > 0 ? (
-                                                vehicleModels.map((model) => (
-                                                    <SelectItem key={model.id} value={model.id.toString()}>
-                                                        {model.year} {model.make} {model.model}
-                                                    </SelectItem>
-                                                ))
+                                                vehicleModels
+                                                    .filter((model) => model.id && model.id.toString().trim() !== '' && !isNaN(Number(model.id)))
+                                                    .map((model) => (
+                                                        <SelectItem key={model.id} value={model.id.toString()}>
+                                                            {`${model.year} ${model.make} ${model.model}`}
+                                                        </SelectItem>
+                                                    ))
                                             ) : (
                                                 <div className="p-2 text-sm text-muted-foreground">
                                                     No vehicle models available. <Link href="/inventory/models/create" className="text-blue-600">Create one</Link>
@@ -544,7 +546,7 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
                                             <SelectValue placeholder="Select sales rep" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">Unassigned</SelectItem>
+                                            <SelectItem value="unassigned">Unassigned</SelectItem>
                                             {salesReps?.map((user) => (
                                                 <SelectItem key={user.id} value={user.id.toString()}>
                                                     {user.name}

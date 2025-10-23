@@ -19,6 +19,7 @@ class TestDrive extends Model
         'customer_email',
         'vehicle_vin',
         'vehicle_details',
+        'vehicle_model_id',
         'scheduled_date',
         'scheduled_time',
         'duration_minutes',
@@ -87,19 +88,51 @@ class TestDrive extends Model
         });
 
         static::updated(function ($testDrive) {
-            // Auto-advance pipeline when test drive status changes to reservation type
-            if ($testDrive->wasChanged('reservation_type') && $testDrive->reservation_type === 'reservation') {
+            // Auto-create or advance pipeline when test drive status changes to confirmed
+            if ($testDrive->wasChanged('status') && $testDrive->status === 'confirmed') {
                 $pipeline = Pipeline::where('customer_phone', $testDrive->customer_phone)
                     ->orWhere('customer_email', $testDrive->customer_email)
-                    ->whereNotIn('current_stage', ['lost', 'won', 'reservation_made'])
+                    ->whereNotIn('current_stage', ['lost', 'won'])
                     ->first();
 
                 if ($pipeline) {
+                    // Pipeline exists - advance it to reservation_made
                     $service = app(\App\Services\PipelineAutoProgressionService::class);
                     $service->advanceToReservation($pipeline, [
                         'test_drive_id' => $testDrive->reservation_id,
-                        'reservation_created_at' => now()->toDateTimeString(),
+                        'test_drive_confirmed_at' => now()->toDateTimeString(),
                     ]);
+                } else {
+                    // No pipeline exists - create one directly in reservation_made stage
+                    $pipeline = Pipeline::create([
+                        'branch_id' => $testDrive->branch_id,
+                        'customer_name' => $testDrive->customer_name,
+                        'customer_phone' => $testDrive->customer_phone,
+                        'customer_email' => $testDrive->customer_email,
+                        'sales_rep_id' => $testDrive->assigned_user_id,
+                        'vehicle_interest' => $testDrive->vehicle_details,
+                        'vehicle_model_id' => $testDrive->vehicle_model_id,
+                        'current_stage' => 'reservation_made',
+                        'probability' => 85,
+                        'priority' => 'high',
+                        'auto_progression_enabled' => true,
+                        'auto_loss_rule_enabled' => true,
+                    ]);
+
+                    // Log the auto-creation
+                    $pipeline->logStageChange(
+                        stage: 'reservation_made',
+                        previousStage: null,
+                        triggerType: 'auto',
+                        triggerSystem: 'Test Drive System',
+                        triggerEvent: 'Test Drive Confirmed - Pipeline Created',
+                        triggerUserId: $testDrive->assigned_user_id,
+                        properties: [
+                            'test_drive_id' => $testDrive->reservation_id,
+                            'test_drive_confirmed_at' => now()->toDateTimeString(),
+                            'auto_created' => true,
+                        ]
+                    );
                 }
             }
         });
@@ -140,6 +173,14 @@ class TestDrive extends Model
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    /**
+     * Get the vehicle model for this test drive
+     */
+    public function vehicleModel(): BelongsTo
+    {
+        return $this->belongsTo(VehicleModel::class);
     }
 
     /**

@@ -44,15 +44,28 @@ interface Lead {
     email: string;
     phone: string;
     branch_id: number;
+    vehicle_interest?: string;
+    vehicle_variant?: string;
+    vehicle_model_id?: number;
+}
+
+interface VehicleModel {
+    id: number;
+    model_code: string;
+    make: string;
+    model: string;
+    year: number;
+    base_price?: number;
 }
 
 interface Props {
     branches: Branch[] | null;
     salesReps: SalesRep[];
     leads: Lead[];
+    vehicleModels: VehicleModel[];
 }
 
-export default function PipelineCreate({ branches, salesReps, leads }: Props) {
+export default function PipelineCreate({ branches, salesReps, leads, vehicleModels }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         branch_id: '',
         lead_id: '',
@@ -61,9 +74,7 @@ export default function PipelineCreate({ branches, salesReps, leads }: Props) {
         customer_email: '',
         sales_rep_id: '',
         vehicle_interest: '',
-        vehicle_year: '',
-        vehicle_make: '',
-        vehicle_model: '',
+        vehicle_model_id: undefined as string | undefined,
         quote_amount: '',
         probability: 50,
         current_stage: 'lead',
@@ -84,7 +95,22 @@ export default function PipelineCreate({ branches, salesReps, leads }: Props) {
     const handleLeadSelect = (leadId: string | undefined) => {
         if (leadId) {
             const selectedLead = leads.find(l => l.id.toString() === leadId);
+            
             if (selectedLead) {
+                // Find the vehicle model if lead has vehicle_model_id
+                let vehicleModel = selectedLead.vehicle_model_id 
+                    ? vehicleModels.find(m => m.id === selectedLead.vehicle_model_id)
+                    : null;
+
+                // If no vehicle_model_id but has vehicle_interest text, try to match it
+                if (!vehicleModel && selectedLead.vehicle_interest) {
+                    const interestText = selectedLead.vehicle_interest.toLowerCase();
+                    vehicleModel = vehicleModels.find(m => {
+                        const modelText = `${m.year} ${m.make} ${m.model}`.toLowerCase();
+                        return interestText.includes(modelText) || modelText.includes(interestText);
+                    });
+                }
+
                 setData({
                     ...data,
                     lead_id: leadId,
@@ -92,8 +118,41 @@ export default function PipelineCreate({ branches, salesReps, leads }: Props) {
                     customer_name: selectedLead.name,
                     customer_email: selectedLead.email,
                     customer_phone: selectedLead.phone,
+                    // Auto-populate vehicle interest and model from lead
+                    vehicle_interest: selectedLead.vehicle_interest || '',
+                    vehicle_model_id: vehicleModel ? vehicleModel.id.toString() : undefined,
+                    // Auto-populate quote amount if vehicle model has base_price
+                    quote_amount: vehicleModel?.base_price ? vehicleModel.base_price.toString() : data.quote_amount,
                 });
             }
+        } else {
+            // Clear lead-related data when deselected
+            setData({
+                ...data,
+                lead_id: '',
+            });
+        }
+    };
+
+    const handleVehicleModelSelect = (value: string) => {
+        if (!value) {
+            setData({
+                ...data,
+                vehicle_model_id: undefined,
+                vehicle_interest: '',
+            });
+            return;
+        }
+
+        const selectedModel = vehicleModels.find(m => m.id.toString() === value);
+        if (selectedModel) {
+            const vehicleText = `${selectedModel.year} ${selectedModel.make} ${selectedModel.model}`;
+            setData({
+                ...data,
+                vehicle_model_id: value,
+                vehicle_interest: vehicleText,
+                quote_amount: selectedModel.base_price ? selectedModel.base_price.toString() : data.quote_amount,
+            });
         }
     };
 
@@ -247,43 +306,29 @@ export default function PipelineCreate({ branches, salesReps, leads }: Props) {
                             <CardDescription>Details about the vehicle the customer is interested in</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="vehicle_year">Year</Label>
-                                    <Input
-                                        id="vehicle_year"
-                                        value={data.vehicle_year}
-                                        onChange={(e) => setData('vehicle_year', e.target.value)}
-                                        placeholder="2024"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="vehicle_make">Make</Label>
-                                    <Input
-                                        id="vehicle_make"
-                                        value={data.vehicle_make}
-                                        onChange={(e) => setData('vehicle_make', e.target.value)}
-                                        placeholder="Toyota"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="vehicle_model">Model</Label>
-                                    <Input
-                                        id="vehicle_model"
-                                        value={data.vehicle_model}
-                                        onChange={(e) => setData('vehicle_model', e.target.value)}
-                                        placeholder="Camry"
-                                    />
-                                </div>
-                            </div>
                             <div className="space-y-2">
-                                <Label htmlFor="vehicle_interest">Vehicle Interest (Summary)</Label>
-                                <Input
-                                    id="vehicle_interest"
-                                    value={data.vehicle_interest}
-                                    onChange={(e) => setData('vehicle_interest', e.target.value)}
-                                    placeholder="e.g., 2024 Toyota Camry"
-                                />
+                                <Label htmlFor="vehicle_model_id">Vehicle Interest</Label>
+                                <Select value={data.vehicle_model_id} onValueChange={handleVehicleModelSelect}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a vehicle model..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {vehicleModels
+                                            .filter((model) => model.id && model.id.toString().trim() !== '' && !isNaN(Number(model.id)))
+                                            .map((model) => (
+                                                <SelectItem key={model.id} value={model.id.toString()}>
+                                                    {`${model.year} ${model.make} ${model.model} (${model.model_code})`}
+                                                    {model.base_price ? ` - ₱${Number(model.base_price).toLocaleString()}` : ''}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                                {errors.vehicle_interest && (
+                                    <p className="text-sm text-red-600 flex items-center">
+                                        <AlertCircle className="h-4 w-4 mr-1" />
+                                        {errors.vehicle_interest}
+                                    </p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="quote_amount">Quote Amount (₱)</Label>

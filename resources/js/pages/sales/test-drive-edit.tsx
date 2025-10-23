@@ -31,6 +31,7 @@ interface TestDrive {
     customer_email?: string;
     vehicle_vin: string;
     vehicle_details: string;
+    vehicle_model_id?: number | null;
     scheduled_date: string;
     scheduled_time: string;
     duration_minutes: number;
@@ -81,6 +82,7 @@ export default function TestDriveEdit({ testDrive, branches, salesReps, vehicleM
         customer_email: testDrive.customer_email || '',
         vehicle_vin: testDrive.vehicle_vin,
         vehicle_details: testDrive.vehicle_details,
+        vehicle_model_id: testDrive.vehicle_model_id?.toString() || '',
         scheduled_date: testDrive.scheduled_date,
         scheduled_time: testDrive.scheduled_time,
         duration_minutes: testDrive.duration_minutes,
@@ -305,19 +307,31 @@ export default function TestDriveEdit({ testDrive, branches, salesReps, vehicleM
                                 <div className="space-y-2">
                                     <Label htmlFor="vehicle_details">Vehicle Model *</Label>
                                     <Select 
-                                        value={data.vehicle_details} 
-                                        onValueChange={(value) => setData('vehicle_details', value)}
+                                        value={data.vehicle_model_id} 
+                                        onValueChange={(value) => {
+                                            const selectedModel = vehicleModels.find(m => m.id.toString() === value);
+                                            if (selectedModel) {
+                                                const vehicleText = `${selectedModel.year} ${selectedModel.make} ${selectedModel.model}`;
+                                                setData((prevData) => ({
+                                                    ...prevData,
+                                                    vehicle_model_id: value,
+                                                    vehicle_details: vehicleText,
+                                                }));
+                                            }
+                                        }}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select vehicle model" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {vehicleModels && vehicleModels.length > 0 ? (
-                                                vehicleModels.map((model) => (
-                                                    <SelectItem key={model.id} value={`${model.year} ${model.make} ${model.model}`}>
-                                                        {model.year} {model.make} {model.model} - {model.body_type}
-                                                    </SelectItem>
-                                                ))
+                                                vehicleModels
+                                                    .filter((model) => model.id && model.id.toString().trim() !== '' && !isNaN(Number(model.id)))
+                                                    .map((model) => (
+                                                        <SelectItem key={model.id} value={model.id.toString()}>
+                                                            {model.year} {model.make} {model.model} - {model.body_type}
+                                                        </SelectItem>
+                                                    ))
                                             ) : (
                                                 <div className="p-2 text-sm text-muted-foreground">
                                                     No vehicle models available

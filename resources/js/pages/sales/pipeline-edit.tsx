@@ -34,9 +34,7 @@ interface Pipeline {
     customer_email: string | null;
     sales_rep_id: number | null;
     vehicle_interest: string | null;
-    vehicle_year: string | null;
-    vehicle_make: string | null;
-    vehicle_model: string | null;
+    vehicle_model_id: number | null;
     quote_amount: number | null;
     probability: number;
     current_stage: string;
@@ -63,21 +61,29 @@ interface SalesRep {
     name: string;
 }
 
+interface VehicleModel {
+    id: number;
+    model_code: string;
+    make: string;
+    model: string;
+    year: number;
+    base_price?: number;
+}
+
 interface Props {
     pipeline: Pipeline;
     salesReps: SalesRep[];
+    vehicleModels: VehicleModel[];
 }
 
-export default function PipelineEdit({ pipeline, salesReps }: Props) {
+export default function PipelineEdit({ pipeline, salesReps, vehicleModels }: Props) {
     const { data, setData, put, processing, errors } = useForm({
         customer_name: pipeline.customer_name || '',
         customer_phone: pipeline.customer_phone || '',
         customer_email: pipeline.customer_email || '',
         sales_rep_id: pipeline.sales_rep_id?.toString() || '',
         vehicle_interest: pipeline.vehicle_interest || '',
-        vehicle_year: pipeline.vehicle_year || '',
-        vehicle_make: pipeline.vehicle_make || '',
-        vehicle_model: pipeline.vehicle_model || '',
+        vehicle_model_id: pipeline.vehicle_model_id?.toString() || '',
         quote_amount: pipeline.quote_amount?.toString() || '',
         probability: pipeline.probability || 50,
         current_stage: pipeline.current_stage || 'lead',
@@ -93,6 +99,28 @@ export default function PipelineEdit({ pipeline, salesReps }: Props) {
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         put(`/sales/pipeline/${pipeline.id}`);
+    };
+
+    const handleVehicleModelSelect = (value: string) => {
+        if (!value) {
+            setData((prevData) => ({
+                ...prevData,
+                vehicle_model_id: '',
+                vehicle_interest: '',
+            }));
+            return;
+        }
+
+        const selectedModel = vehicleModels.find(m => m.id.toString() === value);
+        if (selectedModel) {
+            const vehicleText = `${selectedModel.year} ${selectedModel.make} ${selectedModel.model}`;
+            setData((prevData) => ({
+                ...prevData,
+                vehicle_model_id: value,
+                vehicle_interest: vehicleText,
+                quote_amount: selectedModel.base_price ? selectedModel.base_price.toString() : prevData.quote_amount,
+            }));
+        }
     };
 
     return (
@@ -221,43 +249,29 @@ export default function PipelineEdit({ pipeline, salesReps }: Props) {
                             <CardDescription>Details about the vehicle the customer is interested in</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="vehicle_year">Year</Label>
-                                    <Input
-                                        id="vehicle_year"
-                                        value={data.vehicle_year}
-                                        onChange={(e) => setData('vehicle_year', e.target.value)}
-                                        placeholder="2024"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="vehicle_make">Make</Label>
-                                    <Input
-                                        id="vehicle_make"
-                                        value={data.vehicle_make}
-                                        onChange={(e) => setData('vehicle_make', e.target.value)}
-                                        placeholder="Toyota"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="vehicle_model">Model</Label>
-                                    <Input
-                                        id="vehicle_model"
-                                        value={data.vehicle_model}
-                                        onChange={(e) => setData('vehicle_model', e.target.value)}
-                                        placeholder="Camry"
-                                    />
-                                </div>
-                            </div>
                             <div className="space-y-2">
-                                <Label htmlFor="vehicle_interest">Vehicle Interest (Summary)</Label>
-                                <Input
-                                    id="vehicle_interest"
-                                    value={data.vehicle_interest}
-                                    onChange={(e) => setData('vehicle_interest', e.target.value)}
-                                    placeholder="e.g., 2024 Toyota Camry"
-                                />
+                                <Label htmlFor="vehicle_model_id">Vehicle Interest</Label>
+                                <Select value={data.vehicle_model_id || undefined} onValueChange={handleVehicleModelSelect}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a vehicle model..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {vehicleModels
+                                            .filter((model) => model.id && model.id.toString().trim() !== '' && !isNaN(Number(model.id)))
+                                            .map((model) => (
+                                                <SelectItem key={model.id} value={model.id.toString()}>
+                                                    {`${model.year} ${model.make} ${model.model} (${model.model_code})`}
+                                                    {model.base_price ? ` - ₱${Number(model.base_price).toLocaleString()}` : ''}
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                                {errors.vehicle_interest && (
+                                    <p className="text-sm text-red-600 flex items-center">
+                                        <AlertCircle className="h-4 w-4 mr-1" />
+                                        {errors.vehicle_interest}
+                                    </p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="quote_amount">Quote Amount (₱)</Label>

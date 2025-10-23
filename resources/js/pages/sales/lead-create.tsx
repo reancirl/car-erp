@@ -80,6 +80,7 @@ export default function LeadCreate({ branches, salesReps, vehicleModels, auth }:
         status: 'new',
         priority: 'medium',
         vehicle_interest: '',
+        vehicle_model_id: '' as string,
         budget_min: '',
         budget_max: '',
         purchase_timeline: '',
@@ -110,6 +111,7 @@ export default function LeadCreate({ branches, salesReps, vehicleModels, auth }:
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
+        console.log('Submitting lead data:', data);
         post('/sales/lead-management', {
             preserveScroll: true,
         });
@@ -376,19 +378,33 @@ export default function LeadCreate({ branches, salesReps, vehicleModels, auth }:
                                     <div className="space-y-2">
                                         <Label htmlFor="vehicle_interest">Vehicle of Interest</Label>
                                         <Select 
-                                            value={data.vehicle_interest} 
-                                            onValueChange={(value) => setData('vehicle_interest', value)}
+                                            value={data.vehicle_model_id} 
+                                            onValueChange={(value) => {
+                                                console.log('Selected vehicle model ID:', value);
+                                                const selectedModel = vehicleModels.find(m => m.id.toString() === value);
+                                                console.log('Found model:', selectedModel);
+                                                if (selectedModel) {
+                                                    const vehicleText = `${selectedModel.year} ${selectedModel.make} ${selectedModel.model}`;
+                                                    setData((prevData) => ({
+                                                        ...prevData,
+                                                        vehicle_model_id: value,
+                                                        vehicle_interest: vehicleText,
+                                                    }));
+                                                }
+                                            }}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select vehicle model" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {vehicleModels && vehicleModels.length > 0 ? (
-                                                    vehicleModels.map((model) => (
-                                                        <SelectItem key={model.id} value={`${model.year} ${model.make} ${model.model}`}>
-                                                            {model.year} {model.make} {model.model} - {model.body_type}
-                                                        </SelectItem>
-                                                    ))
+                                                    vehicleModels
+                                                        .filter((model) => model.id && model.id.toString().trim() !== '' && !isNaN(Number(model.id)))
+                                                        .map((model) => (
+                                                            <SelectItem key={model.id} value={model.id.toString()}>
+                                                                {model.year} {model.make} {model.model} - {model.body_type}
+                                                            </SelectItem>
+                                                        ))
                                                 ) : (
                                                     <div className="p-2 text-sm text-muted-foreground">
                                                         No vehicle models available

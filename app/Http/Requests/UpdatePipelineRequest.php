@@ -37,6 +37,13 @@ class UpdatePipelineRequest extends FormRequest
                 'sales_rep_id' => null,
             ]);
         }
+        
+        // Convert empty string to null for vehicle_model_id
+        if ($this->vehicle_model_id === '') {
+            $this->merge([
+                'vehicle_model_id' => null,
+            ]);
+        }
     }
 
     /**
@@ -52,9 +59,7 @@ class UpdatePipelineRequest extends FormRequest
             'customer_email' => 'nullable|email:rfc,dns|max:255',
             'sales_rep_id' => 'nullable|exists:users,id',
             'vehicle_interest' => 'nullable|string|max:255',
-            'vehicle_year' => 'nullable|string|max:4',
-            'vehicle_make' => 'nullable|string|max:100',
-            'vehicle_model' => 'nullable|string|max:100',
+            'vehicle_model_id' => 'nullable|exists:vehicle_models,id',
             'quote_amount' => 'nullable|numeric|min:0|max:99999999.99',
             'current_stage' => 'required|in:lead,qualified,quote_sent,test_drive_scheduled,test_drive_completed,reservation_made,lost,won',
             'probability' => 'required|integer|min:0|max:100',

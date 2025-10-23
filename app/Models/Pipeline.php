@@ -19,9 +19,7 @@ class Pipeline extends Model
         'customer_email',
         'sales_rep_id',
         'vehicle_interest',
-        'vehicle_year',
-        'vehicle_make',
-        'vehicle_model',
+        'vehicle_model_id',
         'quote_amount',
         'current_stage',
         'previous_stage',
@@ -75,6 +73,11 @@ class Pipeline extends Model
     public function salesRep()
     {
         return $this->belongsTo(User::class, 'sales_rep_id');
+    }
+
+    public function vehicleModel()
+    {
+        return $this->belongsTo(VehicleModel::class);
     }
 
     public function stageLogs()

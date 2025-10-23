@@ -59,6 +59,7 @@ export default function TestDriveCreate({ branches, salesReps, vehicleModels }: 
         customer_email: '',
         vehicle_vin: '',
         vehicle_details: '',
+        vehicle_model_id: '' as string,
         scheduled_date: new Date().toISOString().split('T')[0],
         scheduled_time: '09:00',
         duration_minutes: 30,
@@ -259,19 +260,31 @@ export default function TestDriveCreate({ branches, salesReps, vehicleModels }: 
                                 <div className="space-y-2">
                                     <Label htmlFor="vehicle_details">Vehicle Model *</Label>
                                     <Select 
-                                        value={data.vehicle_details} 
-                                        onValueChange={(value) => setData('vehicle_details', value)}
+                                        value={data.vehicle_model_id} 
+                                        onValueChange={(value) => {
+                                            const selectedModel = vehicleModels.find(m => m.id.toString() === value);
+                                            if (selectedModel) {
+                                                const vehicleText = `${selectedModel.year} ${selectedModel.make} ${selectedModel.model}`;
+                                                setData((prevData) => ({
+                                                    ...prevData,
+                                                    vehicle_model_id: value,
+                                                    vehicle_details: vehicleText,
+                                                }));
+                                            }
+                                        }}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select vehicle model" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {vehicleModels && vehicleModels.length > 0 ? (
-                                                vehicleModels.map((model) => (
-                                                    <SelectItem key={model.id} value={`${model.year} ${model.make} ${model.model}`}>
-                                                        {model.year} {model.make} {model.model} - {model.body_type}
-                                                    </SelectItem>
-                                                ))
+                                                vehicleModels
+                                                    .filter((model) => model.id && model.id.toString().trim() !== '' && !isNaN(Number(model.id)))
+                                                    .map((model) => (
+                                                        <SelectItem key={model.id} value={model.id.toString()}>
+                                                            {model.year} {model.make} {model.model} - {model.body_type}
+                                                        </SelectItem>
+                                                    ))
                                             ) : (
                                                 <div className="p-2 text-sm text-muted-foreground">
                                                     No vehicle models available

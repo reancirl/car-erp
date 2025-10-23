@@ -15,6 +15,19 @@ class StoreTestDriveRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        // Convert empty string to null for vehicle_model_id
+        if ($this->vehicle_model_id === '') {
+            $this->merge([
+                'vehicle_model_id' => null,
+            ]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      */
     public function rules(): array
@@ -26,6 +39,7 @@ class StoreTestDriveRequest extends FormRequest
             
             'vehicle_vin' => 'required|string|min:17|max:17',
             'vehicle_details' => 'required|string|max:500',
+            'vehicle_model_id' => 'nullable|exists:vehicle_models,id',
             
             'scheduled_date' => 'required|date|after_or_equal:today',
             'scheduled_time' => ['required', 'string', 'regex:/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/'],
