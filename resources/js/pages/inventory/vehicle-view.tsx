@@ -5,8 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Car, Edit, ArrowLeft, Share2, Printer, Download, MapPin, Calendar, User, DollarSign, Fuel, Gauge, Palette, Settings, History, Camera, FileText, CheckCircle, Clock, AlertTriangle, Star, TestTube, Globe } from 'lucide-react';
+import { Car, Edit, ArrowLeft, Share2, Printer, Download, MapPin, Calendar, User, DollarSign, Fuel, Gauge, Palette, Settings, History, Camera, FileText, CheckCircle, Clock, AlertTriangle, Star, TestTube, Globe, Upload } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+import { useState } from 'react';
 
 interface VehicleUnit {
     id: number;
@@ -120,6 +121,9 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
     
     // Parse features from vehicle specs
     const vehicleFeatures = vehicle.specs?.features || [];
+    
+    // Parse documents from vehicle specs
+    const vehicleDocuments = vehicle.specs?.documents || [];
 
     const getStatusBadge = (status: string) => {
         const statusConfig = {
@@ -374,26 +378,40 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                         )}
 
                         {/* Photos */}
-                        {vehicleImages.length > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center space-x-2">
-                                        <Camera className="h-5 w-5" />
-                                        <span>Vehicle Photos ({vehicleImages.length})</span>
-                                    </CardTitle>
-                                    <CardDescription>High-quality images of the vehicle</CardDescription>
-                                </CardHeader>
-                                <CardContent>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <Camera className="h-5 w-5" />
+                                    <span>Vehicle Photos ({vehicleImages.length})</span>
+                                </CardTitle>
+                                <CardDescription>High-quality images of the vehicle</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {vehicleImages.length > 0 ? (
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         {vehicleImages.map((photo: string, index: number) => (
-                                            <a key={index} href={photo} target="_blank" rel="noopener noreferrer" className="aspect-video bg-gray-100 rounded-lg overflow-hidden hover:opacity-80 transition-opacity">
-                                                <img src={photo} alt={`Vehicle photo ${index + 1}`} className="w-full h-full object-cover" />
+                                            <a 
+                                                key={index} 
+                                                href={photo} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer" 
+                                                className="aspect-video bg-gray-100 rounded-lg overflow-hidden hover:opacity-80 transition-opacity"
+                                            >
+                                                <img 
+                                                    src={photo} 
+                                                    alt={`Vehicle photo ${index + 1}`} 
+                                                    className="w-full h-full object-cover" 
+                                                />
                                             </a>
                                         ))}
                                     </div>
-                                </CardContent>
-                            </Card>
-                        )}
+                                ) : (
+                                    <p className="text-sm text-muted-foreground text-center py-8">
+                                        No photos available. Photos can be added when editing the vehicle.
+                                    </p>
+                                )}
+                            </CardContent>
+                        </Card>
 
                     </div>
 
@@ -508,29 +526,39 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                         </Card>
 
                         {/* Documents */}
-                        {vehicle.specs?.documents && vehicle.specs.documents.length > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center space-x-2">
-                                        <FileText className="h-5 w-5" />
-                                        <span>Documents ({vehicle.specs.documents.length})</span>
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <FileText className="h-5 w-5" />
+                                    <span>Documents ({vehicleDocuments.length})</span>
+                                </CardTitle>
+                                <CardDescription>Vehicle-related documents and files</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {vehicleDocuments.length > 0 ? (
                                     <div className="space-y-2">
-                                        {vehicle.specs.documents.map((doc: any, index: number) => (
-                                            <a key={index} href={doc.url} download className="flex items-center justify-between p-2 border rounded hover:bg-gray-50">
-                                                <div className="flex items-center space-x-2">
-                                                    <FileText className="h-4 w-4" />
-                                                    <span className="text-sm">{doc.name || `Document ${index + 1}`}</span>
+                                        {vehicleDocuments.map((doc: any, index: number) => (
+                                            <a 
+                                                key={index} 
+                                                href={doc.url} 
+                                                download 
+                                                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                                            >
+                                                <div className="flex items-center space-x-3">
+                                                    <FileText className="h-5 w-5 text-gray-400" />
+                                                    <span className="text-sm font-medium">{doc.name || `Document ${index + 1}`}</span>
                                                 </div>
-                                                <Download className="h-4 w-4" />
+                                                <Download className="h-4 w-4 text-gray-400" />
                                             </a>
                                         ))}
                                     </div>
-                                </CardContent>
-                            </Card>
-                        )}
+                                ) : (
+                                    <p className="text-sm text-muted-foreground text-center py-4">
+                                        No documents available. Documents can be added when editing the vehicle.
+                                    </p>
+                                )}
+                            </CardContent>
+                        </Card>
 
                         {/* Activity History */}
                         <Card>

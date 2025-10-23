@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Car, Save, X, Upload, Plus, Minus, AlertCircle, CheckCircle, Camera, FileText, DollarSign, MapPin, Calendar, Fuel, Gauge, Palette, Settings, History, Eye } from 'lucide-react';
+import { Car, Save, X, Upload, Plus, Minus, AlertCircle, CheckCircle, Camera, FileText, DollarSign, MapPin, Calendar, Fuel, Gauge, Palette, Settings, History, Eye, Download } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 
@@ -58,6 +58,15 @@ interface VehicleUnit {
     status: string;
     acquisition_date?: string;
     notes?: string;
+    images?: string[];
+    specs?: {
+        features?: string[];
+        documents?: Array<{
+            name: string;
+            url: string;
+        }>;
+        [key: string]: any;
+    };
 }
 
 interface Props {
@@ -93,16 +102,18 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, auth }: Props) {
+    const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+    const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
+    const [isDraggingDoc, setIsDraggingDoc] = useState(false);
+    
     const isAdmin = auth?.roles?.includes('admin') || auth?.roles?.includes('auditor');
     
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
         vehicle_model_id: unit.vehicle_model_id?.toString() || '',
         branch_id: unit.branch_id?.toString() || '',
         assigned_user_id: unit.assigned_user_id?.toString() || '',
         vin: unit.vin || '',
         stock_number: unit.stock_number || '',
-        trim: unit.trim || '',
-        vehicle_type: unit.vehicle_type || '',
         color_exterior: unit.color_exterior || '',
         color_interior: unit.color_interior || '',
         odometer: unit.odometer?.toString() || '',
@@ -112,18 +123,22 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
         status: unit.status || 'in_stock',
         acquisition_date: unit.acquisition_date || '',
         notes: unit.notes || '',
+        photos: [] as File[],
+        documents: [] as File[],
+        _method: 'PUT' as const,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         console.log('Updating vehicle:', data);
-        put(`/inventory/units/${unit.id}`, {
+        post(`/inventory/units/${unit.id}`, {
+            forceFormData: true,
             onError: (errors) => {
                 console.log('Update errors:', errors);
             },
             onSuccess: () => {
                 console.log('Update successful!');
-            }
+            },
         });
     };
 
@@ -141,6 +156,124 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
         const updated = [...features];
         updated[index][field] = value;
         setFeatures(updated);
+    };
+
+    const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        
+        // Validate file count
+        if (files.length + data.photos.length > 10) {
+            alert('You can only upload up to 10 photos');
+            return;
+        }
+
+        // Validate file sizes (5MB max)
+        const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+        if (oversizedFiles.length > 0) {
+            alert('Some photos exceed the 5MB size limit');
+            return;
+        }
+
+        // Create preview URLs for new files
+        const newPreviews = files.map(file => URL.createObjectURL(file));
+        
+        setData('photos', [...data.photos, ...files]);
+        setPhotoPreviews([...photoPreviews, ...newPreviews]);
+    };
+
+    const handleDocumentSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        
+        // Validate file count
+        if (files.length + data.documents.length > 10) {
+            alert('You can only upload up to 10 documents');
+            return;
+        }
+
+        // Validate file sizes (10MB max)
+        const oversizedFiles = files.filter(file => file.size > 10 * 1024 * 1024);
+        if (oversizedFiles.length > 0) {
+            alert('Some documents exceed the 10MB size limit');
+            return;
+        }
+
+        setData('documents', [...data.documents, ...files]);
+    };
+
+    const removePhoto = (index: number) => {
+        // Revoke the preview URL to free up memory
+        URL.revokeObjectURL(photoPreviews[index]);
+        
+        setData('photos', data.photos.filter((_, i) => i !== index));
+        setPhotoPreviews(photoPreviews.filter((_, i) => i !== index));
+    };
+
+    const removeDocument = (index: number) => {
+        setData('documents', data.documents.filter((_, i) => i !== index));
+    };
+
+    const handlePhotoDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingPhoto(true);
+    };
+
+    const handlePhotoDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingPhoto(false);
+    };
+
+    const handlePhotoDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingPhoto(false);
+        
+        const files = Array.from(e.dataTransfer.files).filter(file => 
+            file.type.startsWith('image/')
+        );
+        
+        if (files.length + data.photos.length > 10) {
+            alert('You can only upload up to 10 photos');
+            return;
+        }
+
+        const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+        if (oversizedFiles.length > 0) {
+            alert('Some photos exceed the 5MB size limit');
+            return;
+        }
+
+        const newPreviews = files.map(file => URL.createObjectURL(file));
+        setData('photos', [...data.photos, ...files]);
+        setPhotoPreviews([...photoPreviews, ...newPreviews]);
+    };
+
+    const handleDocDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingDoc(true);
+    };
+
+    const handleDocDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingDoc(false);
+    };
+
+    const handleDocDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingDoc(false);
+        
+        const files = Array.from(e.dataTransfer.files);
+        
+        if (files.length + data.documents.length > 10) {
+            alert('You can only upload up to 10 documents');
+            return;
+        }
+
+        const oversizedFiles = files.filter(file => file.size > 10 * 1024 * 1024);
+        if (oversizedFiles.length > 0) {
+            alert('Some documents exceed the 10MB size limit');
+            return;
+        }
+
+        setData('documents', [...data.documents, ...files]);
     };
 
     return (
@@ -246,36 +379,6 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                                         Select from pre-configured WULING models. <Link href="/inventory/models" className="text-blue-600 hover:underline">Manage models</Link>
                                     </p>
                                 </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="trim">Trim/Variant</Label>
-                                    <Input 
-                                        id="trim" 
-                                        value={data.trim}
-                                        onChange={(e) => setData('trim', e.target.value)}
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        Specific trim or variant of this unit
-                                    </p>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="vehicle_type">Vehicle Type *</Label>
-                                    <Select 
-                                        value={data.vehicle_type} 
-                                        onValueChange={(value) => setData('vehicle_type', value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="new">New</SelectItem>
-                                            <SelectItem value="used">Used</SelectItem>
-                                            <SelectItem value="demo">Demo</SelectItem>
-                                            <SelectItem value="certified">Certified Pre-Owned</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
                             </CardContent>
                         </Card>
 
@@ -376,6 +479,209 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                                         Add Feature
                                     </Button>
                                 </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Photos & Documents */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <Camera className="h-5 w-5" />
+                                    <span>Photos & Documents</span>
+                                </CardTitle>
+                                <CardDescription>Upload new photos and documents (existing files will remain)</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {/* Existing Photos */}
+                                {unit.images && unit.images.length > 0 && (
+                                    <div className="space-y-2">
+                                        <Label>Current Photos ({unit.images.length})</Label>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                                            {unit.images.map((photo: string, index: number) => (
+                                                <a 
+                                                    key={index} 
+                                                    href={photo} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="aspect-video bg-white rounded-lg overflow-hidden hover:opacity-80 transition-opacity border-2 border-gray-200"
+                                                >
+                                                    <img 
+                                                        src={photo} 
+                                                        alt={`Current photo ${index + 1}`} 
+                                                        className="w-full h-full object-cover" 
+                                                    />
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Photos */}
+                                <div className="space-y-2">
+                                    <Label>Add New Vehicle Photos</Label>
+                                    <div 
+                                        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                                            isDraggingPhoto 
+                                                ? 'border-blue-500 bg-blue-50' 
+                                                : 'border-gray-300 hover:border-gray-400'
+                                        }`}
+                                        onDragOver={handlePhotoDragOver}
+                                        onDragLeave={handlePhotoDragLeave}
+                                        onDrop={handlePhotoDrop}
+                                    >
+                                        <Camera className={`h-12 w-12 mx-auto mb-4 ${isDraggingPhoto ? 'text-blue-500' : 'text-gray-400'}`} />
+                                        <div className="text-sm text-gray-600 mb-2">
+                                            {isDraggingPhoto ? 'Drop photos here' : 'Drag and drop photos here, or click to browse'}
+                                        </div>
+                                        <label htmlFor="photo-upload">
+                                            <Button variant="outline" size="sm" type="button" onClick={() => document.getElementById('photo-upload')?.click()}>
+                                                <Upload className="h-4 w-4 mr-2" />
+                                                Select Photos
+                                            </Button>
+                                        </label>
+                                        <input
+                                            id="photo-upload"
+                                            type="file"
+                                            multiple
+                                            accept="image/jpeg,image/png,image/jpg,image/webp"
+                                            onChange={handlePhotoSelect}
+                                            className="hidden"
+                                        />
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            Max 10 photos, 5MB each (JPEG, PNG, JPG, WEBP)
+                                        </p>
+                                    </div>
+                                    
+                                    {data.photos.length > 0 && (
+                                        <div className="mt-4">
+                                            <p className="text-sm font-medium mb-3">New photos to upload ({data.photos.length}):</p>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                {data.photos.map((photo: File, index: number) => (
+                                                    <div key={index} className="relative group">
+                                                        <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200">
+                                                            <img 
+                                                                src={photoPreviews[index]} 
+                                                                alt={photo.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                        <Button
+                                                            variant="destructive"
+                                                            size="sm"
+                                                            type="button"
+                                                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
+                                                            onClick={() => removePhoto(index)}
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                        <div className="mt-1 text-xs text-gray-600 truncate" title={photo.name}>
+                                                            {photo.name}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {(photo.size / 1024 / 1024).toFixed(2)} MB
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Existing Documents */}
+                                {unit.specs?.documents && unit.specs.documents.length > 0 && (
+                                    <div className="space-y-2">
+                                        <Label>Current Documents ({unit.specs.documents.length})</Label>
+                                        <div className="space-y-2 p-4 bg-gray-50 rounded-lg">
+                                            {unit.specs.documents.map((doc: any, index: number) => (
+                                                <a 
+                                                    key={index} 
+                                                    href={doc.url} 
+                                                    download 
+                                                    className="flex items-center justify-between p-3 bg-white border rounded-lg hover:bg-gray-50 transition-colors"
+                                                >
+                                                    <div className="flex items-center space-x-3">
+                                                        <FileText className="h-5 w-5 text-gray-400" />
+                                                        <span className="text-sm font-medium">{doc.name || `Document ${index + 1}`}</span>
+                                                    </div>
+                                                    <Download className="h-4 w-4 text-gray-400" />
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Documents */}
+                                <div className="space-y-2">
+                                    <Label>Add New Documents</Label>
+                                    <div 
+                                        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                                            isDraggingDoc 
+                                                ? 'border-blue-500 bg-blue-50' 
+                                                : 'border-gray-300 hover:border-gray-400'
+                                        }`}
+                                        onDragOver={handleDocDragOver}
+                                        onDragLeave={handleDocDragLeave}
+                                        onDrop={handleDocDrop}
+                                    >
+                                        <FileText className={`h-12 w-12 mx-auto mb-4 ${isDraggingDoc ? 'text-blue-500' : 'text-gray-400'}`} />
+                                        <div className="text-sm text-gray-600 mb-2">
+                                            {isDraggingDoc ? 'Drop documents here' : 'Drag and drop documents here, or click to browse'}
+                                        </div>
+                                        <label htmlFor="document-upload">
+                                            <Button variant="outline" size="sm" type="button" onClick={() => document.getElementById('document-upload')?.click()}>
+                                                <Upload className="h-4 w-4 mr-2" />
+                                                Select Documents
+                                            </Button>
+                                        </label>
+                                        <input
+                                            id="document-upload"
+                                            type="file"
+                                            multiple
+                                            accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                            onChange={handleDocumentSelect}
+                                            className="hidden"
+                                        />
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            Max 10 documents, 10MB each (PDF, DOC, DOCX, XLS, XLSX)
+                                        </p>
+                                    </div>
+                                    
+                                    {data.documents.length > 0 && (
+                                        <div className="space-y-2 mt-3">
+                                            <p className="text-sm font-medium">New documents to upload ({data.documents.length}):</p>
+                                            {data.documents.map((doc: File, index: number) => (
+                                                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                                    <div className="flex items-center space-x-2">
+                                                        <FileText className="h-4 w-4" />
+                                                        <span className="text-sm">{doc.name}</span>
+                                                        <span className="text-xs text-gray-500">
+                                                            ({(doc.size / 1024 / 1024).toFixed(2)} MB)
+                                                        </span>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        type="button"
+                                                        onClick={() => removeDocument(index)}
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {(data.photos.length > 0 || data.documents.length > 0) && (
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                        <div className="flex items-start space-x-2">
+                                            <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
+                                            <p className="text-xs text-blue-700">
+                                                New files will be uploaded when you save the vehicle. Existing files will remain unchanged.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 

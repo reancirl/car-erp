@@ -69,8 +69,9 @@ interface Props {
 
 export default function VehicleCreate({ branches, salesReps, vehicleModels, auth }: Props) {
     const [features, setFeatures] = useState<Feature[]>([{ title: '', value: '' }]);
-    const [photos, setPhotos] = useState<string[]>([]);
-    const [documents, setDocuments] = useState<string[]>([]);
+    const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+    const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
+    const [isDraggingDoc, setIsDraggingDoc] = useState(false);
     
     const isAdmin = auth?.roles?.includes('admin') || auth?.roles?.includes('auditor');
 
@@ -80,8 +81,6 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
         assigned_user_id: '',
         vin: '',
         stock_number: '',
-        trim: '',
-        vehicle_type: '',
         color_exterior: '',
         color_interior: '',
         odometer: '',
@@ -91,19 +90,22 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
         status: 'in_stock',
         acquisition_date: '',
         notes: '',
+        photos: [] as File[],
+        documents: [] as File[],
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Submitting form data:', data);
-        console.log('Errors:', errors);
+        
+        // Use Inertia's form submission with file support
         post('/inventory/units', {
+            forceFormData: true,
+            onSuccess: () => {
+                console.log('Vehicle created successfully!');
+            },
             onError: (errors) => {
                 console.log('Submission errors:', errors);
             },
-            onSuccess: () => {
-                console.log('Submission successful!');
-            }
         });
     };
 
@@ -119,6 +121,124 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
         const updated = [...features];
         updated[index][field] = value;
         setFeatures(updated);
+    };
+
+    const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        
+        // Validate file count
+        if (files.length + data.photos.length > 10) {
+            alert('You can only upload up to 10 photos');
+            return;
+        }
+
+        // Validate file sizes (5MB max)
+        const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+        if (oversizedFiles.length > 0) {
+            alert('Some photos exceed the 5MB size limit');
+            return;
+        }
+
+        // Create preview URLs for new files
+        const newPreviews = files.map(file => URL.createObjectURL(file));
+        
+        setData('photos', [...data.photos, ...files]);
+        setPhotoPreviews([...photoPreviews, ...newPreviews]);
+    };
+
+    const handleDocumentSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        
+        // Validate file count
+        if (files.length + data.documents.length > 10) {
+            alert('You can only upload up to 10 documents');
+            return;
+        }
+
+        // Validate file sizes (10MB max)
+        const oversizedFiles = files.filter(file => file.size > 10 * 1024 * 1024);
+        if (oversizedFiles.length > 0) {
+            alert('Some documents exceed the 10MB size limit');
+            return;
+        }
+
+        setData('documents', [...data.documents, ...files]);
+    };
+
+    const removePhoto = (index: number) => {
+        // Revoke the preview URL to free up memory
+        URL.revokeObjectURL(photoPreviews[index]);
+        
+        setData('photos', data.photos.filter((_, i) => i !== index));
+        setPhotoPreviews(photoPreviews.filter((_, i) => i !== index));
+    };
+
+    const removeDocument = (index: number) => {
+        setData('documents', data.documents.filter((_, i) => i !== index));
+    };
+
+    const handlePhotoDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingPhoto(true);
+    };
+
+    const handlePhotoDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingPhoto(false);
+    };
+
+    const handlePhotoDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingPhoto(false);
+        
+        const files = Array.from(e.dataTransfer.files).filter(file => 
+            file.type.startsWith('image/')
+        );
+        
+        if (files.length + data.photos.length > 10) {
+            alert('You can only upload up to 10 photos');
+            return;
+        }
+
+        const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+        if (oversizedFiles.length > 0) {
+            alert('Some photos exceed the 5MB size limit');
+            return;
+        }
+
+        const newPreviews = files.map(file => URL.createObjectURL(file));
+        setData('photos', [...data.photos, ...files]);
+        setPhotoPreviews([...photoPreviews, ...newPreviews]);
+    };
+
+    const handleDocDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingDoc(true);
+    };
+
+    const handleDocDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingDoc(false);
+    };
+
+    const handleDocDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDraggingDoc(false);
+        
+        const files = Array.from(e.dataTransfer.files);
+        
+        if (files.length + data.documents.length > 10) {
+            alert('You can only upload up to 10 documents');
+            return;
+        }
+
+        const oversizedFiles = files.filter(file => file.size > 10 * 1024 * 1024);
+        if (oversizedFiles.length > 0) {
+            alert('Some documents exceed the 10MB size limit');
+            return;
+        }
+
+        setData('documents', [...data.documents, ...files]);
     };
 
     return (
@@ -141,7 +261,7 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
                         </Link>
                         <Button size="sm" onClick={handleSubmit} disabled={processing}>
                             <Save className="h-4 w-4 mr-2" />
-                            Save Vehicle
+                            {processing ? 'Saving Vehicle...' : 'Save Vehicle'}
                         </Button>
                     </div>
                 </div>
@@ -236,35 +356,6 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
                                         Select from pre-configured WULING models. <Link href="/inventory/models" className="text-blue-600 hover:underline">Manage models</Link>
                                     </p>
                                     {errors.vehicle_model_id && <p className="text-sm text-red-600">{errors.vehicle_model_id}</p>}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="trim">Trim/Variant</Label>
-                                    <Input 
-                                        id="trim" 
-                                        placeholder="e.g., Elite, Comfort, Standard"
-                                        value={data.trim}
-                                        onChange={(e) => setData('trim', e.target.value)}
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        Specific trim or variant of this unit
-                                    </p>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="vehicle_type">Vehicle Type *</Label>
-                                    <Select value={data.vehicle_type} onValueChange={(value) => setData('vehicle_type', value)}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select vehicle type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="new">New</SelectItem>
-                                            <SelectItem value="used">Used</SelectItem>
-                                            <SelectItem value="demo">Demo</SelectItem>
-                                            <SelectItem value="certified">Certified Pre-Owned</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    {errors.vehicle_type && <p className="text-sm text-red-600">{errors.vehicle_type}</p>}
                                 </div>
                             </CardContent>
                         </Card>
@@ -380,42 +471,152 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
                                     <Camera className="h-5 w-5" />
                                     <span>Photos & Documents</span>
                                 </CardTitle>
-                                <CardDescription>Upload vehicle photos and documentation</CardDescription>
+                                <CardDescription>Select files to upload with the vehicle</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                {/* Photos */}
                                 <div className="space-y-2">
                                     <Label>Vehicle Photos</Label>
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                                        <Camera className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                                    <div 
+                                        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                                            isDraggingPhoto 
+                                                ? 'border-blue-500 bg-blue-50' 
+                                                : 'border-gray-300 hover:border-gray-400'
+                                        }`}
+                                        onDragOver={handlePhotoDragOver}
+                                        onDragLeave={handlePhotoDragLeave}
+                                        onDrop={handlePhotoDrop}
+                                    >
+                                        <Camera className={`h-12 w-12 mx-auto mb-4 ${isDraggingPhoto ? 'text-blue-500' : 'text-gray-400'}`} />
                                         <div className="text-sm text-gray-600 mb-2">
-                                            Drag and drop photos here, or click to browse
+                                            {isDraggingPhoto ? 'Drop photos here' : 'Drag and drop photos here, or click to browse'}
                                         </div>
-                                        <Button variant="outline" size="sm">
-                                            <Upload className="h-4 w-4 mr-2" />
-                                            Upload Photos
-                                        </Button>
+                                        <label htmlFor="photo-upload">
+                                            <Button variant="outline" size="sm" type="button" onClick={() => document.getElementById('photo-upload')?.click()}>
+                                                <Upload className="h-4 w-4 mr-2" />
+                                                Select Photos
+                                            </Button>
+                                        </label>
+                                        <input
+                                            id="photo-upload"
+                                            type="file"
+                                            multiple
+                                            accept="image/jpeg,image/png,image/jpg,image/webp"
+                                            onChange={handlePhotoSelect}
+                                            className="hidden"
+                                        />
                                         <p className="text-xs text-muted-foreground mt-2">
-                                            Recommended: Front, rear, interior, engine bay
+                                            Max 10 photos, 5MB each (JPEG, PNG, JPG, WEBP)
                                         </p>
                                     </div>
+                                    
+                                    {data.photos.length > 0 && (
+                                        <div className="mt-4">
+                                            <p className="text-sm font-medium mb-3">Selected photos ({data.photos.length}):</p>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                {data.photos.map((photo: File, index: number) => (
+                                                    <div key={index} className="relative group">
+                                                        <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200">
+                                                            <img 
+                                                                src={photoPreviews[index]} 
+                                                                alt={photo.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                        <Button
+                                                            variant="destructive"
+                                                            size="sm"
+                                                            type="button"
+                                                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
+                                                            onClick={() => removePhoto(index)}
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                        <div className="mt-1 text-xs text-gray-600 truncate" title={photo.name}>
+                                                            {photo.name}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {(photo.size / 1024 / 1024).toFixed(2)} MB
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
+                                {/* Documents */}
                                 <div className="space-y-2">
                                     <Label>Documents</Label>
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                                        <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                                    <div 
+                                        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                                            isDraggingDoc 
+                                                ? 'border-blue-500 bg-blue-50' 
+                                                : 'border-gray-300 hover:border-gray-400'
+                                        }`}
+                                        onDragOver={handleDocDragOver}
+                                        onDragLeave={handleDocDragLeave}
+                                        onDrop={handleDocDrop}
+                                    >
+                                        <FileText className={`h-12 w-12 mx-auto mb-4 ${isDraggingDoc ? 'text-blue-500' : 'text-gray-400'}`} />
                                         <div className="text-sm text-gray-600 mb-2">
-                                            Upload vehicle documents
+                                            {isDraggingDoc ? 'Drop documents here' : 'Drag and drop documents here, or click to browse'}
                                         </div>
-                                        <Button variant="outline" size="sm">
-                                            <Upload className="h-4 w-4 mr-2" />
-                                            Upload Documents
-                                        </Button>
+                                        <label htmlFor="document-upload">
+                                            <Button variant="outline" size="sm" type="button" onClick={() => document.getElementById('document-upload')?.click()}>
+                                                <Upload className="h-4 w-4 mr-2" />
+                                                Select Documents
+                                            </Button>
+                                        </label>
+                                        <input
+                                            id="document-upload"
+                                            type="file"
+                                            multiple
+                                            accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                            onChange={handleDocumentSelect}
+                                            className="hidden"
+                                        />
                                         <p className="text-xs text-muted-foreground mt-2">
-                                            Title, registration, inspection reports, etc.
+                                            Max 10 documents, 10MB each (PDF, DOC, DOCX, XLS, XLSX)
                                         </p>
                                     </div>
+                                    
+                                    {data.documents.length > 0 && (
+                                        <div className="space-y-2 mt-3">
+                                            <p className="text-sm font-medium">Selected documents ({data.documents.length}):</p>
+                                            {data.documents.map((doc: File, index: number) => (
+                                                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                                    <div className="flex items-center space-x-2">
+                                                        <FileText className="h-4 w-4" />
+                                                        <span className="text-sm">{doc.name}</span>
+                                                        <span className="text-xs text-gray-500">
+                                                            ({(doc.size / 1024 / 1024).toFixed(2)} MB)
+                                                        </span>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        type="button"
+                                                        onClick={() => removeDocument(index)}
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
+
+                                {(data.photos.length > 0 || data.documents.length > 0) && (
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                        <div className="flex items-start space-x-2">
+                                            <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
+                                            <p className="text-xs text-blue-700">
+                                                Files will be uploaded automatically after the vehicle is created
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
@@ -623,7 +824,7 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
                                 <div className="space-y-2">
                                     <Button className="w-full" onClick={handleSubmit} disabled={processing}>
                                         <Save className="h-4 w-4 mr-2" />
-                                        Save Vehicle
+                                        {processing ? 'Saving Vehicle...' : 'Save Vehicle'}
                                     </Button>
                                     <Link href="/inventory/vehicles" className="block">
                                         <Button variant="outline" className="w-full">

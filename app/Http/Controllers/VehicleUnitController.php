@@ -188,11 +188,45 @@ class VehicleUnitController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage (Inertia).
+     * Store a newly created resource in storage (Inertia/API).
      */
     public function store(StoreVehicleUnitRequest $request)
     {
-        $unit = VehicleUnit::create($request->validated());
+        $validated = $request->validated();
+        
+        // Handle photo uploads
+        $imageUrls = [];
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $photo) {
+                $path = $photo->store('vehicles/photos', 'public');
+                $imageUrls[] = '/storage/' . $path;
+            }
+        }
+        $validated['images'] = $imageUrls;
+        
+        // Handle document uploads
+        $documents = [];
+        if ($request->hasFile('documents')) {
+            foreach ($request->file('documents') as $doc) {
+                $path = $doc->store('vehicles/documents', 'public');
+                $documents[] = [
+                    'name' => $doc->getClientOriginalName(),
+                    'url' => '/storage/' . $path,
+                ];
+            }
+        }
+        
+        // Store documents in specs JSON
+        if (!empty($documents)) {
+            $specs = $validated['specs'] ?? [];
+            $specs['documents'] = $documents;
+            $validated['specs'] = $specs;
+        }
+        
+        // Remove photos and documents from validated data as they're now processed
+        unset($validated['photos'], $validated['documents']);
+        
+        $unit = VehicleUnit::create($validated);
 
         $this->logCreated(
             'Inventory',
@@ -202,10 +236,21 @@ class VehicleUnitController extends Controller
                 'unit_id' => $unit->id,
                 'stock_number' => $unit->stock_number,
                 'vin' => $unit->vin,
+                'photos_count' => count($imageUrls),
+                'documents_count' => count($documents),
             ]
         );
 
-        return redirect()->route('inventory.vehicles.index')
+        // If this is an API request (for file uploads), return JSON
+        if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
+            return response()->json([
+                'message' => 'Vehicle unit created successfully.',
+                'data' => $unit->load(['master', 'branch']),
+            ], 201);
+        }
+
+        // Otherwise, redirect for normal Inertia form submission
+        return redirect()->route('inventory.vehicles.show', $unit->id)
             ->with('success', 'Vehicle unit created successfully.');
     }
 
@@ -277,11 +322,42 @@ class VehicleUnitController extends Controller
                 ->with('error', 'Unauthorized to update this vehicle unit.');
         }
 
+        $validated = $request->validated();
         $original = $unit->toArray();
-        $unit->update($request->validated());
+        
+        // Handle new photo uploads (append to existing)
+        if ($request->hasFile('photos')) {
+            $existingImages = $unit->images ?? [];
+            foreach ($request->file('photos') as $photo) {
+                $path = $photo->store('vehicles/photos', 'public');
+                $existingImages[] = '/storage/' . $path;
+            }
+            $validated['images'] = $existingImages;
+        }
+        
+        // Handle new document uploads (append to existing)
+        if ($request->hasFile('documents')) {
+            $existingDocs = $unit->specs['documents'] ?? [];
+            foreach ($request->file('documents') as $doc) {
+                $path = $doc->store('vehicles/documents', 'public');
+                $existingDocs[] = [
+                    'name' => $doc->getClientOriginalName(),
+                    'url' => '/storage/' . $path,
+                ];
+            }
+            
+            $specs = $validated['specs'] ?? $unit->specs ?? [];
+            $specs['documents'] = $existingDocs;
+            $validated['specs'] = $specs;
+        }
+        
+        // Remove photos and documents from validated data as they're now processed
+        unset($validated['photos'], $validated['documents']);
+        
+        $unit->update($validated);
 
         $changes = [];
-        foreach ($request->validated() as $key => $value) {
+        foreach ($validated as $key => $value) {
             if (isset($original[$key]) && $original[$key] != $value) {
                 $changes[$key] = ['old' => $original[$key], 'new' => $value];
             }
@@ -294,7 +370,7 @@ class VehicleUnitController extends Controller
             ['changes' => $changes]
         );
 
-        return redirect()->route('inventory.vehicles.index')
+        return redirect()->route('inventory.vehicles.show', $unit->id)
             ->with('success', 'Vehicle unit updated successfully.');
     }
 
@@ -430,6 +506,209 @@ class VehicleUnitController extends Controller
         return response()->json([
             'message' => 'Vehicle unit status updated successfully.',
             'data' => $unit->fresh(['master', 'branch']),
+        ]);
+    }
+
+    /**
+     * Upload photos for a vehicle unit.
+     */
+    public function uploadPhotos(Request $request, $id): JsonResponse
+    {
+        $unit = VehicleUnit::findOrFail($id);
+        
+        // Verify user has access to this unit's branch
+        $user = $request->user();
+        if (!$user->hasRole(['admin', 'auditor']) && $unit->branch_id !== $user->branch_id) {
+            return response()->json([
+                'message' => 'Unauthorized to upload photos for this vehicle unit.',
+            ], 403);
+        }
+
+        $request->validate([
+            'photos' => 'required|array|max:10',
+            'photos.*' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120', // 5MB max per image
+        ]);
+
+        $existingImages = $unit->images ?? [];
+        $uploadedImages = [];
+
+        foreach ($request->file('photos') as $photo) {
+            $path = $photo->store('vehicles/' . $unit->id . '/photos', 'public');
+            $uploadedImages[] = '/storage/' . $path;
+        }
+
+        $allImages = array_merge($existingImages, $uploadedImages);
+        $unit->update(['images' => $allImages]);
+
+        $this->logActivity(
+            action: 'photos_uploaded',
+            module: 'Inventory',
+            description: "Uploaded " . count($uploadedImages) . " photo(s) for vehicle: {$unit->stock_number}",
+            subject: $unit,
+            properties: ['uploaded_count' => count($uploadedImages)],
+            status: 'success',
+            event: 'updated'
+        );
+
+        return response()->json([
+            'message' => 'Photos uploaded successfully.',
+            'data' => [
+                'images' => $allImages,
+                'uploaded_count' => count($uploadedImages),
+            ],
+        ]);
+    }
+
+    /**
+     * Delete a photo from a vehicle unit.
+     */
+    public function deletePhoto(Request $request, $id): JsonResponse
+    {
+        $unit = VehicleUnit::findOrFail($id);
+        
+        // Verify user has access to this unit's branch
+        $user = $request->user();
+        if (!$user->hasRole(['admin', 'auditor']) && $unit->branch_id !== $user->branch_id) {
+            return response()->json([
+                'message' => 'Unauthorized to delete photos for this vehicle unit.',
+            ], 403);
+        }
+
+        $request->validate([
+            'photo_url' => 'required|string',
+        ]);
+
+        $existingImages = $unit->images ?? [];
+        $photoUrl = $request->photo_url;
+        
+        // Remove from array
+        $updatedImages = array_values(array_filter($existingImages, fn($img) => $img !== $photoUrl));
+        
+        // Delete physical file
+        $path = str_replace('/storage/', '', $photoUrl);
+        \Storage::disk('public')->delete($path);
+
+        $unit->update(['images' => $updatedImages]);
+
+        $this->logActivity(
+            action: 'photo_deleted',
+            module: 'Inventory',
+            description: "Deleted photo from vehicle: {$unit->stock_number}",
+            subject: $unit,
+            properties: ['deleted_photo' => $photoUrl],
+            status: 'success',
+            event: 'updated'
+        );
+
+        return response()->json([
+            'message' => 'Photo deleted successfully.',
+            'data' => ['images' => $updatedImages],
+        ]);
+    }
+
+    /**
+     * Upload documents for a vehicle unit.
+     */
+    public function uploadDocuments(Request $request, $id): JsonResponse
+    {
+        $unit = VehicleUnit::findOrFail($id);
+        
+        // Verify user has access to this unit's branch
+        $user = $request->user();
+        if (!$user->hasRole(['admin', 'auditor']) && $unit->branch_id !== $user->branch_id) {
+            return response()->json([
+                'message' => 'Unauthorized to upload documents for this vehicle unit.',
+            ], 403);
+        }
+
+        $request->validate([
+            'documents' => 'required|array|max:10',
+            'documents.*' => 'required|file|mimes:pdf,doc,docx,xls,xlsx|max:10240', // 10MB max per document
+        ]);
+
+        $specs = $unit->specs ?? [];
+        $existingDocuments = $specs['documents'] ?? [];
+        $uploadedDocuments = [];
+
+        foreach ($request->file('documents') as $document) {
+            $originalName = $document->getClientOriginalName();
+            $path = $document->store('vehicles/' . $unit->id . '/documents', 'public');
+            
+            $uploadedDocuments[] = [
+                'name' => $originalName,
+                'url' => '/storage/' . $path,
+                'uploaded_at' => now()->toISOString(),
+            ];
+        }
+
+        $specs['documents'] = array_merge($existingDocuments, $uploadedDocuments);
+        $unit->update(['specs' => $specs]);
+
+        $this->logActivity(
+            action: 'documents_uploaded',
+            module: 'Inventory',
+            description: "Uploaded " . count($uploadedDocuments) . " document(s) for vehicle: {$unit->stock_number}",
+            subject: $unit,
+            properties: ['uploaded_count' => count($uploadedDocuments)],
+            status: 'success',
+            event: 'updated'
+        );
+
+        return response()->json([
+            'message' => 'Documents uploaded successfully.',
+            'data' => [
+                'documents' => $specs['documents'],
+                'uploaded_count' => count($uploadedDocuments),
+            ],
+        ]);
+    }
+
+    /**
+     * Delete a document from a vehicle unit.
+     */
+    public function deleteDocument(Request $request, $id): JsonResponse
+    {
+        $unit = VehicleUnit::findOrFail($id);
+        
+        // Verify user has access to this unit's branch
+        $user = $request->user();
+        if (!$user->hasRole(['admin', 'auditor']) && $unit->branch_id !== $user->branch_id) {
+            return response()->json([
+                'message' => 'Unauthorized to delete documents for this vehicle unit.',
+            ], 403);
+        }
+
+        $request->validate([
+            'document_url' => 'required|string',
+        ]);
+
+        $specs = $unit->specs ?? [];
+        $existingDocuments = $specs['documents'] ?? [];
+        $documentUrl = $request->document_url;
+        
+        // Remove from array
+        $updatedDocuments = array_values(array_filter($existingDocuments, fn($doc) => $doc['url'] !== $documentUrl));
+        
+        // Delete physical file
+        $path = str_replace('/storage/', '', $documentUrl);
+        \Storage::disk('public')->delete($path);
+
+        $specs['documents'] = $updatedDocuments;
+        $unit->update(['specs' => $specs]);
+
+        $this->logActivity(
+            action: 'document_deleted',
+            module: 'Inventory',
+            description: "Deleted document from vehicle: {$unit->stock_number}",
+            subject: $unit,
+            properties: ['deleted_document' => $documentUrl],
+            status: 'success',
+            event: 'updated'
+        );
+
+        return response()->json([
+            'message' => 'Document deleted successfully.',
+            'data' => ['documents' => $specs['documents']],
         ]);
     }
 

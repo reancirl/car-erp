@@ -320,6 +320,12 @@ Route::middleware(['auth', 'verified'])->prefix('inventory')->group(function () 
         Route::match(['put', 'patch'], '/units/{unit}', [\App\Http\Controllers\VehicleUnitController::class, 'update'])->name('inventory.units.update');
         Route::post('/units/{unit}/transfer', [\App\Http\Controllers\VehicleUnitController::class, 'transfer'])->name('inventory.units.transfer');
         Route::post('/units/{unit}/status', [\App\Http\Controllers\VehicleUnitController::class, 'updateStatus'])->name('inventory.units.status');
+        
+        // File uploads
+        Route::post('/units/{id}/upload-photos', [\App\Http\Controllers\VehicleUnitController::class, 'uploadPhotos'])->name('inventory.units.upload-photos');
+        Route::delete('/units/{id}/delete-photo', [\App\Http\Controllers\VehicleUnitController::class, 'deletePhoto'])->name('inventory.units.delete-photo');
+        Route::post('/units/{id}/upload-documents', [\App\Http\Controllers\VehicleUnitController::class, 'uploadDocuments'])->name('inventory.units.upload-documents');
+        Route::delete('/units/{id}/delete-document', [\App\Http\Controllers\VehicleUnitController::class, 'deleteDocument'])->name('inventory.units.delete-document');
     });
     
     Route::middleware(['permission:inventory.delete'])->group(function () {
