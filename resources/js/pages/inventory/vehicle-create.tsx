@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,22 +28,96 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function VehicleCreate() {
-    const [features, setFeatures] = useState<string[]>(['']);
+interface Feature {
+    title: string;
+    value: string;
+}
+
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
+}
+
+interface User {
+    id: number;
+    name: string;
+    email: string;
+}
+
+interface VehicleModel {
+    id: number;
+    make: string;
+    model: string;
+    year: number;
+    body_type: string;
+    transmission: string;
+    fuel_type: string;
+}
+
+interface Props {
+    branches: Branch[];
+    salesReps: User[];
+    vehicleModels: VehicleModel[];
+    auth: {
+        user: {
+            branch_id?: number;
+        };
+        roles?: string[];
+    };
+}
+
+export default function VehicleCreate({ branches, salesReps, vehicleModels, auth }: Props) {
+    const [features, setFeatures] = useState<Feature[]>([{ title: '', value: '' }]);
     const [photos, setPhotos] = useState<string[]>([]);
     const [documents, setDocuments] = useState<string[]>([]);
+    
+    const isAdmin = auth?.roles?.includes('admin') || auth?.roles?.includes('auditor');
+
+    const { data, setData, post, processing, errors } = useForm({
+        vehicle_model_id: '',
+        branch_id: auth?.user?.branch_id || '',
+        assigned_user_id: '',
+        vin: '',
+        stock_number: '',
+        trim: '',
+        vehicle_type: '',
+        color_exterior: '',
+        color_interior: '',
+        odometer: '',
+        purchase_price: '',
+        sale_price: '',
+        currency: 'PHP',
+        status: 'in_stock',
+        acquisition_date: '',
+        notes: '',
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        console.log('Submitting form data:', data);
+        console.log('Errors:', errors);
+        post('/inventory/units', {
+            onError: (errors) => {
+                console.log('Submission errors:', errors);
+            },
+            onSuccess: () => {
+                console.log('Submission successful!');
+            }
+        });
+    };
 
     const addFeature = () => {
-        setFeatures([...features, '']);
+        setFeatures([...features, { title: '', value: '' }]);
     };
 
     const removeFeature = (index: number) => {
         setFeatures(features.filter((_, i) => i !== index));
     };
 
-    const updateFeature = (index: number, value: string) => {
+    const updateFeature = (index: number, field: 'title' | 'value', value: string) => {
         const updated = [...features];
-        updated[index] = value;
+        updated[index][field] = value;
         setFeatures(updated);
     };
 
@@ -65,12 +139,31 @@ export default function VehicleCreate() {
                                 Cancel
                             </Button>
                         </Link>
-                        <Button size="sm">
+                        <Button size="sm" onClick={handleSubmit} disabled={processing}>
                             <Save className="h-4 w-4 mr-2" />
                             Save Vehicle
                         </Button>
                     </div>
                 </div>
+
+                {/* Validation Errors */}
+                {Object.keys(errors).length > 0 && (
+                    <Card className="border-red-200 bg-red-50">
+                        <CardContent className="pt-6">
+                            <div className="flex items-start space-x-2">
+                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-red-900">Please fix the following errors:</h3>
+                                    <ul className="list-disc list-inside text-sm text-red-700 mt-2">
+                                        {Object.entries(errors).map(([key, error]) => (
+                                            <li key={key}>{error}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Form */}
@@ -88,82 +181,77 @@ export default function VehicleCreate() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="vin">VIN Number *</Label>
-                                        <Input id="vin" placeholder="17-character VIN" maxLength={17} />
+                                        <Input 
+                                            id="vin" 
+                                            placeholder="17-character VIN" 
+                                            maxLength={17}
+                                            value={data.vin}
+                                            onChange={(e) => setData('vin', e.target.value)}
+                                        />
                                         <p className="text-xs text-muted-foreground">Vehicle Identification Number</p>
+                                        {errors.vin && <p className="text-sm text-red-600">{errors.vin}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="stock_number">Stock Number *</Label>
-                                        <Input id="stock_number" placeholder="e.g., NEW-2024-001" />
+                                        <Input 
+                                            id="stock_number" 
+                                            placeholder="e.g., NEW-2024-001"
+                                            value={data.stock_number}
+                                            onChange={(e) => setData('stock_number', e.target.value)}
+                                        />
                                         <p className="text-xs text-muted-foreground">Internal inventory reference</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="year">Year *</Label>
-                                        <Select>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select year" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="2024">2024</SelectItem>
-                                                <SelectItem value="2023">2023</SelectItem>
-                                                <SelectItem value="2022">2022</SelectItem>
-                                                <SelectItem value="2021">2021</SelectItem>
-                                                <SelectItem value="2020">2020</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="make">Make *</Label>
-                                        <Select>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select make" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="honda">Honda</SelectItem>
-                                                <SelectItem value="toyota">Toyota</SelectItem>
-                                                <SelectItem value="volkswagen">Volkswagen</SelectItem>
-                                                <SelectItem value="hyundai">Hyundai</SelectItem>
-                                                <SelectItem value="subaru">Subaru</SelectItem>
-                                                <SelectItem value="mazda">Mazda</SelectItem>
-                                                <SelectItem value="nissan">Nissan</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="model">Model *</Label>
-                                        <Input id="model" placeholder="e.g., Civic, Camry" />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="trim">Trim Level</Label>
-                                        <Input id="trim" placeholder="e.g., Sport, Limited, SE" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="body_type">Body Type</Label>
-                                        <Select>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select body type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="sedan">Sedan</SelectItem>
-                                                <SelectItem value="suv">SUV</SelectItem>
-                                                <SelectItem value="hatchback">Hatchback</SelectItem>
-                                                <SelectItem value="coupe">Coupe</SelectItem>
-                                                <SelectItem value="convertible">Convertible</SelectItem>
-                                                <SelectItem value="pickup">Pickup Truck</SelectItem>
-                                                <SelectItem value="wagon">Wagon</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        {errors.stock_number && <p className="text-sm text-red-600">{errors.stock_number}</p>}
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
+                                    <Label htmlFor="vehicle_model_id">Vehicle Model *</Label>
+                                    <Select 
+                                        value={data.vehicle_model_id} 
+                                        onValueChange={(value) => {
+                                            console.log('Selected vehicle model:', value);
+                                            setData('vehicle_model_id', value);
+                                        }}
+                                    >
+                                        <SelectTrigger className={errors.vehicle_model_id ? 'border-red-500' : ''}>
+                                            <SelectValue placeholder="Select vehicle model" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {vehicleModels && vehicleModels.length > 0 ? (
+                                                vehicleModels.map((model) => (
+                                                    <SelectItem key={model.id} value={model.id.toString()}>
+                                                        {model.year} {model.make} {model.model}
+                                                    </SelectItem>
+                                                ))
+                                            ) : (
+                                                <div className="p-2 text-sm text-muted-foreground">
+                                                    No vehicle models available. <Link href="/inventory/models/create" className="text-blue-600">Create one</Link>
+                                                </div>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">
+                                        Select from pre-configured WULING models. <Link href="/inventory/models" className="text-blue-600 hover:underline">Manage models</Link>
+                                    </p>
+                                    {errors.vehicle_model_id && <p className="text-sm text-red-600">{errors.vehicle_model_id}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="trim">Trim/Variant</Label>
+                                    <Input 
+                                        id="trim" 
+                                        placeholder="e.g., Elite, Comfort, Standard"
+                                        value={data.trim}
+                                        onChange={(e) => setData('trim', e.target.value)}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Specific trim or variant of this unit
+                                    </p>
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label htmlFor="vehicle_type">Vehicle Type *</Label>
-                                    <Select>
+                                    <Select value={data.vehicle_type} onValueChange={(value) => setData('vehicle_type', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select vehicle type" />
                                         </SelectTrigger>
@@ -174,81 +262,56 @@ export default function VehicleCreate() {
                                             <SelectItem value="certified">Certified Pre-Owned</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                    {errors.vehicle_type && <p className="text-sm text-red-600">{errors.vehicle_type}</p>}
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Specifications */}
+                        {/* Unit-Specific Details */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <Settings className="h-5 w-5" />
-                                    <span>Specifications</span>
-                                </CardTitle>
-                                <CardDescription>Technical specifications and features</CardDescription>
+                                <CardTitle>Unit-Specific Details</CardTitle>
+                                <CardDescription>Details specific to this vehicle unit</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="engine" className="flex items-center space-x-1">
-                                            <Fuel className="h-4 w-4" />
-                                            <span>Engine</span>
-                                        </Label>
-                                        <Input id="engine" placeholder="e.g., 2.0L 4-Cylinder Turbo" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="transmission">Transmission</Label>
-                                        <Select>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select transmission" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="manual">Manual</SelectItem>
-                                                <SelectItem value="automatic">Automatic</SelectItem>
-                                                <SelectItem value="cvt">CVT</SelectItem>
-                                                <SelectItem value="dual_clutch">Dual Clutch</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="fuel_type">Fuel Type</Label>
-                                        <Select>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select fuel type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="gasoline">Gasoline</SelectItem>
-                                                <SelectItem value="diesel">Diesel</SelectItem>
-                                                <SelectItem value="hybrid">Hybrid</SelectItem>
-                                                <SelectItem value="electric">Electric</SelectItem>
-                                                <SelectItem value="plug_in_hybrid">Plug-in Hybrid</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="mileage" className="flex items-center space-x-1">
+                                        <Label htmlFor="odometer" className="flex items-center space-x-1">
                                             <Gauge className="h-4 w-4" />
-                                            <span>Mileage (km)</span>
+                                            <span>Odometer (km)</span>
                                         </Label>
-                                        <Input id="mileage" type="number" placeholder="0" />
+                                        <Input 
+                                            id="odometer" 
+                                            type="number" 
+                                            placeholder="0"
+                                            value={data.odometer}
+                                            onChange={(e) => setData('odometer', e.target.value)}
+                                        />
+                                        <p className="text-xs text-muted-foreground">Current mileage reading</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="color_exterior" className="flex items-center space-x-1">
+                                            <Palette className="h-4 w-4" />
+                                            <span>Exterior Color *</span>
+                                        </Label>
+                                        <Input 
+                                            id="color_exterior" 
+                                            placeholder="e.g., Crystal White, Midnight Black"
+                                            value={data.color_exterior}
+                                            onChange={(e) => setData('color_exterior', e.target.value)}
+                                        />
+                                        {errors.color_exterior && <p className="text-sm text-red-600">{errors.color_exterior}</p>}
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="exterior_color" className="flex items-center space-x-1">
-                                            <Palette className="h-4 w-4" />
-                                            <span>Exterior Color</span>
-                                        </Label>
-                                        <Input id="exterior_color" placeholder="e.g., Crystal Black Pearl" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="interior_color">Interior Color</Label>
-                                        <Input id="interior_color" placeholder="e.g., Black Cloth" />
-                                    </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="color_interior">Interior Color</Label>
+                                    <Input 
+                                        id="color_interior" 
+                                        placeholder="e.g., Black Cloth, Beige Leather"
+                                        value={data.color_interior}
+                                        onChange={(e) => setData('color_interior', e.target.value)}
+                                    />
                                 </div>
                             </CardContent>
                         </Card>
@@ -260,26 +323,38 @@ export default function VehicleCreate() {
                                 <CardDescription>Add vehicle features and optional equipment</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     <Label>Vehicle Features</Label>
+                                    <p className="text-sm text-muted-foreground">e.g., Apple CarPlay, Sunroof, Heated Seats</p>
                                     {features.map((feature, index) => (
-                                        <div key={index} className="flex items-center space-x-2">
-                                            <Input
-                                                value={feature}
-                                                onChange={(e) => updateFeature(index, e.target.value)}
-                                                placeholder="e.g., Apple CarPlay, Sunroof, Heated Seats"
-                                                className="flex-1"
-                                            />
-                                            {features.length > 1 && (
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => removeFeature(index)}
-                                                >
-                                                    <Minus className="h-4 w-4" />
-                                                </Button>
-                                            )}
+                                        <div key={index} className="grid grid-cols-12 gap-2 items-start">
+                                            <div className="col-span-5">
+                                                <Input
+                                                    value={feature.title}
+                                                    onChange={(e) => updateFeature(index, 'title', e.target.value)}
+                                                    placeholder="Feature name"
+                                                />
+                                            </div>
+                                            <div className="col-span-6">
+                                                <Input
+                                                    value={feature.value}
+                                                    onChange={(e) => updateFeature(index, 'value', e.target.value)}
+                                                    placeholder="Value (e.g., Standard, Optional)"
+                                                />
+                                            </div>
+                                            <div className="col-span-1">
+                                                {features.length > 1 && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => removeFeature(index)}
+                                                        className="h-10 w-10 p-0"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                     <Button
@@ -356,30 +431,54 @@ export default function VehicleCreate() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="msrp">MSRP (₱)</Label>
-                                    <Input id="msrp" type="number" placeholder="1,250,000" />
-                                    <p className="text-xs text-muted-foreground">Manufacturer's suggested retail price</p>
+                                    <Label htmlFor="purchase_price">Purchase Price (₱) *</Label>
+                                    <Input 
+                                        id="purchase_price" 
+                                        type="number" 
+                                        placeholder="1,100,000"
+                                        value={data.purchase_price}
+                                        onChange={(e) => setData('purchase_price', e.target.value)}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Your acquisition/dealer cost</p>
+                                    {errors.purchase_price && <p className="text-sm text-red-600">{errors.purchase_price}</p>}
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="dealer_cost">Dealer Cost (₱)</Label>
-                                    <Input id="dealer_cost" type="number" placeholder="1,100,000" />
-                                    <p className="text-xs text-muted-foreground">Your acquisition cost</p>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="current_price">Current Price (₱) *</Label>
-                                    <Input id="current_price" type="number" placeholder="1,200,000" />
-                                    <p className="text-xs text-muted-foreground">Current selling price</p>
+                                    <Label htmlFor="sale_price">Selling Price (₱)</Label>
+                                    <Input 
+                                        id="sale_price" 
+                                        type="number" 
+                                        placeholder="1,200,000"
+                                        value={data.sale_price}
+                                        onChange={(e) => setData('sale_price', e.target.value)}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Target/current selling price</p>
+                                    {errors.sale_price && <p className="text-sm text-red-600">{errors.sale_price}</p>}
                                 </div>
 
                                 <Separator />
 
-                                <div className="bg-green-50 p-3 rounded-lg">
-                                    <div className="text-sm font-medium text-green-800">Estimated Margin</div>
-                                    <div className="text-lg font-bold text-green-600">₱100,000</div>
-                                    <div className="text-xs text-green-600">8.3% margin</div>
-                                </div>
+                                {(() => {
+                                    const purchasePrice = parseFloat(data.purchase_price) || 0;
+                                    const salePrice = parseFloat(data.sale_price) || 0;
+                                    const margin = salePrice - purchasePrice;
+                                    const marginPercent = purchasePrice > 0 ? (margin / purchasePrice * 100) : 0;
+                                    const isPositive = margin >= 0;
+
+                                    return (
+                                        <div className={`${isPositive ? 'bg-green-50' : 'bg-red-50'} p-3 rounded-lg`}>
+                                            <div className={`text-sm font-medium ${isPositive ? 'text-green-800' : 'text-red-800'}`}>
+                                                {isPositive ? 'Estimated Profit' : 'Loss'}
+                                            </div>
+                                            <div className={`text-lg font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                                                {margin > 0 ? '₱' : margin < 0 ? '-₱' : '₱'}{Math.abs(margin).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                            <div className={`text-xs ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                                                {marginPercent.toFixed(2)}% margin
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </CardContent>
                         </Card>
 
@@ -390,80 +489,82 @@ export default function VehicleCreate() {
                                     <MapPin className="h-5 w-5" />
                                     <span>Location & Status</span>
                                 </CardTitle>
-                                <CardDescription>Set vehicle location and availability</CardDescription>
+                                <CardDescription>Set vehicle branch and availability</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="location">Location *</Label>
-                                    <Select>
+                                    <Label htmlFor="branch_id">Branch *</Label>
+                                    <Select 
+                                        value={data.branch_id?.toString()} 
+                                        onValueChange={(value) => setData('branch_id', value)}
+                                        disabled={!isAdmin}
+                                    >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select location" />
+                                            <SelectValue placeholder="Select branch" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="showroom_a1">Showroom A-1</SelectItem>
-                                            <SelectItem value="showroom_a2">Showroom A-2</SelectItem>
-                                            <SelectItem value="showroom_a3">Showroom A-3</SelectItem>
-                                            <SelectItem value="lot_b1">Lot B-1</SelectItem>
-                                            <SelectItem value="lot_b2">Lot B-2</SelectItem>
-                                            <SelectItem value="service_area">Service Area</SelectItem>
-                                            <SelectItem value="demo_fleet">Demo Fleet</SelectItem>
-                                            <SelectItem value="in_transit">In Transit</SelectItem>
+                                            {branches?.map((branch) => (
+                                                <SelectItem key={branch.id} value={branch.id.toString()}>
+                                                    {branch.name} ({branch.code})
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
+                                    {!isAdmin && <p className="text-xs text-muted-foreground">Locked to your branch</p>}
+                                    {errors.branch_id && <p className="text-sm text-red-600">{errors.branch_id}</p>}
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="status">Status</Label>
-                                    <Select>
+                                    <Select 
+                                        value={data.status} 
+                                        onValueChange={(value) => setData('status', value)}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select status" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="available">Available</SelectItem>
+                                            <SelectItem value="in_stock">In Stock</SelectItem>
                                             <SelectItem value="reserved">Reserved</SelectItem>
                                             <SelectItem value="sold">Sold</SelectItem>
-                                            <SelectItem value="demo">Demo</SelectItem>
                                             <SelectItem value="in_transit">In Transit</SelectItem>
+                                            <SelectItem value="transferred">Transferred</SelectItem>
+                                            <SelectItem value="disposed">Disposed</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="assigned_sales_rep">Assigned Sales Rep</Label>
-                                    <Select>
+                                    <Label htmlFor="assigned_user_id">Assigned Sales Rep</Label>
+                                    <Select 
+                                        value={data.assigned_user_id} 
+                                        onValueChange={(value) => setData('assigned_user_id', value)}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select sales rep" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="maria_santos">Maria Santos</SelectItem>
-                                            <SelectItem value="carlos_rodriguez">Carlos Rodriguez</SelectItem>
-                                            <SelectItem value="lisa_brown">Lisa Brown</SelectItem>
-                                            <SelectItem value="pedro_martinez">Pedro Martinez</SelectItem>
-                                            <SelectItem value="ana_garcia">Ana Garcia</SelectItem>
+                                            <SelectItem value="">Unassigned</SelectItem>
+                                            {salesReps?.map((user) => (
+                                                <SelectItem key={user.id} value={user.id.toString()}>
+                                                    {user.name}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="priority">Priority Level</Label>
-                                    <Select>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select priority" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="low">Low</SelectItem>
-                                            <SelectItem value="medium">Medium</SelectItem>
-                                            <SelectItem value="high">High</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="date_received" className="flex items-center space-x-1">
+                                    <Label htmlFor="acquisition_date" className="flex items-center space-x-1">
                                         <Calendar className="h-4 w-4" />
-                                        <span>Date Received</span>
+                                        <span>Acquisition Date</span>
                                     </Label>
-                                    <Input id="date_received" type="date" />
+                                    <Input 
+                                        id="acquisition_date" 
+                                        type="date"
+                                        value={data.acquisition_date}
+                                        onChange={(e) => setData('acquisition_date', e.target.value)}
+                                    />
                                 </div>
                             </CardContent>
                         </Card>
@@ -507,6 +608,8 @@ export default function VehicleCreate() {
                                         id="notes" 
                                         placeholder="Add any internal notes about this vehicle..."
                                         className="min-h-[80px]"
+                                        value={data.notes}
+                                        onChange={(e) => setData('notes', e.target.value)}
                                     />
                                 </div>
                             </CardContent>
@@ -516,14 +619,16 @@ export default function VehicleCreate() {
                         <Card>
                             <CardContent className="pt-6">
                                 <div className="space-y-2">
-                                    <Button className="w-full">
+                                    <Button className="w-full" onClick={handleSubmit} disabled={processing}>
                                         <Save className="h-4 w-4 mr-2" />
                                         Save Vehicle
                                     </Button>
-                                    <Button variant="outline" className="w-full">
-                                        <CheckCircle className="h-4 w-4 mr-2" />
-                                        Save & Add Another
-                                    </Button>
+                                    <Link href="/inventory/vehicles" className="block">
+                                        <Button variant="outline" className="w-full">
+                                            <X className="h-4 w-4 mr-2" />
+                                            Cancel
+                                        </Button>
+                                    </Link>
                                 </div>
                                 <p className="text-xs text-muted-foreground text-center mt-2">
                                     All required fields must be completed

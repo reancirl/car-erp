@@ -261,22 +261,72 @@ Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->gr
 
 // Vehicle Inventory Management Routes
 Route::middleware(['auth', 'verified'])->prefix('inventory')->group(function () {
-    // Vehicle Inventory
-    Route::get('/vehicles', function () {
-        return Inertia::render('inventory/vehicles');
-    })->name('inventory.vehicles.index');
+    // Vehicle Models (Master Data) - Inertia Routes
+    Route::get('/models', [\App\Http\Controllers\VehicleModelController::class, 'indexPage'])->name('inventory.models.index')->middleware('permission:vehicle_model.view');
+    Route::get('/models/create', [\App\Http\Controllers\VehicleModelController::class, 'create'])->name('inventory.models.create')->middleware('permission:vehicle_model.create');
+    Route::post('/models', [\App\Http\Controllers\VehicleModelController::class, 'store'])->name('inventory.models.store')->middleware('permission:vehicle_model.create');
+    Route::get('/models/{vehicleModel}/edit', [\App\Http\Controllers\VehicleModelController::class, 'edit'])->name('inventory.models.edit')->middleware('permission:vehicle_model.edit');
+    Route::match(['put', 'patch'], '/models/{vehicleModel}', [\App\Http\Controllers\VehicleModelController::class, 'update'])->name('inventory.models.update')->middleware('permission:vehicle_model.edit');
+    Route::delete('/models/{vehicleModel}', [\App\Http\Controllers\VehicleModelController::class, 'destroy'])->name('inventory.models.destroy')->middleware('permission:vehicle_model.delete');
+    Route::post('/models/{id}/restore', [\App\Http\Controllers\VehicleModelController::class, 'restore'])->name('inventory.models.restore')->middleware('permission:vehicle_model.create');
+    
+    // Vehicle Models - API Routes (for AJAX calls if needed)
+    Route::middleware(['permission:vehicle_model.view'])->group(function () {
+        Route::get('/api/models', [\App\Http\Controllers\VehicleModelController::class, 'index'])->name('inventory.models.api.index');
+        Route::get('/api/models/{vehicleModel}', [\App\Http\Controllers\VehicleModelController::class, 'show'])->name('inventory.models.api.show');
+    });
 
-    Route::get('/vehicles/create', function () {
-        return Inertia::render('inventory/vehicle-create');
-    })->name('inventory.vehicles.create');
+    // Vehicle Inventory (existing UI route - connects to units API)
+    Route::get('/vehicles', [\App\Http\Controllers\VehicleUnitController::class, 'indexPage'])->name('inventory.vehicles.index')->middleware('permission:inventory.view');
 
-    Route::get('/vehicles/{id}/edit', function ($id) {
-        return Inertia::render('inventory/vehicle-edit', ['id' => $id]);
-    })->name('inventory.vehicles.edit');
+    Route::get('/vehicles/create', [\App\Http\Controllers\VehicleUnitController::class, 'create'])->name('inventory.vehicles.create')->middleware('permission:inventory.create');
+
+    Route::get('/vehicles/{id}/edit', [\App\Http\Controllers\VehicleUnitController::class, 'edit'])->name('inventory.vehicles.edit')->middleware('permission:inventory.edit');
 
     Route::get('/vehicles/{id}', function ($id) {
         return Inertia::render('inventory/vehicle-view', ['id' => $id]);
     })->name('inventory.vehicles.show');
+    
+    // Vehicle Masters API Routes
+    Route::middleware(['permission:inventory.view'])->group(function () {
+        Route::get('/masters', [\App\Http\Controllers\VehicleMasterController::class, 'index'])->name('inventory.masters.index');
+        Route::get('/masters/{master}', [\App\Http\Controllers\VehicleMasterController::class, 'show'])->name('inventory.masters.show');
+    });
+    
+    Route::middleware(['permission:inventory.create'])->group(function () {
+        Route::post('/masters', [\App\Http\Controllers\VehicleMasterController::class, 'store'])->name('inventory.masters.store');
+        Route::post('/masters/{id}/restore', [\App\Http\Controllers\VehicleMasterController::class, 'restore'])->name('inventory.masters.restore');
+    });
+    
+    Route::middleware(['permission:inventory.edit'])->group(function () {
+        Route::match(['put', 'patch'], '/masters/{master}', [\App\Http\Controllers\VehicleMasterController::class, 'update'])->name('inventory.masters.update');
+    });
+    
+    Route::middleware(['permission:inventory.delete'])->group(function () {
+        Route::delete('/masters/{master}', [\App\Http\Controllers\VehicleMasterController::class, 'destroy'])->name('inventory.masters.destroy');
+    });
+    
+    // Vehicle Units API Routes
+    Route::middleware(['permission:inventory.view'])->group(function () {
+        Route::get('/units', [\App\Http\Controllers\VehicleUnitController::class, 'index'])->name('inventory.units.index');
+        Route::get('/units/{unit}', [\App\Http\Controllers\VehicleUnitController::class, 'show'])->name('inventory.units.show');
+        Route::get('/units/{unit}/movements', [\App\Http\Controllers\VehicleUnitController::class, 'movements'])->name('inventory.units.movements');
+    });
+    
+    Route::middleware(['permission:inventory.create'])->group(function () {
+        Route::post('/units', [\App\Http\Controllers\VehicleUnitController::class, 'store'])->name('inventory.units.store');
+        Route::post('/units/{id}/restore', [\App\Http\Controllers\VehicleUnitController::class, 'restore'])->name('inventory.units.restore');
+    });
+    
+    Route::middleware(['permission:inventory.edit'])->group(function () {
+        Route::match(['put', 'patch'], '/units/{unit}', [\App\Http\Controllers\VehicleUnitController::class, 'update'])->name('inventory.units.update');
+        Route::post('/units/{unit}/transfer', [\App\Http\Controllers\VehicleUnitController::class, 'transfer'])->name('inventory.units.transfer');
+        Route::post('/units/{unit}/status', [\App\Http\Controllers\VehicleUnitController::class, 'updateStatus'])->name('inventory.units.status');
+    });
+    
+    Route::middleware(['permission:inventory.delete'])->group(function () {
+        Route::delete('/units/{unit}', [\App\Http\Controllers\VehicleUnitController::class, 'destroy'])->name('inventory.units.destroy');
+    });
 });
 
 require __DIR__.'/settings.php';

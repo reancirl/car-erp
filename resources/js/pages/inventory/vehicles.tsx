@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,8 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Car, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, MapPin, DollarSign, Calendar, User, Fuel, Gauge } from 'lucide-react';
+import { Car, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, MapPin, DollarSign, Calendar, User, Fuel, Gauge, Trash2, RotateCcw, ArrowRightLeft } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+import { useState, FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -20,133 +21,156 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function VehicleInventory() {
-    // Mock vehicle inventory data
-    const mockVehicles = [
-        {
-            id: 1,
-            vin: 'JH4KA8260MC123456',
-            stock_number: 'NEW-2024-001',
-            year: 2024,
-            make: 'Honda',
-            model: 'Civic',
-            trim: 'Sport',
-            body_type: 'Sedan',
-            exterior_color: 'Crystal Black Pearl',
-            interior_color: 'Black Cloth',
-            engine: '2.0L 4-Cylinder',
-            transmission: 'CVT Automatic',
-            fuel_type: 'Gasoline',
-            mileage: 12,
-            msrp: 1250000,
-            dealer_cost: 1100000,
-            current_price: 1200000,
-            status: 'available',
-            location: 'Showroom A-1',
-            date_received: '2024-01-10',
-            days_in_inventory: 15,
-            assigned_sales_rep: 'Maria Santos',
-            features: ['Apple CarPlay', 'Honda Sensing', 'Sunroof', 'Alloy Wheels'],
-            vehicle_type: 'new',
-            priority: 'high'
-        },
-        {
-            id: 2,
-            vin: 'WVWZZZ1JZ3W123789',
-            stock_number: 'USED-2022-045',
-            year: 2022,
-            make: 'Volkswagen',
-            model: 'Jetta',
-            trim: 'SE',
-            body_type: 'Sedan',
-            exterior_color: 'Pure White',
-            interior_color: 'Titan Black Leatherette',
-            engine: '1.4L Turbo',
-            transmission: '8-Speed Automatic',
-            fuel_type: 'Gasoline',
-            mileage: 35000,
-            msrp: 980000,
-            dealer_cost: 850000,
-            current_price: 920000,
-            status: 'sold',
-            location: 'Lot B-12',
-            date_received: '2023-12-15',
-            days_in_inventory: 42,
-            assigned_sales_rep: 'Carlos Rodriguez',
-            features: ['Digital Cockpit', 'Heated Seats', 'Backup Camera'],
-            vehicle_type: 'used',
-            priority: 'medium',
-            sold_date: '2024-01-20',
-            buyer: 'Juan Dela Cruz'
-        },
-        {
-            id: 3,
-            vin: 'KMHD84LF5EU456123',
-            stock_number: 'NEW-2024-002',
-            year: 2024,
-            make: 'Hyundai',
-            model: 'Elantra',
-            trim: 'Limited',
-            body_type: 'Sedan',
-            exterior_color: 'Intense Blue',
-            interior_color: 'Gray Leather',
-            engine: '2.0L 4-Cylinder',
-            transmission: 'CVT',
-            fuel_type: 'Gasoline',
-            mileage: 8,
-            msrp: 1180000,
-            dealer_cost: 1050000,
-            current_price: 1150000,
-            status: 'reserved',
-            location: 'Showroom A-3',
-            date_received: '2024-01-18',
-            days_in_inventory: 7,
-            assigned_sales_rep: 'Lisa Brown',
-            features: ['Wireless Charging', 'Bose Audio', 'Smart Cruise Control'],
-            vehicle_type: 'new',
-            priority: 'high',
-            reserved_by: 'Maria Garcia',
-            reservation_date: '2024-01-22'
-        },
-        {
-            id: 4,
-            vin: 'JF1VA1C60M9876543',
-            stock_number: 'DEMO-2023-008',
-            year: 2023,
-            make: 'Subaru',
-            model: 'Outback',
-            trim: 'Premium',
-            body_type: 'SUV',
-            exterior_color: 'Magnetite Gray Metallic',
-            interior_color: 'Black Cloth',
-            engine: '2.5L Boxer',
-            transmission: 'CVT',
-            fuel_type: 'Gasoline',
-            mileage: 5200,
-            msrp: 1650000,
-            dealer_cost: 1450000,
-            current_price: 1580000,
-            status: 'demo',
-            location: 'Demo Fleet',
-            date_received: '2023-11-20',
-            days_in_inventory: 67,
-            assigned_sales_rep: 'Pedro Martinez',
-            features: ['EyeSight Safety', 'All-Wheel Drive', 'Roof Rails'],
-            vehicle_type: 'demo',
-            priority: 'medium'
+interface VehicleUnit {
+    id: number;
+    vehicle_master_id: number;
+    vehicle_model_id: number | null;
+    branch_id: number;
+    assigned_user_id: number | null;
+    vin: string;
+    stock_number: string;
+    status: string;
+    purchase_price: number;
+    sale_price: number | null;
+    currency: string;
+    acquisition_date: string | null;
+    sold_date: string | null;
+    color_exterior: string | null;
+    color_interior: string | null;
+    odometer: number | null;
+    notes: string | null;
+    created_at: string;
+    deleted_at: string | null;
+    master: {
+        id: number;
+        make: string;
+        model: string;
+        year: number;
+        trim: string | null;
+        body_type: string | null;
+        transmission: string | null;
+        fuel_type: string | null;
+    };
+    vehicle_model: {
+        id: number;
+        make: string;
+        model: string;
+        year: number;
+        body_type: string | null;
+        transmission: string | null;
+        fuel_type: string | null;
+    } | null;
+    branch: {
+        id: number;
+        name: string;
+        code: string;
+    };
+    assigned_user: {
+        id: number;
+        name: string;
+        email: string;
+    } | null;
+}
+
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
+}
+
+interface Stats {
+    total: number;
+    in_stock: number;
+    reserved: number;
+    sold: number;
+    total_value: number;
+}
+
+interface Props {
+    records: {
+        data: VehicleUnit[];
+        links: any;
+        meta: any;
+    };
+    stats: Stats;
+    filters: {
+        search?: string;
+        branch_id?: number;
+        status?: string;
+        vin?: string;
+        stock_number?: string;
+        include_deleted?: boolean;
+    };
+    branches: Branch[] | null;
+    auth?: {
+        user?: {
+            id: number;
+            name: string;
+            email: string;
+            branch_id: number;
+            roles: any[];
+            mfa_enabled: boolean;
+        };
+        permissions?: string[];
+        roles?: string[];
+    };
+}
+
+export default function VehicleInventory({ records, stats, filters, branches, auth }: Props) {
+    const [search, setSearch] = useState(filters?.search || '');
+    const [branchId, setBranchId] = useState<string>(filters?.branch_id?.toString() || 'all');
+    const [status, setStatus] = useState(filters?.status || 'all');
+    const [includeDeleted, setIncludeDeleted] = useState(filters?.include_deleted || false);
+
+    const handleFilter = (e: FormEvent) => {
+        e.preventDefault();
+        router.get('/inventory/vehicles', {
+            search: search || undefined,
+            branch_id: branchId !== 'all' ? branchId : undefined,
+            status: status !== 'all' ? status : undefined,
+            include_deleted: includeDeleted || undefined,
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const handleDelete = (id: number) => {
+        if (confirm('Are you sure you want to delete this vehicle unit?')) {
+            router.delete(`/inventory/units/${id}`, {
+                preserveScroll: true,
+            });
         }
-    ];
+    };
+
+    const handleRestore = (id: number) => {
+        if (confirm('Are you sure you want to restore this vehicle unit?')) {
+            router.post(`/inventory/units/${id}/restore`, {}, {
+                preserveScroll: true,
+            });
+        }
+    };
+
+    const formatCurrency = (amount: number, currency: string) => {
+        return new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: currency || 'PHP',
+        }).format(amount);
+    };
+
+    const isAdmin = auth?.roles?.includes('admin') || auth?.roles?.includes('auditor');
 
     const getStatusBadge = (status: string) => {
         const statusConfig = {
-            available: { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'Available' },
-            sold: { color: 'bg-blue-100 text-blue-800', icon: CheckCircle, label: 'Sold' },
+            in_stock: { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'In Stock' },
             reserved: { color: 'bg-yellow-100 text-yellow-800', icon: Clock, label: 'Reserved' },
-            demo: { color: 'bg-purple-100 text-purple-800', icon: Car, label: 'Demo' },
+            sold: { color: 'bg-blue-100 text-blue-800', icon: CheckCircle, label: 'Sold' },
             in_transit: { color: 'bg-orange-100 text-orange-800', icon: Clock, label: 'In Transit' },
+            transferred: { color: 'bg-purple-100 text-purple-800', icon: ArrowRightLeft, label: 'Transferred' },
+            disposed: { color: 'bg-gray-100 text-gray-800', icon: AlertTriangle, label: 'Disposed' },
         };
         
-        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.available;
+        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.in_stock;
         const IconComponent = config.icon;
         
         return (
@@ -176,10 +200,10 @@ export default function VehicleInventory() {
         return <Badge variant="outline" className={colors[priority as keyof typeof colors]}>{priority.toUpperCase()}</Badge>;
     };
 
-    const totalInventoryValue = mockVehicles.reduce((sum, vehicle) => sum + vehicle.current_price, 0);
-    const availableVehicles = mockVehicles.filter(v => v.status === 'available').length;
-    const soldVehicles = mockVehicles.filter(v => v.status === 'sold').length;
-    const averageDaysInInventory = Math.round(mockVehicles.reduce((sum, v) => sum + v.days_in_inventory, 0) / mockVehicles.length);
+    // Use real stats from API
+    const totalInventoryValue = stats.total_value;
+    const availableVehicles = stats.in_stock;
+    const soldVehicles = stats.sold;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -210,29 +234,29 @@ export default function VehicleInventory() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <Card>
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Total Vehicles</CardTitle>
+                            <CardTitle className="text-sm font-medium">Total Units</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{mockVehicles.length}</div>
+                            <div className="text-2xl font-bold">{stats.total}</div>
                             <p className="text-xs text-muted-foreground">In inventory</p>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Available</CardTitle>
+                            <CardTitle className="text-sm font-medium">In Stock</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-green-600">{availableVehicles}</div>
-                            <p className="text-xs text-muted-foreground">Ready for sale</p>
+                            <div className="text-2xl font-bold text-green-600">{stats.in_stock}</div>
+                            <p className="text-xs text-muted-foreground">Available</p>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Sold This Month</CardTitle>
+                            <CardTitle className="text-sm font-medium">Reserved</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-blue-600">{soldVehicles}</div>
-                            <p className="text-xs text-muted-foreground">Units moved</p>
+                            <div className="text-2xl font-bold text-yellow-600">{stats.reserved}</div>
+                            <p className="text-xs text-muted-foreground">Pending sale</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -240,8 +264,8 @@ export default function VehicleInventory() {
                             <CardTitle className="text-sm font-medium">Inventory Value</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">₱{(totalInventoryValue / 1000000).toFixed(1)}M</div>
-                            <p className="text-xs text-muted-foreground">Total value</p>
+                            <div className="text-2xl font-bold">{formatCurrency(totalInventoryValue, 'PHP')}</div>
+                            <p className="text-xs text-muted-foreground">In stock value</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -253,54 +277,86 @@ export default function VehicleInventory() {
                         <CardDescription>Search and filter vehicle inventory by various criteria</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex flex-col md:flex-row gap-4">
-                            <div className="flex-1">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input placeholder="Search by VIN, stock number, make, model..." className="pl-10" />
+                        <form onSubmit={handleFilter} className="space-y-4">
+                            <div className="grid gap-4 md:grid-cols-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Search</label>
+                                    <div className="relative">
+                                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder="VIN, stock, make, model..."
+                                            value={search}
+                                            onChange={(e) => setSearch(e.target.value)}
+                                            className="pl-8"
+                                        />
+                                    </div>
+                                </div>
+                                {isAdmin && branches && (
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Branch</label>
+                                        <Select value={branchId} onValueChange={setBranchId}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Branches</SelectItem>
+                                                {branches.map((branch) => (
+                                                    <SelectItem key={branch.id} value={branch.id.toString()}>
+                                                        {branch.name} ({branch.code})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Status</label>
+                                    <Select value={status} onValueChange={setStatus}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Status</SelectItem>
+                                            <SelectItem value="in_stock">In Stock</SelectItem>
+                                            <SelectItem value="reserved">Reserved</SelectItem>
+                                            <SelectItem value="sold">Sold</SelectItem>
+                                            <SelectItem value="in_transit">In Transit</SelectItem>
+                                            <SelectItem value="transferred">Transferred</SelectItem>
+                                            <SelectItem value="disposed">Disposed</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
-                            <Select>
-                                <SelectTrigger className="w-full md:w-[180px]">
-                                    <SelectValue placeholder="Make" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Makes</SelectItem>
-                                    <SelectItem value="honda">Honda</SelectItem>
-                                    <SelectItem value="volkswagen">Volkswagen</SelectItem>
-                                    <SelectItem value="hyundai">Hyundai</SelectItem>
-                                    <SelectItem value="subaru">Subaru</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Select>
-                                <SelectTrigger className="w-full md:w-[180px]">
-                                    <SelectValue placeholder="Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="available">Available</SelectItem>
-                                    <SelectItem value="sold">Sold</SelectItem>
-                                    <SelectItem value="reserved">Reserved</SelectItem>
-                                    <SelectItem value="demo">Demo</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Select>
-                                <SelectTrigger className="w-full md:w-[180px]">
-                                    <SelectValue placeholder="Type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Types</SelectItem>
-                                    <SelectItem value="new">New</SelectItem>
-                                    <SelectItem value="used">Used</SelectItem>
-                                    <SelectItem value="demo">Demo</SelectItem>
-                                    <SelectItem value="certified">Certified</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Button variant="outline">
-                                <Filter className="h-4 w-4 mr-2" />
-                                Apply
-                            </Button>
-                        </div>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        id="include_deleted"
+                                        checked={includeDeleted}
+                                        onChange={(e) => setIncludeDeleted(e.target.checked)}
+                                        className="rounded border-gray-300"
+                                    />
+                                    <label htmlFor="include_deleted" className="text-sm font-medium">
+                                        Include deleted records
+                                    </label>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button type="button" variant="outline" onClick={() => {
+                                        setSearch('');
+                                        setBranchId('all');
+                                        setStatus('all');
+                                        setIncludeDeleted(false);
+                                        router.get('/inventory/vehicles');
+                                    }}>
+                                        Clear
+                                    </Button>
+                                    <Button type="submit">
+                                        <Filter className="h-4 w-4 mr-2" />
+                                        Apply Filters
+                                    </Button>
+                                </div>
+                            </div>
+                        </form>
                     </CardContent>
                 </Card>
 
@@ -325,174 +381,178 @@ export default function VehicleInventory() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {mockVehicles.map((vehicle) => (
-                                    <TableRow key={vehicle.id} className={vehicle.status === 'sold' ? 'bg-blue-50' : vehicle.status === 'reserved' ? 'bg-yellow-50' : ''}>
-                                        <TableCell className="font-medium">
-                                            <div>
-                                                <div className="font-medium">{vehicle.year} {vehicle.make} {vehicle.model}</div>
-                                                <div className="text-sm text-muted-foreground">{vehicle.trim} • {vehicle.body_type}</div>
-                                                <div className="text-xs text-muted-foreground font-mono">{vehicle.vin}</div>
-                                                <div className="text-xs text-muted-foreground">Stock: {vehicle.stock_number}</div>
-                                                <div className="flex items-center space-x-1 mt-1">
-                                                    {getVehicleTypeBadge(vehicle.vehicle_type)}
-                                                    {getPriorityBadge(vehicle.priority)}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="space-y-1">
-                                                <div className="flex items-center space-x-1">
-                                                    <Fuel className="h-3 w-3" />
-                                                    <span className="text-sm">{vehicle.engine}</span>
-                                                </div>
-                                                <div className="text-sm text-muted-foreground">{vehicle.transmission}</div>
-                                                <div className="flex items-center space-x-1">
-                                                    <Gauge className="h-3 w-3" />
-                                                    <span className="text-sm">{vehicle.mileage.toLocaleString()} km</span>
-                                                </div>
-                                                <div className="text-sm text-muted-foreground">{vehicle.exterior_color}</div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <div className="text-sm font-medium">₱{vehicle.current_price.toLocaleString()}</div>
-                                                <div className="text-xs text-muted-foreground">MSRP: ₱{vehicle.msrp.toLocaleString()}</div>
-                                                <div className="text-xs text-muted-foreground">Cost: ₱{vehicle.dealer_cost.toLocaleString()}</div>
-                                                <div className="text-xs text-green-600">
-                                                    Margin: ₱{(vehicle.current_price - vehicle.dealer_cost).toLocaleString()}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center space-x-1">
-                                                <MapPin className="h-3 w-3" />
-                                                <span className="text-sm">{vehicle.location}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <div className="flex items-center space-x-1">
-                                                    <User className="h-3 w-3" />
-                                                    <span className="text-sm">{vehicle.assigned_sales_rep}</span>
-                                                </div>
-                                                {vehicle.status === 'sold' && vehicle.buyer && (
-                                                    <div className="text-xs text-muted-foreground mt-1">
-                                                        Sold to: {vehicle.buyer}
-                                                    </div>
-                                                )}
-                                                {vehicle.status === 'reserved' && vehicle.reserved_by && (
-                                                    <div className="text-xs text-muted-foreground mt-1">
-                                                        Reserved by: {vehicle.reserved_by}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="text-center">
-                                                <div className="text-lg font-medium">{vehicle.days_in_inventory}</div>
-                                                <div className="text-xs text-muted-foreground">days</div>
-                                                {vehicle.days_in_inventory > 60 && (
-                                                    <Badge variant="outline" className="bg-orange-100 text-orange-800 text-xs mt-1">
-                                                        <AlertTriangle className="h-3 w-3 mr-1" />
-                                                        Aging
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
-                                        <TableCell>
-                                            <div className="flex space-x-1">
-                                                <Link href={`/inventory/vehicles/${vehicle.id}`}>
-                                                    <Button variant="ghost" size="sm">
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                                <Link href={`/inventory/vehicles/${vehicle.id}/edit`}>
-                                                    <Button variant="ghost" size="sm">
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                            </div>
+                                {!records?.data || records.data.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                                            No vehicle units found. Try adjusting your filters.
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                ) : (
+                                    records.data.map((unit) => (
+                                        <TableRow 
+                                            key={unit.id} 
+                                            className={unit.deleted_at ? 'opacity-50' : ''}
+                                        >
+                                            <TableCell>
+                                                <Badge variant="outline">{unit.stock_number}</Badge>
+                                            </TableCell>
+                                            <TableCell className="font-medium">
+                                                <div>
+                                                    <div className="font-medium">
+                                                        {unit.vehicle_model ? (
+                                                            `${unit.vehicle_model.year} ${unit.vehicle_model.make} ${unit.vehicle_model.model}`
+                                                        ) : (
+                                                            `${unit.master.year} ${unit.master.make} ${unit.master.model}`
+                                                        )}
+                                                    </div>
+                                                    <div className="text-sm text-muted-foreground">
+                                                        {(unit.vehicle_model?.body_type || unit.master.body_type)}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground font-mono">{unit.vin}</div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                {getStatusBadge(unit.status)}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="space-y-1">
+                                                    {(unit.vehicle_model?.transmission || unit.master.transmission) && (
+                                                        <div className="text-sm">{unit.vehicle_model?.transmission || unit.master.transmission}</div>
+                                                    )}
+                                                    {(unit.vehicle_model?.fuel_type || unit.master.fuel_type) && (
+                                                        <div className="flex items-center space-x-1">
+                                                            <Fuel className="h-3 w-3" />
+                                                            <span className="text-sm">{unit.vehicle_model?.fuel_type || unit.master.fuel_type}</span>
+                                                        </div>
+                                                    )}
+                                                    {unit.color_exterior && (
+                                                        <div className="text-sm text-muted-foreground">{unit.color_exterior}</div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    <div className="text-sm font-medium">
+                                                        {formatCurrency(unit.purchase_price, unit.currency)}
+                                                    </div>
+                                                    {unit.sale_price && (
+                                                        <>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                Sale: {formatCurrency(unit.sale_price, unit.currency)}
+                                                            </div>
+                                                            <div className="text-xs text-green-600">
+                                                                Margin: {formatCurrency(unit.sale_price - unit.purchase_price, unit.currency)}
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center space-x-1">
+                                                    <MapPin className="h-3 w-3" />
+                                                    <span className="text-sm">{unit.branch.name}</span>
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">{unit.branch.code}</div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    {unit.assigned_user ? (
+                                                        <div className="flex items-center space-x-1">
+                                                            <User className="h-3 w-3" />
+                                                            <span className="text-sm">{unit.assigned_user.name}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-xs text-muted-foreground">Unassigned</div>
+                                                    )}
+                                                    {unit.acquisition_date && (
+                                                        <div className="text-xs text-muted-foreground mt-1">
+                                                            Acquired: {new Date(unit.acquisition_date).toLocaleDateString()}
+                                                        </div>
+                                                    )}
+                                                    {unit.sold_date && (
+                                                        <div className="text-xs text-muted-foreground">
+                                                            Sold: {new Date(unit.sold_date).toLocaleDateString()}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="text-center">
+                                                    {unit.acquisition_date && (
+                                                        <>
+                                                            <div className="text-lg font-medium">
+                                                                {Math.floor((new Date().getTime() - new Date(unit.acquisition_date).getTime()) / (1000 * 60 * 60 * 24))}
+                                                            </div>
+                                                            <div className="text-xs text-muted-foreground">days</div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>{getStatusBadge(unit.status)}</TableCell>
+                                            <TableCell>
+                                                <div className="flex space-x-1">
+                                                    <Link href={`/inventory/vehicles/${unit.id}`}>
+                                                        <Button variant="ghost" size="sm" title="View">
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                    </Link>
+                                                    {!unit.deleted_at && (
+                                                        <>
+                                                            <Link href={`/inventory/vehicles/${unit.id}/edit`}>
+                                                                <Button variant="ghost" size="sm" title="Edit">
+                                                                    <Edit className="h-4 w-4" />
+                                                                </Button>
+                                                            </Link>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="sm" 
+                                                                onClick={() => handleDelete(unit.id)}
+                                                                title="Delete"
+                                                            >
+                                                                <Trash2 className="h-4 w-4 text-red-600" />
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                    {unit.deleted_at && (
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="sm" 
+                                                            onClick={() => handleRestore(unit.id)}
+                                                            title="Restore"
+                                                        >
+                                                            <RotateCcw className="h-4 w-4 text-green-600" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
                             </TableBody>
                         </Table>
                     </CardContent>
                 </Card>
 
-                {/* Inventory Analytics */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Inventory Performance</CardTitle>
-                            <CardDescription>Key metrics and performance indicators</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Average Days in Inventory</div>
-                                        <div className="text-sm text-muted-foreground">Time to sell</div>
-                                    </div>
-                                    <div className="text-2xl font-bold">{averageDaysInInventory}</div>
-                                </div>
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Turn Rate</div>
-                                        <div className="text-sm text-muted-foreground">Monthly turnover</div>
-                                    </div>
-                                    <div className="text-2xl font-bold text-green-600">12.5%</div>
-                                </div>
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Aging Inventory</div>
-                                        <div className="text-sm text-muted-foreground">Over 60 days</div>
-                                    </div>
-                                    <div className="text-2xl font-bold text-orange-600">1</div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Inventory Distribution</CardTitle>
-                            <CardDescription>Vehicle types and status breakdown</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">New Vehicles</div>
-                                        <div className="text-sm text-muted-foreground">Fresh inventory</div>
-                                    </div>
-                                    <Badge className="bg-green-100 text-green-800">
-                                        {mockVehicles.filter(v => v.vehicle_type === 'new').length} units
-                                    </Badge>
-                                </div>
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Used Vehicles</div>
-                                        <div className="text-sm text-muted-foreground">Pre-owned inventory</div>
-                                    </div>
-                                    <Badge className="bg-blue-100 text-blue-800">
-                                        {mockVehicles.filter(v => v.vehicle_type === 'used').length} units
-                                    </Badge>
-                                </div>
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Demo Vehicles</div>
-                                        <div className="text-sm text-muted-foreground">Test drive fleet</div>
-                                    </div>
-                                    <Badge className="bg-purple-100 text-purple-800">
-                                        {mockVehicles.filter(v => v.vehicle_type === 'demo').length} units
-                                    </Badge>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                {/* Pagination */}
+                {records?.meta?.last_page > 1 && (
+                    <div className="flex items-center justify-between">
+                        <div className="text-sm text-muted-foreground">
+                            Showing {records.meta.from} to {records.meta.to} of {records.meta.total} results
+                        </div>
+                        <div className="flex gap-2">
+                            {records.links?.map((link: any, index: number) => (
+                                <Button
+                                    key={index}
+                                    variant={link.active ? 'default' : 'outline'}
+                                    size="sm"
+                                    disabled={!link.url}
+                                    onClick={() => link.url && router.get(link.url)}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </AppLayout>
     );

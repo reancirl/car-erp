@@ -89,6 +89,11 @@ const operationsNavItems: NavItem[] = [
 // Inventory Management
 const inventoryNavItems: NavItem[] = [
     {
+        title: 'Vehicle Models',
+        href: '/inventory/models',
+        icon: LayoutGrid,
+    },
+    {
         title: 'Vehicle Inventory',
         href: '/inventory/vehicles',
         icon: Car,

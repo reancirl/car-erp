@@ -18,6 +18,9 @@ class DatabaseSeeder extends Seeder
         
         // Seed branches
         $this->call(BranchSeeder::class);
+        
+        // Seed attribute definitions for inventory system
+        $this->call(AttributeDefinitionsSeeder::class);
 
         // Create only admin user
         $admin = User::factory()->create([

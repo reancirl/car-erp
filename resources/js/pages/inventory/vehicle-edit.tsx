@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,66 @@ import { Separator } from '@/components/ui/separator';
 import { Car, Save, X, Upload, Plus, Minus, AlertCircle, CheckCircle, Camera, FileText, DollarSign, MapPin, Calendar, Fuel, Gauge, Palette, Settings, History, Eye } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
+
+interface Feature {
+    title: string;
+    value: string;
+}
+
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
+}
+
+interface User {
+    id: number;
+    name: string;
+    email: string;
+}
+
+interface VehicleModel {
+    id: number;
+    make: string;
+    model: string;
+    year: number;
+    body_type: string;
+    transmission: string;
+    fuel_type: string;
+}
+
+interface VehicleUnit {
+    id: number;
+    vin: string;
+    stock_number: string;
+    vehicle_model_id: number;
+    branch_id: number;
+    assigned_user_id?: number;
+    trim?: string;
+    vehicle_type: string;
+    color_exterior: string;
+    color_interior: string;
+    odometer: number;
+    purchase_price: number;
+    sale_price?: number;
+    currency: string;
+    status: string;
+    acquisition_date?: string;
+    notes?: string;
+}
+
+interface Props {
+    unit: VehicleUnit;
+    branches: Branch[];
+    salesReps: User[];
+    vehicleModels: VehicleModel[];
+    auth: {
+        user: {
+            branch_id?: number;
+        };
+        roles?: string[];
+    };
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -32,56 +92,84 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function VehicleEdit() {
-    // Mock vehicle data for editing
+export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, auth }: Props) {
+    const isAdmin = auth?.roles?.includes('admin') || auth?.roles?.includes('auditor');
+    
+    const { data, setData, put, processing, errors } = useForm({
+        vehicle_model_id: unit.vehicle_model_id?.toString() || '',
+        branch_id: unit.branch_id?.toString() || '',
+        assigned_user_id: unit.assigned_user_id?.toString() || '',
+        vin: unit.vin || '',
+        stock_number: unit.stock_number || '',
+        trim: unit.trim || '',
+        vehicle_type: unit.vehicle_type || '',
+        color_exterior: unit.color_exterior || '',
+        color_interior: unit.color_interior || '',
+        odometer: unit.odometer?.toString() || '',
+        purchase_price: unit.purchase_price?.toString() || '',
+        sale_price: unit.sale_price?.toString() || '',
+        currency: unit.currency || 'PHP',
+        status: unit.status || 'in_stock',
+        acquisition_date: unit.acquisition_date || '',
+        notes: unit.notes || '',
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        console.log('Updating vehicle:', data);
+        put(`/inventory/units/${unit.id}`, {
+            onError: (errors) => {
+                console.log('Update errors:', errors);
+            },
+            onSuccess: () => {
+                console.log('Update successful!');
+            }
+        });
+    };
+
     const mockVehicle = {
-        id: 1,
-        vin: 'JH4KA8260MC123456',
-        stock_number: 'NEW-2024-001',
-        year: 2024,
-        make: 'Honda',
-        model: 'Civic',
-        trim: 'Sport',
-        body_type: 'Sedan',
-        exterior_color: 'Crystal Black Pearl',
-        interior_color: 'Black Cloth',
-        engine: '2.0L 4-Cylinder',
-        transmission: 'CVT Automatic',
-        fuel_type: 'Gasoline',
-        mileage: 12,
-        msrp: 1250000,
-        dealer_cost: 1100000,
-        current_price: 1200000,
-        status: 'available',
-        location: 'Showroom A-1',
-        date_received: '2024-01-10',
-        assigned_sales_rep: 'Maria Santos',
-        priority: 'high',
-        vehicle_type: 'new',
+        id: unit.id,
+        vin: unit.vin,
+        stock_number: unit.stock_number,
+        branch_id: unit.branch_id,
+        assigned_user_id: unit.assigned_user_id,
+        vehicle_model_id: unit.vehicle_model_id,
+        trim: unit.trim,
+        exterior_color: unit.color_exterior,
+        interior_color: unit.color_interior,
+        mileage: unit.odometer,
+        status: unit.status,
+        date_received: unit.acquisition_date,
+        vehicle_type: unit.vehicle_type,
         featured: true,
         allow_test_drive: true,
         online_listing: true,
         notes: 'Popular model with high demand. Consider for featured listing.',
-        features: ['Apple CarPlay', 'Honda Sensing', 'Sunroof', 'Alloy Wheels'],
+        features: [
+            { title: 'Apple CarPlay', value: 'Standard' },
+            { title: 'Honda Sensing', value: 'Standard' },
+            { title: 'Sunroof', value: 'Optional' },
+            { title: 'Alloy Wheels', value: 'Standard' }
+        ],
         photos: ['front.jpg', 'rear.jpg', 'interior.jpg'],
         documents: ['title.pdf', 'inspection.pdf']
     };
 
-    const [features, setFeatures] = useState<string[]>(mockVehicle.features);
+    const [features, setFeatures] = useState<Feature[]>(mockVehicle.features);
     const [currentPrice, setCurrentPrice] = useState(mockVehicle.current_price);
     const [dealerCost, setDealerCost] = useState(mockVehicle.dealer_cost);
 
     const addFeature = () => {
-        setFeatures([...features, '']);
+        setFeatures([...features, { title: '', value: '' }]);
     };
 
     const removeFeature = (index: number) => {
         setFeatures(features.filter((_, i) => i !== index));
     };
 
-    const updateFeature = (index: number, value: string) => {
+    const updateFeature = (index: number, field: 'title' | 'value', value: string) => {
         const updated = [...features];
-        updated[index] = value;
+        updated[index][field] = value;
         setFeatures(updated);
     };
 
@@ -120,7 +208,7 @@ export default function VehicleEdit() {
                                 Cancel
                             </Button>
                         </Link>
-                        <Button size="sm">
+                        <Button size="sm" onClick={handleSubmit} disabled={processing}>
                             <Save className="h-4 w-4 mr-2" />
                             Update Vehicle
                         </Button>
@@ -164,67 +252,31 @@ export default function VehicleEdit() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="year">Year *</Label>
-                                        <Select defaultValue={mockVehicle.year.toString()}>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="2024">2024</SelectItem>
-                                                <SelectItem value="2023">2023</SelectItem>
-                                                <SelectItem value="2022">2022</SelectItem>
-                                                <SelectItem value="2021">2021</SelectItem>
-                                                <SelectItem value="2020">2020</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="make">Make *</Label>
-                                        <Select defaultValue={mockVehicle.make.toLowerCase()}>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="honda">Honda</SelectItem>
-                                                <SelectItem value="toyota">Toyota</SelectItem>
-                                                <SelectItem value="volkswagen">Volkswagen</SelectItem>
-                                                <SelectItem value="hyundai">Hyundai</SelectItem>
-                                                <SelectItem value="subaru">Subaru</SelectItem>
-                                                <SelectItem value="mazda">Mazda</SelectItem>
-                                                <SelectItem value="nissan">Nissan</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="model">Model *</Label>
-                                        <Input id="model" defaultValue={mockVehicle.model} />
-                                    </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="vehicle_model_id">Vehicle Model *</Label>
+                                    <Select defaultValue={mockVehicle.vehicle_model_id?.toString()}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select vehicle model" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {vehicleModels?.map((model) => (
+                                                <SelectItem key={model.id} value={model.id.toString()}>
+                                                    {model.year} {model.make} {model.model}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">
+                                        Select from pre-configured WULING models. <Link href="/inventory/models" className="text-blue-600 hover:underline">Manage models</Link>
+                                    </p>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="trim">Trim Level</Label>
-                                        <Input id="trim" defaultValue={mockVehicle.trim} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="body_type">Body Type</Label>
-                                        <Select defaultValue={mockVehicle.body_type.toLowerCase()}>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="sedan">Sedan</SelectItem>
-                                                <SelectItem value="suv">SUV</SelectItem>
-                                                <SelectItem value="hatchback">Hatchback</SelectItem>
-                                                <SelectItem value="coupe">Coupe</SelectItem>
-                                                <SelectItem value="convertible">Convertible</SelectItem>
-                                                <SelectItem value="pickup">Pickup Truck</SelectItem>
-                                                <SelectItem value="wagon">Wagon</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="trim">Trim/Variant</Label>
+                                    <Input id="trim" defaultValue={mockVehicle.trim} />
+                                    <p className="text-xs text-muted-foreground">
+                                        Specific trim or variant of this unit
+                                    </p>
                                 </div>
 
                                 <div className="space-y-2">
@@ -244,77 +296,34 @@ export default function VehicleEdit() {
                             </CardContent>
                         </Card>
 
-                        {/* Specifications */}
+                        {/* Unit-Specific Details */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <Settings className="h-5 w-5" />
-                                    <span>Specifications</span>
-                                </CardTitle>
-                                <CardDescription>Update technical specifications and features</CardDescription>
+                                <CardTitle>Unit-Specific Details</CardTitle>
+                                <CardDescription>Details specific to this vehicle unit</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="engine" className="flex items-center space-x-1">
-                                            <Fuel className="h-4 w-4" />
-                                            <span>Engine</span>
-                                        </Label>
-                                        <Input id="engine" defaultValue={mockVehicle.engine} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="transmission">Transmission</Label>
-                                        <Select defaultValue="cvt">
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="manual">Manual</SelectItem>
-                                                <SelectItem value="automatic">Automatic</SelectItem>
-                                                <SelectItem value="cvt">CVT</SelectItem>
-                                                <SelectItem value="dual_clutch">Dual Clutch</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="fuel_type">Fuel Type</Label>
-                                        <Select defaultValue={mockVehicle.fuel_type.toLowerCase()}>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="gasoline">Gasoline</SelectItem>
-                                                <SelectItem value="diesel">Diesel</SelectItem>
-                                                <SelectItem value="hybrid">Hybrid</SelectItem>
-                                                <SelectItem value="electric">Electric</SelectItem>
-                                                <SelectItem value="plug_in_hybrid">Plug-in Hybrid</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
                                         <Label htmlFor="mileage" className="flex items-center space-x-1">
                                             <Gauge className="h-4 w-4" />
-                                            <span>Mileage (km)</span>
+                                            <span>Odometer (km)</span>
                                         </Label>
                                         <Input id="mileage" type="number" defaultValue={mockVehicle.mileage} />
+                                        <p className="text-xs text-muted-foreground">Current mileage reading</p>
                                     </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="exterior_color" className="flex items-center space-x-1">
                                             <Palette className="h-4 w-4" />
-                                            <span>Exterior Color</span>
+                                            <span>Exterior Color *</span>
                                         </Label>
                                         <Input id="exterior_color" defaultValue={mockVehicle.exterior_color} />
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="interior_color">Interior Color</Label>
-                                        <Input id="interior_color" defaultValue={mockVehicle.interior_color} />
-                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="interior_color">Interior Color</Label>
+                                    <Input id="interior_color" defaultValue={mockVehicle.interior_color} />
                                 </div>
                             </CardContent>
                         </Card>
@@ -326,26 +335,38 @@ export default function VehicleEdit() {
                                 <CardDescription>Update vehicle features and optional equipment</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     <Label>Vehicle Features</Label>
+                                    <p className="text-sm text-muted-foreground">e.g., Apple CarPlay, Sunroof, Heated Seats</p>
                                     {features.map((feature, index) => (
-                                        <div key={index} className="flex items-center space-x-2">
-                                            <Input
-                                                value={feature}
-                                                onChange={(e) => updateFeature(index, e.target.value)}
-                                                placeholder="e.g., Apple CarPlay, Sunroof, Heated Seats"
-                                                className="flex-1"
-                                            />
-                                            {features.length > 1 && (
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => removeFeature(index)}
-                                                >
-                                                    <Minus className="h-4 w-4" />
-                                                </Button>
-                                            )}
+                                        <div key={index} className="grid grid-cols-12 gap-2 items-start">
+                                            <div className="col-span-5">
+                                                <Input
+                                                    value={feature.title}
+                                                    onChange={(e) => updateFeature(index, 'title', e.target.value)}
+                                                    placeholder="Feature name"
+                                                />
+                                            </div>
+                                            <div className="col-span-6">
+                                                <Input
+                                                    value={feature.value}
+                                                    onChange={(e) => updateFeature(index, 'value', e.target.value)}
+                                                    placeholder="Value (e.g., Standard, Optional)"
+                                                />
+                                            </div>
+                                            <div className="col-span-1">
+                                                {features.length > 1 && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => removeFeature(index)}
+                                                        className="h-10 w-10 p-0"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                     <Button
@@ -468,26 +489,24 @@ export default function VehicleEdit() {
                                     <MapPin className="h-5 w-5" />
                                     <span>Location & Status</span>
                                 </CardTitle>
-                                <CardDescription>Update vehicle location and availability</CardDescription>
+                                <CardDescription>Update vehicle branch and availability</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="location">Location *</Label>
-                                    <Select defaultValue="showroom_a1">
+                                    <Label htmlFor="branch_id">Branch *</Label>
+                                    <Select defaultValue={mockVehicle.branch_id?.toString()} disabled={!isAdmin}>
                                         <SelectTrigger>
-                                            <SelectValue />
+                                            <SelectValue placeholder="Select branch" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="showroom_a1">Showroom A-1</SelectItem>
-                                            <SelectItem value="showroom_a2">Showroom A-2</SelectItem>
-                                            <SelectItem value="showroom_a3">Showroom A-3</SelectItem>
-                                            <SelectItem value="lot_b1">Lot B-1</SelectItem>
-                                            <SelectItem value="lot_b2">Lot B-2</SelectItem>
-                                            <SelectItem value="service_area">Service Area</SelectItem>
-                                            <SelectItem value="demo_fleet">Demo Fleet</SelectItem>
-                                            <SelectItem value="in_transit">In Transit</SelectItem>
+                                            {branches?.map((branch) => (
+                                                <SelectItem key={branch.id} value={branch.id.toString()}>
+                                                    {branch.name} ({branch.code})
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
+                                    {!isAdmin && <p className="text-xs text-muted-foreground">Branch cannot be changed</p>}
                                 </div>
 
                                 <div className="space-y-2">
@@ -497,51 +516,39 @@ export default function VehicleEdit() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="available">Available</SelectItem>
+                                            <SelectItem value="in_stock">In Stock</SelectItem>
                                             <SelectItem value="reserved">Reserved</SelectItem>
                                             <SelectItem value="sold">Sold</SelectItem>
-                                            <SelectItem value="demo">Demo</SelectItem>
                                             <SelectItem value="in_transit">In Transit</SelectItem>
+                                            <SelectItem value="transferred">Transferred</SelectItem>
+                                            <SelectItem value="disposed">Disposed</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="assigned_sales_rep">Assigned Sales Rep</Label>
-                                    <Select defaultValue="maria_santos">
+                                    <Label htmlFor="assigned_user_id">Assigned Sales Rep</Label>
+                                    <Select defaultValue={mockVehicle.assigned_user_id?.toString()}>
                                         <SelectTrigger>
-                                            <SelectValue />
+                                            <SelectValue placeholder="Select sales rep" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="maria_santos">Maria Santos</SelectItem>
-                                            <SelectItem value="carlos_rodriguez">Carlos Rodriguez</SelectItem>
-                                            <SelectItem value="lisa_brown">Lisa Brown</SelectItem>
-                                            <SelectItem value="pedro_martinez">Pedro Martinez</SelectItem>
-                                            <SelectItem value="ana_garcia">Ana Garcia</SelectItem>
+                                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                                            {salesReps?.map((user) => (
+                                                <SelectItem key={user.id} value={user.id.toString()}>
+                                                    {user.name}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="priority">Priority Level</Label>
-                                    <Select defaultValue={mockVehicle.priority}>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="low">Low</SelectItem>
-                                            <SelectItem value="medium">Medium</SelectItem>
-                                            <SelectItem value="high">High</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="date_received" className="flex items-center space-x-1">
+                                    <Label htmlFor="acquisition_date" className="flex items-center space-x-1">
                                         <Calendar className="h-4 w-4" />
-                                        <span>Date Received</span>
+                                        <span>Acquisition Date</span>
                                     </Label>
-                                    <Input id="date_received" type="date" defaultValue={mockVehicle.date_received} />
+                                    <Input id="acquisition_date" type="date" defaultValue={mockVehicle.date_received} />
                                 </div>
                             </CardContent>
                         </Card>
@@ -629,7 +636,7 @@ export default function VehicleEdit() {
                         <Card>
                             <CardContent className="pt-6">
                                 <div className="space-y-2">
-                                    <Button className="w-full">
+                                    <Button className="w-full" onClick={handleSubmit} disabled={processing}>
                                         <Save className="h-4 w-4 mr-2" />
                                         Update Vehicle
                                     </Button>
