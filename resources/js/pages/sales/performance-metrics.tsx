@@ -9,6 +9,51 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BarChart3, Search, Filter, Download, TrendingUp, TrendingDown, Users, DollarSign, Clock, Target, Calendar, Award, AlertTriangle } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
+interface KPI {
+    id: number;
+    metric_name: string;
+    current_value: number;
+    previous_value: number;
+    unit: string;
+    target_value: number;
+    period: string;
+    trend: string;
+    data_source: string;
+    last_updated: string;
+    auto_calculated: boolean;
+}
+
+interface SalesRepPerformance {
+    id: number;
+    rep_name: string;
+    leads_assigned: number;
+    leads_converted: number;
+    conversion_rate: number;
+    pipelines_managed: number;
+    pipelines_won: number;
+    pipeline_value: number;
+    test_drives_conducted: number;
+    customer_satisfaction: number;
+    rank: number;
+}
+
+interface PerformanceMetricsProps {
+    kpis: {
+        summary: {
+            total_leads: number;
+            active_pipelines: number;
+            completed_test_drives: number;
+        };
+        metrics: KPI[];
+    };
+    salesRepPerformance: SalesRepPerformance[];
+    filters: {
+        branch_id: number | null;
+        start_date: string;
+        end_date: string;
+    };
+}
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Sales & Customer',
@@ -20,149 +65,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function PerformanceMetrics() {
-    // Mock data for demonstration
-    const mockKPIs = [
-        {
-            id: 1,
-            metric_name: 'Lead Conversion Rate',
-            current_value: 23.5,
-            previous_value: 21.2,
-            unit: '%',
-            target_value: 25.0,
-            period: 'This Month',
-            trend: 'up',
-            data_source: 'Lead Management System',
-            last_updated: '2025-01-13 18:00:00',
-            auto_calculated: true,
-            manual_override: false
-        },
-        {
-            id: 2,
-            metric_name: 'Average Deal Size',
-            current_value: 28750,
-            previous_value: 27200,
-            unit: '$',
-            target_value: 30000,
-            period: 'This Month',
-            trend: 'up',
-            data_source: 'Sales System',
-            last_updated: '2025-01-13 17:45:00',
-            auto_calculated: true,
-            manual_override: false
-        },
-        {
-            id: 3,
-            metric_name: 'Test Drive to Sale Rate',
-            current_value: 42.8,
-            previous_value: 45.1,
-            unit: '%',
-            target_value: 50.0,
-            period: 'This Month',
-            trend: 'down',
-            data_source: 'Test Drive System',
-            last_updated: '2025-01-13 16:30:00',
-            auto_calculated: true,
-            manual_override: false
-        },
-        {
-            id: 4,
-            metric_name: 'Customer Satisfaction',
-            current_value: 4.5,
-            previous_value: 4.3,
-            unit: '/5',
-            target_value: 4.7,
-            period: 'This Month',
-            trend: 'up',
-            data_source: 'Survey System',
-            last_updated: '2025-01-13 19:15:00',
-            auto_calculated: true,
-            manual_override: false
-        },
-        {
-            id: 5,
-            metric_name: 'Sales Cycle Length',
-            current_value: 12.3,
-            previous_value: 14.1,
-            unit: 'days',
-            target_value: 10.0,
-            period: 'This Month',
-            trend: 'up',
-            data_source: 'Pipeline System',
-            last_updated: '2025-01-13 18:30:00',
-            auto_calculated: true,
-            manual_override: false
-        },
-        {
-            id: 6,
-            metric_name: 'Follow-up Response Rate',
-            current_value: 67.2,
-            previous_value: 71.8,
-            unit: '%',
-            target_value: 75.0,
-            period: 'This Month',
-            trend: 'down',
-            data_source: 'CRM System',
-            last_updated: '2025-01-13 17:00:00',
-            auto_calculated: true,
-            manual_override: false
-        }
-    ];
-
-    const mockSalesRepPerformance = [
-        {
-            id: 1,
-            rep_name: 'Sarah Sales Rep',
-            leads_assigned: 15,
-            leads_converted: 4,
-            conversion_rate: 26.7,
-            total_sales_value: 115000,
-            avg_deal_size: 28750,
-            test_drives_conducted: 8,
-            customer_satisfaction: 4.8,
-            pipeline_value: 87500,
-            rank: 1
-        },
-        {
-            id: 2,
-            rep_name: 'Mike Sales Rep',
-            leads_assigned: 12,
-            leads_converted: 3,
-            conversion_rate: 25.0,
-            total_sales_value: 82500,
-            avg_deal_size: 27500,
-            test_drives_conducted: 6,
-            customer_satisfaction: 4.4,
-            pipeline_value: 65000,
-            rank: 2
-        },
-        {
-            id: 3,
-            rep_name: 'Tom Sales Rep',
-            leads_assigned: 18,
-            leads_converted: 3,
-            conversion_rate: 16.7,
-            total_sales_value: 63600,
-            avg_deal_size: 21200,
-            test_drives_conducted: 9,
-            customer_satisfaction: 4.2,
-            pipeline_value: 95000,
-            rank: 3
-        },
-        {
-            id: 4,
-            rep_name: 'Lisa Sales Rep',
-            leads_assigned: 8,
-            leads_converted: 1,
-            conversion_rate: 12.5,
-            total_sales_value: 45000,
-            avg_deal_size: 45000,
-            test_drives_conducted: 3,
-            customer_satisfaction: 4.6,
-            pipeline_value: 32000,
-            rank: 4
-        }
-    ];
+export default function PerformanceMetrics({ kpis, salesRepPerformance }: PerformanceMetricsProps) {
 
     const getTrendIcon = (trend: string) => {
         switch (trend) {
@@ -282,29 +185,29 @@ export default function PerformanceMetrics() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card>
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">₱306,100</div>
-                            <p className="text-xs text-muted-foreground">This month</p>
+                            <div className="text-2xl font-bold">{kpis.summary.total_leads}</div>
+                            <p className="text-xs text-muted-foreground">Created this period</p>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Units Sold</CardTitle>
+                            <CardTitle className="text-sm font-medium">Test Drives Completed</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">11</div>
-                            <p className="text-xs text-muted-foreground">Vehicles delivered</p>
+                            <div className="text-2xl font-bold">{kpis.summary.completed_test_drives}</div>
+                            <p className="text-xs text-muted-foreground">This period</p>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Active Pipeline</CardTitle>
+                            <CardTitle className="text-sm font-medium">Active Pipelines</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">₱279,500</div>
-                            <p className="text-xs text-muted-foreground">Potential revenue</p>
+                            <div className="text-2xl font-bold">{kpis.summary.active_pipelines}</div>
+                            <p className="text-xs text-muted-foreground">Currently active</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -374,7 +277,7 @@ export default function PerformanceMetrics() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {mockKPIs.map((kpi) => (
+                                {kpis.metrics.map((kpi) => (
                                     <TableRow key={kpi.id}>
                                         <TableCell className="font-medium">
                                             <div>
@@ -442,7 +345,7 @@ export default function PerformanceMetrics() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {mockSalesRepPerformance.map((rep) => (
+                                {salesRepPerformance.map((rep) => (
                                     <TableRow key={rep.id}>
                                         <TableCell className="font-medium">
                                             <div className="flex items-center space-x-2">
@@ -458,11 +361,8 @@ export default function PerformanceMetrics() {
                                         </TableCell>
                                         <TableCell>
                                             <div>
-                                                <div className="flex items-center space-x-1">
-                                                    <DollarSign className="h-3 w-3" />
-                                                    <span className="text-sm font-medium">₱{rep.total_sales_value.toLocaleString('en-PH')}</span>
-                                                </div>
-                                                <div className="text-xs text-muted-foreground">Avg: ₱{rep.avg_deal_size.toLocaleString('en-PH')}</div>
+                                                <div className="text-sm font-medium">{rep.pipelines_won}/{rep.pipelines_managed} won</div>
+                                                <div className="text-xs text-muted-foreground">Pipelines managed</div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
@@ -507,8 +407,8 @@ export default function PerformanceMetrics() {
                                     <h4 className="font-medium">Lead Management Events</h4>
                                 </div>
                                 <p className="text-sm text-muted-foreground mb-2">Lead creation, qualification, assignment</p>
-                                <div className="text-2xl font-bold">127</div>
-                                <p className="text-xs text-muted-foreground">Events this month</p>
+                                <div className="text-2xl font-bold">{kpis.summary.total_leads}</div>
+                                <p className="text-xs text-muted-foreground">Leads created</p>
                             </div>
                             <div className="p-4 border rounded-lg">
                                 <div className="flex items-center space-x-2 mb-2">
@@ -516,8 +416,8 @@ export default function PerformanceMetrics() {
                                     <h4 className="font-medium">Sales System Events</h4>
                                 </div>
                                 <p className="text-sm text-muted-foreground mb-2">Quotes, reservations, sales completion</p>
-                                <div className="text-2xl font-bold">89</div>
-                                <p className="text-xs text-muted-foreground">Events this month</p>
+                                <div className="text-2xl font-bold">{kpis.summary.active_pipelines}</div>
+                                <p className="text-xs text-muted-foreground">Active pipelines</p>
                             </div>
                             <div className="p-4 border rounded-lg">
                                 <div className="flex items-center space-x-2 mb-2">
@@ -525,8 +425,8 @@ export default function PerformanceMetrics() {
                                     <h4 className="font-medium">Customer Interaction Events</h4>
                                 </div>
                                 <p className="text-sm text-muted-foreground mb-2">Test drives, surveys, follow-ups</p>
-                                <div className="text-2xl font-bold">156</div>
-                                <p className="text-xs text-muted-foreground">Events this month</p>
+                                <div className="text-2xl font-bold">{kpis.summary.completed_test_drives}</div>
+                                <p className="text-xs text-muted-foreground">Test drives completed</p>
                             </div>
                         </div>
                     </CardContent>

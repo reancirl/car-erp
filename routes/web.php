@@ -149,9 +149,7 @@ Route::middleware(['auth', 'verified', 'permission:sales.view'])->prefix('sales'
     Route::get('/pipeline-export', [\App\Http\Controllers\PipelineController::class, 'export'])->name('pipeline.export')->middleware('permission:sales.view');
     Route::post('/pipeline-auto-loss-detection', [\App\Http\Controllers\PipelineController::class, 'runAutoLossDetection'])->name('pipeline.auto-loss-detection')->middleware('permission:sales.edit');
     
-    Route::get('/performance-metrics', function () {
-        return Inertia::render('sales/performance-metrics');
-    })->name('performance-metrics')->middleware('permission:reports.view');
+    Route::get('/performance-metrics', [\App\Http\Controllers\PerformanceMetricsController::class, 'index'])->name('performance-metrics')->middleware('permission:reports.view');
 });
 
 // Customer Experience Routes - Separate from sales (uses customer.view permission)
