@@ -104,9 +104,17 @@ class TestDriveController extends Controller
             })
             ->get(['id', 'name', 'branch_id']);
 
+        // Get vehicle models for vehicle selection
+        $vehicleModels = \App\Models\VehicleModel::where('is_active', true)
+            ->orderBy('make')
+            ->orderBy('model')
+            ->orderBy('year', 'desc')
+            ->get(['id', 'make', 'model', 'year', 'body_type']);
+
         return Inertia::render('sales/test-drive-create', [
             'branches' => $user->hasRole('admin') ? Branch::where('status', 'active')->get() : null,
             'salesReps' => $salesReps,
+            'vehicleModels' => $vehicleModels,
         ]);
     }
 
@@ -188,10 +196,18 @@ class TestDriveController extends Controller
             })
             ->get(['id', 'name', 'branch_id']);
 
+        // Get vehicle models for vehicle selection
+        $vehicleModels = \App\Models\VehicleModel::where('is_active', true)
+            ->orderBy('make')
+            ->orderBy('model')
+            ->orderBy('year', 'desc')
+            ->get(['id', 'make', 'model', 'year', 'body_type']);
+
         return Inertia::render('sales/test-drive-edit', [
             'testDrive' => $testDrive,
             'branches' => $user->hasRole('admin') ? Branch::where('status', 'active')->get() : null,
             'salesReps' => $salesReps,
+            'vehicleModels' => $vehicleModels,
         ]);
     }
 

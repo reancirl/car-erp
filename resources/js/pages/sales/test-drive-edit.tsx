@@ -44,10 +44,19 @@ interface TestDrive {
     notes?: string;
 }
 
+interface VehicleModel {
+    id: number;
+    make: string;
+    model: string;
+    year: number;
+    body_type: string;
+}
+
 interface Props {
     testDrive: TestDrive;
     branches?: Branch[] | null;
     salesReps: SalesRep[];
+    vehicleModels: VehicleModel[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -65,7 +74,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function TestDriveEdit({ testDrive, branches, salesReps }: Props) {
+export default function TestDriveEdit({ testDrive, branches, salesReps, vehicleModels }: Props) {
     const { data, setData, put, processing, errors } = useForm({
         customer_name: testDrive.customer_name,
         customer_phone: testDrive.customer_phone,
@@ -294,14 +303,31 @@ export default function TestDriveEdit({ testDrive, branches, salesReps }: Props)
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="vehicle_details">Vehicle Details *</Label>
-                                    <Input 
-                                        id="vehicle_details" 
-                                        value={data.vehicle_details}
-                                        onChange={(e) => setData('vehicle_details', e.target.value)}
-                                        placeholder="e.g., 2024 Honda Civic LX - Silver"
-                                        required
-                                    />
+                                    <Label htmlFor="vehicle_details">Vehicle Model *</Label>
+                                    <Select 
+                                        value={data.vehicle_details} 
+                                        onValueChange={(value) => setData('vehicle_details', value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select vehicle model" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {vehicleModels && vehicleModels.length > 0 ? (
+                                                vehicleModels.map((model) => (
+                                                    <SelectItem key={model.id} value={`${model.year} ${model.make} ${model.model}`}>
+                                                        {model.year} {model.make} {model.model} - {model.body_type}
+                                                    </SelectItem>
+                                                ))
+                                            ) : (
+                                                <div className="p-2 text-sm text-muted-foreground">
+                                                    No vehicle models available
+                                                </div>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">
+                                        Select from available vehicle models
+                                    </p>
                                     {errors.vehicle_details && <p className="text-sm text-red-600">{errors.vehicle_details}</p>}
                                 </div>
                             </CardContent>

@@ -46,9 +46,18 @@ interface Role {
     guard_name: string;
 }
 
+interface VehicleModel {
+    id: number;
+    make: string;
+    model: string;
+    year: number;
+    body_type: string;
+}
+
 interface Props {
     branches: Branch[] | null;
     salesReps: SalesRep[];
+    vehicleModels: VehicleModel[];
     auth: {
         user: {
             roles?: Role[];
@@ -57,7 +66,7 @@ interface Props {
     };
 }
 
-export default function LeadCreate({ branches, salesReps, auth }: Props) {
+export default function LeadCreate({ branches, salesReps, vehicleModels, auth }: Props) {
     const isAdmin = auth.user.roles?.some(role => role.name === 'admin');
     
     const { data, setData, post, processing, errors } = useForm({
@@ -366,12 +375,30 @@ export default function LeadCreate({ branches, salesReps, auth }: Props) {
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="vehicle_interest">Vehicle of Interest</Label>
-                                        <Input 
-                                            id="vehicle_interest" 
-                                            placeholder="e.g., 2024 Honda Civic, SUV, Sedan"
-                                            value={data.vehicle_interest}
-                                            onChange={(e) => setData('vehicle_interest', e.target.value)}
-                                        />
+                                        <Select 
+                                            value={data.vehicle_interest} 
+                                            onValueChange={(value) => setData('vehicle_interest', value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select vehicle model" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {vehicleModels && vehicleModels.length > 0 ? (
+                                                    vehicleModels.map((model) => (
+                                                        <SelectItem key={model.id} value={`${model.year} ${model.make} ${model.model}`}>
+                                                            {model.year} {model.make} {model.model} - {model.body_type}
+                                                        </SelectItem>
+                                                    ))
+                                                ) : (
+                                                    <div className="p-2 text-sm text-muted-foreground">
+                                                        No vehicle models available
+                                                    </div>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-muted-foreground">
+                                            Select from available vehicle models in inventory
+                                        </p>
                                         {errors.vehicle_interest && <p className="text-sm text-red-600">{errors.vehicle_interest}</p>}
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

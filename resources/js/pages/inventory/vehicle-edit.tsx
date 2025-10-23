@@ -127,37 +127,7 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
         });
     };
 
-    const mockVehicle = {
-        id: unit.id,
-        vin: unit.vin,
-        stock_number: unit.stock_number,
-        branch_id: unit.branch_id,
-        assigned_user_id: unit.assigned_user_id,
-        vehicle_model_id: unit.vehicle_model_id,
-        trim: unit.trim,
-        exterior_color: unit.color_exterior,
-        interior_color: unit.color_interior,
-        mileage: unit.odometer,
-        status: unit.status,
-        date_received: unit.acquisition_date,
-        vehicle_type: unit.vehicle_type,
-        featured: true,
-        allow_test_drive: true,
-        online_listing: true,
-        notes: 'Popular model with high demand. Consider for featured listing.',
-        features: [
-            { title: 'Apple CarPlay', value: 'Standard' },
-            { title: 'Honda Sensing', value: 'Standard' },
-            { title: 'Sunroof', value: 'Optional' },
-            { title: 'Alloy Wheels', value: 'Standard' }
-        ],
-        photos: ['front.jpg', 'rear.jpg', 'interior.jpg'],
-        documents: ['title.pdf', 'inspection.pdf']
-    };
-
-    const [features, setFeatures] = useState<Feature[]>(mockVehicle.features);
-    const [currentPrice, setCurrentPrice] = useState(mockVehicle.current_price);
-    const [dealerCost, setDealerCost] = useState(mockVehicle.dealer_cost);
+    const [features, setFeatures] = useState<Feature[]>([]);
 
     const addFeature = () => {
         setFeatures([...features, { title: '', value: '' }]);
@@ -173,14 +143,6 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
         setFeatures(updated);
     };
 
-    const calculateMargin = () => {
-        return currentPrice - dealerCost;
-    };
-
-    const calculateMarginPercentage = () => {
-        return ((calculateMargin() / currentPrice) * 100).toFixed(1);
-    };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Edit Vehicle - 2024 Honda Civic Sport" />
@@ -192,11 +154,11 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                         <Car className="h-6 w-6" />
                         <div>
                             <h1 className="text-2xl font-bold">Edit Vehicle</h1>
-                            <p className="text-muted-foreground">{mockVehicle.year} {mockVehicle.make} {mockVehicle.model} {mockVehicle.trim}</p>
+                            <p className="text-muted-foreground">Stock: {unit.stock_number}</p>
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Link href={`/inventory/vehicles/${mockVehicle.id}`}>
+                        <Link href={`/inventory/vehicles/${unit.id}`}>
                             <Button variant="outline" size="sm">
                                 <Eye className="h-4 w-4 mr-2" />
                                 View
@@ -242,19 +204,33 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="vin">VIN Number *</Label>
-                                        <Input id="vin" defaultValue={mockVehicle.vin} maxLength={17} />
+                                        <Input 
+                                            id="vin" 
+                                            value={data.vin}
+                                            onChange={(e) => setData('vin', e.target.value)}
+                                            maxLength={17} 
+                                        />
+                                        {errors.vin && <p className="text-sm text-red-600">{errors.vin}</p>}
                                         <p className="text-xs text-muted-foreground">Vehicle Identification Number</p>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="stock_number">Stock Number *</Label>
-                                        <Input id="stock_number" defaultValue={mockVehicle.stock_number} />
+                                        <Input 
+                                            id="stock_number" 
+                                            value={data.stock_number}
+                                            onChange={(e) => setData('stock_number', e.target.value)}
+                                        />
+                                        {errors.stock_number && <p className="text-sm text-red-600">{errors.stock_number}</p>}
                                         <p className="text-xs text-muted-foreground">Internal inventory reference</p>
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="vehicle_model_id">Vehicle Model *</Label>
-                                    <Select defaultValue={mockVehicle.vehicle_model_id?.toString()}>
+                                    <Select 
+                                        value={data.vehicle_model_id} 
+                                        onValueChange={(value) => setData('vehicle_model_id', value)}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select vehicle model" />
                                         </SelectTrigger>
@@ -273,7 +249,11 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
 
                                 <div className="space-y-2">
                                     <Label htmlFor="trim">Trim/Variant</Label>
-                                    <Input id="trim" defaultValue={mockVehicle.trim} />
+                                    <Input 
+                                        id="trim" 
+                                        value={data.trim}
+                                        onChange={(e) => setData('trim', e.target.value)}
+                                    />
                                     <p className="text-xs text-muted-foreground">
                                         Specific trim or variant of this unit
                                     </p>
@@ -281,7 +261,10 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
 
                                 <div className="space-y-2">
                                     <Label htmlFor="vehicle_type">Vehicle Type *</Label>
-                                    <Select defaultValue={mockVehicle.vehicle_type}>
+                                    <Select 
+                                        value={data.vehicle_type} 
+                                        onValueChange={(value) => setData('vehicle_type', value)}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
@@ -309,7 +292,12 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                                             <Gauge className="h-4 w-4" />
                                             <span>Odometer (km)</span>
                                         </Label>
-                                        <Input id="mileage" type="number" defaultValue={mockVehicle.mileage} />
+                                        <Input 
+                                            id="odometer" 
+                                            type="number"
+                                            value={data.odometer}
+                                            onChange={(e) => setData('odometer', e.target.value)}
+                                        />
                                         <p className="text-xs text-muted-foreground">Current mileage reading</p>
                                     </div>
                                     <div className="space-y-2">
@@ -317,13 +305,21 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                                             <Palette className="h-4 w-4" />
                                             <span>Exterior Color *</span>
                                         </Label>
-                                        <Input id="exterior_color" defaultValue={mockVehicle.exterior_color} />
+                                        <Input 
+                                            id="color_exterior" 
+                                            value={data.color_exterior}
+                                            onChange={(e) => setData('color_exterior', e.target.value)}
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="interior_color">Interior Color</Label>
-                                    <Input id="interior_color" defaultValue={mockVehicle.interior_color} />
+                                    <Input 
+                                        id="color_interior" 
+                                        value={data.color_interior}
+                                        onChange={(e) => setData('color_interior', e.target.value)}
+                                    />
                                 </div>
                             </CardContent>
                         </Card>
@@ -383,53 +379,6 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                             </CardContent>
                         </Card>
 
-                        {/* Photos & Documents */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <Camera className="h-5 w-5" />
-                                    <span>Photos & Documents</span>
-                                </CardTitle>
-                                <CardDescription>Manage vehicle photos and documentation</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label>Current Photos ({mockVehicle.photos.length})</Label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {mockVehicle.photos.map((photo, index) => (
-                                            <div key={index} className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-                                                <Camera className="h-8 w-8 text-gray-400" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <Button variant="outline" size="sm" className="w-full">
-                                        <Upload className="h-4 w-4 mr-2" />
-                                        Add More Photos
-                                    </Button>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Documents ({mockVehicle.documents.length})</Label>
-                                    <div className="space-y-2">
-                                        {mockVehicle.documents.map((doc, index) => (
-                                            <div key={index} className="flex items-center justify-between p-2 border rounded">
-                                                <div className="flex items-center space-x-2">
-                                                    <FileText className="h-4 w-4" />
-                                                    <span className="text-sm">{doc}</span>
-                                                </div>
-                                                <Button variant="ghost" size="sm">
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <Button variant="outline" size="sm" className="w-full">
-                                        <Upload className="h-4 w-4 mr-2" />
-                                        Add Documents
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
                     </div>
 
                     {/* Sidebar */}
@@ -445,40 +394,53 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="msrp">MSRP (₱)</Label>
-                                    <Input id="msrp" type="number" defaultValue={mockVehicle.msrp} />
-                                    <p className="text-xs text-muted-foreground">Manufacturer's suggested retail price</p>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="dealer_cost">Dealer Cost (₱)</Label>
+                                    <Label htmlFor="purchase_price">Purchase Price (₱)</Label>
                                     <Input 
-                                        id="dealer_cost" 
-                                        type="number" 
-                                        defaultValue={mockVehicle.dealer_cost}
-                                        onChange={(e) => setDealerCost(Number(e.target.value))}
+                                        id="purchase_price" 
+                                        type="number"
+                                        value={data.purchase_price}
+                                        onChange={(e) => setData('purchase_price', e.target.value)}
+                                        placeholder="0.00"
                                     />
                                     <p className="text-xs text-muted-foreground">Your acquisition cost</p>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="current_price">Current Price (₱) *</Label>
+                                    <Label htmlFor="sale_price">Sale Price (₱)</Label>
                                     <Input 
-                                        id="current_price" 
-                                        type="number" 
-                                        defaultValue={mockVehicle.current_price}
-                                        onChange={(e) => setCurrentPrice(Number(e.target.value))}
+                                        id="sale_price" 
+                                        type="number"
+                                        value={data.sale_price}
+                                        onChange={(e) => setData('sale_price', e.target.value)}
+                                        placeholder="0.00"
                                     />
-                                    <p className="text-xs text-muted-foreground">Current selling price</p>
+                                    <p className="text-xs text-muted-foreground">Selling price</p>
                                 </div>
 
                                 <Separator />
 
-                                <div className="bg-green-50 p-3 rounded-lg">
-                                    <div className="text-sm font-medium text-green-800">Current Margin</div>
-                                    <div className="text-lg font-bold text-green-600">₱{calculateMargin().toLocaleString()}</div>
-                                    <div className="text-xs text-green-600">{calculateMarginPercentage()}% margin</div>
-                                </div>
+                                {/* Dynamic Profit Calculation */}
+                                {(() => {
+                                    const purchasePrice = parseFloat(data.purchase_price) || 0;
+                                    const salePrice = parseFloat(data.sale_price) || 0;
+                                    const margin = salePrice - purchasePrice;
+                                    const marginPercent = salePrice > 0 ? ((margin / salePrice) * 100).toFixed(1) : '0.0';
+                                    const isProfit = margin >= 0;
+
+                                    return (
+                                        <div className={`p-3 rounded-lg ${isProfit ? 'bg-green-50' : 'bg-red-50'}`}>
+                                            <div className={`text-sm font-medium ${isProfit ? 'text-green-800' : 'text-red-800'}`}>
+                                                Estimated {isProfit ? 'Profit' : 'Loss'}
+                                            </div>
+                                            <div className={`text-lg font-bold ${isProfit ? 'text-green-600' : 'text-red-600'}`}>
+                                                ₱{Math.abs(margin).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                            <div className={`text-xs ${isProfit ? 'text-green-600' : 'text-red-600'}`}>
+                                                {marginPercent}% margin
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </CardContent>
                         </Card>
 
@@ -494,7 +456,11 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="branch_id">Branch *</Label>
-                                    <Select defaultValue={mockVehicle.branch_id?.toString()} disabled={!isAdmin}>
+                                    <Select 
+                                        value={data.branch_id?.toString()} 
+                                        onValueChange={(value) => setData('branch_id', value)}
+                                        disabled={!isAdmin}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select branch" />
                                         </SelectTrigger>
@@ -511,7 +477,10 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
 
                                 <div className="space-y-2">
                                     <Label htmlFor="status">Status</Label>
-                                    <Select defaultValue={mockVehicle.status}>
+                                    <Select 
+                                        value={data.status} 
+                                        onValueChange={(value) => setData('status', value)}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
@@ -528,7 +497,10 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
 
                                 <div className="space-y-2">
                                     <Label htmlFor="assigned_user_id">Assigned Sales Rep</Label>
-                                    <Select defaultValue={mockVehicle.assigned_user_id?.toString()}>
+                                    <Select 
+                                        value={data.assigned_user_id} 
+                                        onValueChange={(value) => setData('assigned_user_id', value)}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select sales rep" />
                                         </SelectTrigger>
@@ -548,7 +520,12 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                                         <Calendar className="h-4 w-4" />
                                         <span>Acquisition Date</span>
                                     </Label>
-                                    <Input id="acquisition_date" type="date" defaultValue={mockVehicle.date_received} />
+                                    <Input 
+                                        id="acquisition_date" 
+                                        type="date"
+                                        value={data.acquisition_date}
+                                        onChange={(e) => setData('acquisition_date', e.target.value)}
+                                    />
                                 </div>
                             </CardContent>
                         </Card>
@@ -560,38 +537,16 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                                 <CardDescription>Update additional options and settings</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Label htmlFor="featured">Featured Vehicle</Label>
-                                        <p className="text-xs text-muted-foreground">Highlight on website</p>
-                                    </div>
-                                    <Switch id="featured" defaultChecked={mockVehicle.featured} />
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Label htmlFor="allow_test_drive">Allow Test Drives</Label>
-                                        <p className="text-xs text-muted-foreground">Enable test drive booking</p>
-                                    </div>
-                                    <Switch id="allow_test_drive" defaultChecked={mockVehicle.allow_test_drive} />
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Label htmlFor="online_listing">Online Listing</Label>
-                                        <p className="text-xs text-muted-foreground">Show on website</p>
-                                    </div>
-                                    <Switch id="online_listing" defaultChecked={mockVehicle.online_listing} />
-                                </div>
-
                                 <Separator />
 
                                 <div className="space-y-2">
                                     <Label htmlFor="notes">Internal Notes</Label>
                                     <Textarea 
                                         id="notes" 
-                                        defaultValue={mockVehicle.notes}
+                                        value={data.notes}
+                                        onChange={(e) => setData('notes', e.target.value)}
                                         className="min-h-[80px]"
+                                        placeholder="Add any internal notes about this vehicle..."
                                     />
                                 </div>
                             </CardContent>

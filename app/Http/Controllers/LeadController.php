@@ -89,9 +89,17 @@ class LeadController extends Controller
             })
             ->get(['id', 'name', 'branch_id']);
 
+        // Get vehicle models for vehicle interest dropdown
+        $vehicleModels = \App\Models\VehicleModel::where('is_active', true)
+            ->orderBy('make')
+            ->orderBy('model')
+            ->orderBy('year', 'desc')
+            ->get(['id', 'make', 'model', 'year', 'body_type']);
+
         return Inertia::render('sales/lead-create', [
             'branches' => $user->hasRole('admin') ? Branch::where('status', 'active')->get() : null,
             'salesReps' => $salesReps,
+            'vehicleModels' => $vehicleModels,
         ]);
     }
 
@@ -170,9 +178,17 @@ class LeadController extends Controller
             })
             ->get(['id', 'name', 'branch_id']);
 
+        // Get vehicle models for vehicle interest dropdown
+        $vehicleModels = \App\Models\VehicleModel::where('is_active', true)
+            ->orderBy('make')
+            ->orderBy('model')
+            ->orderBy('year', 'desc')
+            ->get(['id', 'make', 'model', 'year', 'body_type']);
+
         return Inertia::render('sales/lead-edit', [
             'lead' => $lead,
             'salesReps' => $salesReps,
+            'vehicleModels' => $vehicleModels,
         ]);
     }
 

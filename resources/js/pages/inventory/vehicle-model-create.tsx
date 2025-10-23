@@ -81,8 +81,8 @@ export default function VehicleModelCreate() {
         available_colors: [],
         available_trims: [],
         description: '',
-        is_active: true,
-        is_featured: false,
+        is_active: true as boolean,
+        is_featured: false as boolean,
         launch_date: '',
         notes: '',
     });
