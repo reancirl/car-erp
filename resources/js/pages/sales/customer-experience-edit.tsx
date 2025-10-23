@@ -126,9 +126,9 @@ export default function CustomerExperienceEdit({ customer, managers, existingCus
         company_name: customer.company_name || '',
         tax_id: customer.tax_id || '',
         status: customer.status || 'active',
-        email_notifications: customer.email_notifications ?? true,
-        sms_notifications: customer.sms_notifications ?? true,
-        marketing_consent: customer.marketing_consent ?? false,
+        email_notifications: (customer.email_notifications ?? true) as boolean,
+        sms_notifications: (customer.sms_notifications ?? true) as boolean,
+        marketing_consent: (customer.marketing_consent ?? false) as boolean,
         assigned_to: customer.assigned_to ? customer.assigned_to.toString() : 'unassigned',
         notes: customer.notes || '',
         tags: customer.tags || [] as string[],
@@ -296,9 +296,10 @@ export default function CustomerExperienceEdit({ customer, managers, existingCus
                                             value={data.phone}
                                             onChange={(e) => setData('phone', e.target.value)}
                                             className={errors.phone ? 'border-red-500' : ''}
-                                            placeholder="+63 XXX XXX XXXX"
+                                            placeholder="09171234567"
                                             required
                                         />
+                                        <p className="text-xs text-muted-foreground">Format: 09XXXXXXXXX or +639XXXXXXXXX</p>
                                         {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
                                     </div>
                                 </div>
@@ -312,8 +313,9 @@ export default function CustomerExperienceEdit({ customer, managers, existingCus
                                             value={data.alternate_phone}
                                             onChange={(e) => setData('alternate_phone', e.target.value)}
                                             className={errors.alternate_phone ? 'border-red-500' : ''}
-                                            placeholder="+63 XXX XXX XXXX"
+                                            placeholder="09171234567"
                                         />
+                                        <p className="text-xs text-muted-foreground">Format: 09XXXXXXXXX or +639XXXXXXXXX</p>
                                         {errors.alternate_phone && <p className="text-sm text-red-600">{errors.alternate_phone}</p>}
                                     </div>
 
@@ -396,13 +398,16 @@ export default function CustomerExperienceEdit({ customer, managers, existingCus
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="postal_code">Postal Code</Label>
+                                        <Label htmlFor="postal_code">Postal Code (ZIP)</Label>
                                         <Input
                                             id="postal_code"
                                             value={data.postal_code}
                                             onChange={(e) => setData('postal_code', e.target.value)}
                                             className={errors.postal_code ? 'border-red-500' : ''}
+                                            placeholder="1000"
+                                            maxLength={4}
                                         />
+                                        <p className="text-xs text-muted-foreground">4-digit Philippine ZIP code</p>
                                         {errors.postal_code && <p className="text-sm text-red-600">{errors.postal_code}</p>}
                                     </div>
 
@@ -557,7 +562,7 @@ export default function CustomerExperienceEdit({ customer, managers, existingCus
                                     <Checkbox
                                         id="email_notifications"
                                         checked={data.email_notifications}
-                                        onCheckedChange={(checked) => setData('email_notifications', checked as boolean)}
+                                        onCheckedChange={(checked) => setData('email_notifications', !!checked)}
                                     />
                                     <label htmlFor="email_notifications" className="text-sm font-medium">
                                         Email Notifications
@@ -568,7 +573,7 @@ export default function CustomerExperienceEdit({ customer, managers, existingCus
                                     <Checkbox
                                         id="sms_notifications"
                                         checked={data.sms_notifications}
-                                        onCheckedChange={(checked) => setData('sms_notifications', checked as boolean)}
+                                        onCheckedChange={(checked) => setData('sms_notifications', !!checked)}
                                     />
                                     <label htmlFor="sms_notifications" className="text-sm font-medium">
                                         SMS Notifications
@@ -579,7 +584,7 @@ export default function CustomerExperienceEdit({ customer, managers, existingCus
                                     <Checkbox
                                         id="marketing_consent"
                                         checked={data.marketing_consent}
-                                        onCheckedChange={(checked) => setData('marketing_consent', checked as boolean)}
+                                        onCheckedChange={(checked) => setData('marketing_consent', !!checked)}
                                     />
                                     <label htmlFor="marketing_consent" className="text-sm font-medium">
                                         Marketing Consent
