@@ -51,6 +51,7 @@ class StorePipelineRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
+            'branch_id' => 'required|exists:branches,id',
             'customer_name' => 'required|string|min:2|max:255',
             'customer_phone' => 'required|string|regex:/^\+?63[-\s]?[0-9]{1,2}[-\s]?[0-9]{3,4}[-\s]?[0-9]{4}$/',
             'customer_email' => 'nullable|email:rfc,dns|max:255',
@@ -74,8 +75,7 @@ class StorePipelineRequest extends FormRequest
             'tags.*' => 'string|max:100',
         ];
 
-        // branch_id is now auto-filled from lead or user's branch
-        // No manual selection needed
+        // branch_id is auto-filled from lead or user's branch in prepareForValidation()
 
         return $rules;
     }

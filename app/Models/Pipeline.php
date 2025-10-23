@@ -169,7 +169,8 @@ class Pipeline extends Model
     private static function generatePipelineId(): string
     {
         $year = date('Y');
-        $lastPipeline = self::whereYear('created_at', $year)
+        $lastPipeline = self::withTrashed()
+            ->whereYear('created_at', $year)
             ->orderBy('id', 'desc')
             ->first();
 
