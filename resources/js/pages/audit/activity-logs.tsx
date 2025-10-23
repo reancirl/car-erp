@@ -104,6 +104,9 @@ export default function ActivityLogs({ logs, stats, filters = {}, branches }: Pr
             case 'Sales':
                 restoreRoute = route('sales.lead-management.restore', log.subject_id);
                 break;
+            case 'Customer':
+                restoreRoute = route('sales.customer-experience.restore', log.subject_id);
+                break;
             default:
                 return;
         }

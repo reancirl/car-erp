@@ -1,34 +1,16 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { 
-    ArrowLeft, 
-    Plus, 
-    MessageSquare,
-    User,
-    Phone,
-    Mail,
-    Calendar,
-    Clock,
-    Star,
-    FileText,
-    CheckCircle,
-    AlertTriangle,
-    Activity,
-    Link as LinkIcon,
-    Send,
-    Settings,
-    Zap
-} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Save, User, Building2, MapPin, Star, Phone, Mail, X, AlertCircle, Users, Crown, Calendar } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -40,168 +22,159 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/sales/customer-experience',
     },
     {
-        title: 'Create Survey',
+        title: 'Create Customer',
         href: '/sales/customer-experience/create',
     },
 ];
 
-export default function CustomerExperienceCreate() {
-    const [formData, setFormData] = useState({
-        customer_name: '',
-        customer_email: '',
-        customer_phone: '',
-        survey_type: '',
-        trigger_event: '',
-        dispatch_method: 'email',
-        survey_link: '',
-        link_expires_days: 7,
-        sales_rep: '',
-        vehicle: '',
-        follow_up_required: false,
-        follow_up_due: '',
-        priority: 'medium',
-        assigned_to: 'Customer Service',
-        auto_resend: true,
-        reminder_frequency: 'daily',
-        auto_dispatch: true,
-        dispatch_delay: 5
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
+}
+
+interface Manager {
+    id: number;
+    name: string;
+    branch_id: number;
+}
+
+interface ExistingCustomer {
+    id: number;
+    customer_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+}
+
+interface Role {
+    id: number;
+    name: string;
+    guard_name: string;
+}
+
+interface Props {
+    branches: Branch[] | null;
+    managers: Manager[];
+    existingCustomers: ExistingCustomer[];
+    auth: {
+        user: {
+            roles?: Role[];
+            branch_id?: number;
+        };
+    };
+    errors: Record<string, string>;
+}
+
+export default function CustomerExperienceCreate({ branches, managers, existingCustomers, auth, errors }: Props) {
+    const isAdmin = auth.user.roles?.some(role => role.name === 'admin');
+    
+    const { data, setData, post, processing } = useForm({
+        branch_id: !isAdmin && auth.user.branch_id ? auth.user.branch_id.toString() : '',
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        alternate_phone: '',
+        date_of_birth: '',
+        gender: '',
+        address: '',
+        city: '',
+        state: '',
+        postal_code: '',
+        country: 'Philippines',
+        customer_type: 'individual',
+        company_name: '',
+        tax_id: '',
+        status: 'active',
+        email_notifications: true,
+        sms_notifications: true,
+        marketing_consent: false,
+        assigned_to: 'unassigned',
+        notes: '',
+        tags: [] as string[],
+        referred_by: 'none',
+        referral_source: '',
     });
 
-    const [surveyPreview, setSurveyPreview] = useState({
-        estimated_response_rate: 0,
-        auto_link_generated: false,
-        dispatch_ready: false
-    });
+    const availableTags = [
+        { id: 'vip', name: 'VIP' },
+        { id: 'fleet_buyer', name: 'Fleet Buyer' },
+        { id: 'referral_source', name: 'Referral Source' },
+        { id: 'high_value', name: 'High Value' },
+        { id: 'repeat_customer', name: 'Repeat Customer' },
+        { id: 'corporate_account', name: 'Corporate Account' },
+        { id: 'cash_buyer', name: 'Cash Buyer' },
+        { id: 'financing_preferred', name: 'Financing Preferred' },
+    ];
 
-    const handleInputChange = (field: string, value: string | number | boolean) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-        // Update preview when relevant fields change
-        setTimeout(updateSurveyPreview, 100);
+    const toggleTag = (tagId: string) => {
+        setData('tags', data.tags.includes(tagId)
+            ? data.tags.filter(id => id !== tagId)
+            : [...data.tags, tagId]
+        );
     };
 
-    const updateSurveyPreview = () => {
-        let responseRate = 30; // Base rate
-        
-        // Adjust based on survey type
-        if (formData.survey_type === 'test_drive') responseRate += 20;
-        else if (formData.survey_type === 'delivery') responseRate += 15;
-        else if (formData.survey_type === 'sales_process') responseRate += 10;
-        
-        // Adjust based on dispatch method
-        if (formData.dispatch_method === 'sms') responseRate += 15;
-        else if (formData.dispatch_method === 'both') responseRate += 25;
-        
-        // Auto-link generation
-        const autoLink = formData.survey_type && formData.customer_email;
-        
-        // Dispatch readiness
-        const dispatchReady = formData.customer_name && formData.survey_type && 
-                            (formData.customer_email || formData.customer_phone);
-        
-        setSurveyPreview({
-            estimated_response_rate: Math.min(responseRate, 85),
-            auto_link_generated: !!autoLink,
-            dispatch_ready: !!dispatchReady
+    const handleSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        post('/sales/customer-experience', {
+            preserveScroll: true,
         });
     };
 
-    const getSurveyTypeBadge = (type: string) => {
-        switch (type) {
-            case 'test_drive':
-                return <Badge variant="outline" className="bg-purple-100 text-purple-800">Test Drive</Badge>;
-            case 'delivery':
-                return <Badge variant="outline" className="bg-blue-100 text-blue-800">Delivery</Badge>;
-            case 'service_completion':
-                return <Badge variant="outline" className="bg-orange-100 text-orange-800">Service</Badge>;
-            case 'sales_process':
-                return <Badge variant="outline" className="bg-green-100 text-green-800">Sales</Badge>;
-            default:
-                return <Badge variant="secondary">{type}</Badge>;
-        }
-    };
-
-    const getResponseRateBadge = (rate: number) => {
-        if (rate >= 70) {
-            return <Badge variant="default" className="bg-green-100 text-green-800">High ({rate}%)</Badge>;
-        } else if (rate >= 50) {
-            return <Badge variant="outline" className="bg-blue-100 text-blue-800">Good ({rate}%)</Badge>;
-        } else if (rate >= 30) {
-            return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Fair ({rate}%)</Badge>;
-        } else {
-            return <Badge variant="outline" className="bg-red-100 text-red-800">Low ({rate}%)</Badge>;
-        }
-    };
-
-    const mockSalesReps = [
-        'Lisa Sales Rep',
-        'Mike Sales Rep',
-        'Sarah Sales Rep',
-        'Tom Sales Rep',
-        'Jennifer Sales Rep'
-    ];
-
-    const mockVehicles = [
-        '2024 BMW X3',
-        '2024 Honda Civic',
-        '2023 Toyota Camry',
-        '2024 Ford F-150',
-        '2024 Nissan Altima'
-    ];
-
-    const surveyTemplates = [
-        {
-            type: 'test_drive',
-            name: 'Test Drive Experience',
-            questions: 8,
-            avg_completion: '3-5 min'
-        },
-        {
-            type: 'delivery',
-            name: 'Vehicle Delivery',
-            questions: 10,
-            avg_completion: '4-6 min'
-        },
-        {
-            type: 'service_completion',
-            name: 'Service Experience',
-            questions: 12,
-            avg_completion: '5-7 min'
-        },
-        {
-            type: 'sales_process',
-            name: 'Sales Process',
-            questions: 15,
-            avg_completion: '6-8 min'
-        }
-    ];
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Create Customer Experience Survey" />
+            <Head title="Create Customer" />
             
-            <div className="space-y-6 p-6">
+            <form onSubmit={handleSubmit} className="space-y-6 p-6">
+                {/* Validation Error Banner */}
+                {Object.keys(errors).length > 0 && (
+                    <Card className="border-red-200 bg-red-50">
+                        <CardContent className="pt-6">
+                            <div className="flex items-start space-x-3">
+                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-red-900">Validation Error</h3>
+                                    <p className="text-sm text-red-800 mt-1">
+                                        Please correct the following errors before submitting:
+                                    </p>
+                                    <ul className="list-disc list-inside text-sm text-red-700 mt-2 space-y-1">
+                                        {Object.entries(errors).map(([field, message]) => (
+                                            <li key={field}>
+                                                <strong className="capitalize">{field.replace(/_/g, ' ')}</strong>: {message}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         <Link href="/sales/customer-experience">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" type="button">
                                 <ArrowLeft className="h-4 w-4 mr-2" />
-                                Back to Customer Experience
+                                Back to Customers
                             </Button>
                         </Link>
                         <div>
-                            <h1 className="text-2xl font-bold">Create Customer Survey</h1>
-                            <p className="text-muted-foreground">Set up automated survey dispatch and follow-up</p>
+                            <h1 className="text-2xl font-bold">Create New Customer</h1>
+                            <p className="text-muted-foreground">Add a new customer to the system</p>
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline">
-                            <FileText className="h-4 w-4 mr-2" />
-                            Save Draft
-                        </Button>
-                        <Button>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Create Survey
+                        <Link href="/sales/customer-experience">
+                            <Button variant="outline" type="button">
+                                <X className="h-4 w-4 mr-2" />
+                                Cancel
+                            </Button>
+                        </Link>
+                        <Button type="submit" disabled={processing}>
+                            <Save className="h-4 w-4 mr-2" />
+                            {processing ? 'Creating...' : 'Create Customer'}
                         </Button>
                     </div>
                 </div>
@@ -209,294 +182,288 @@ export default function CustomerExperienceCreate() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Form */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Customer Information */}
+                        {/* Branch Selection (Admin Only) */}
+                        {isAdmin && branches && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Branch Assignment</CardTitle>
+                                    <CardDescription>Select which branch this customer belongs to (Required)</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="branch_id">Branch *</Label>
+                                        <Select value={data.branch_id} onValueChange={(value) => setData('branch_id', value)} required>
+                                            <SelectTrigger className={errors.branch_id ? 'border-red-500' : ''}>
+                                                <SelectValue placeholder="Select branch (Required)" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {branches.map((branch) => (
+                                                    <SelectItem key={branch.id} value={branch.id.toString()}>
+                                                        {branch.name} ({branch.code})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {errors.branch_id && <p className="text-sm text-red-600">{errors.branch_id}</p>}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Personal Information */}
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center">
                                     <User className="h-5 w-5 mr-2" />
-                                    Customer Information
+                                    Personal Information
                                 </CardTitle>
-                                <CardDescription>
-                                    Customer contact details for survey dispatch
-                                </CardDescription>
+                                <CardDescription>Basic customer details</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="customer_name">Customer Name *</Label>
+                                        <Label htmlFor="first_name">First Name *</Label>
                                         <Input
-                                            id="customer_name"
-                                            value={formData.customer_name}
-                                            onChange={(e) => handleInputChange('customer_name', e.target.value)}
-                                            placeholder="Enter customer name"
+                                            id="first_name"
+                                            value={data.first_name}
+                                            onChange={(e) => setData('first_name', e.target.value)}
+                                            className={errors.first_name ? 'border-red-500' : ''}
+                                            required
                                         />
+                                        {errors.first_name && <p className="text-sm text-red-600">{errors.first_name}</p>}
                                     </div>
+
                                     <div className="space-y-2">
-                                        <Label htmlFor="customer_phone">Phone Number</Label>
+                                        <Label htmlFor="last_name">Last Name *</Label>
                                         <Input
-                                            id="customer_phone"
-                                            value={formData.customer_phone}
-                                            onChange={(e) => handleInputChange('customer_phone', e.target.value)}
-                                            placeholder="+1-555-0123"
+                                            id="last_name"
+                                            value={data.last_name}
+                                            onChange={(e) => setData('last_name', e.target.value)}
+                                            className={errors.last_name ? 'border-red-500' : ''}
+                                            required
                                         />
+                                        {errors.last_name && <p className="text-sm text-red-600">{errors.last_name}</p>}
                                     </div>
                                 </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email">Email *</Label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            value={data.email}
+                                            onChange={(e) => setData('email', e.target.value)}
+                                            className={errors.email ? 'border-red-500' : ''}
+                                            required
+                                        />
+                                        {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="phone">Phone *</Label>
+                                        <Input
+                                            id="phone"
+                                            type="tel"
+                                            value={data.phone}
+                                            onChange={(e) => setData('phone', e.target.value)}
+                                            className={errors.phone ? 'border-red-500' : ''}
+                                            placeholder="+63 XXX XXX XXXX"
+                                            required
+                                        />
+                                        {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="alternate_phone">Alternate Phone</Label>
+                                        <Input
+                                            id="alternate_phone"
+                                            type="tel"
+                                            value={data.alternate_phone}
+                                            onChange={(e) => setData('alternate_phone', e.target.value)}
+                                            className={errors.alternate_phone ? 'border-red-500' : ''}
+                                            placeholder="+63 XXX XXX XXXX"
+                                        />
+                                        {errors.alternate_phone && <p className="text-sm text-red-600">{errors.alternate_phone}</p>}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="date_of_birth">Date of Birth</Label>
+                                        <Input
+                                            id="date_of_birth"
+                                            type="date"
+                                            value={data.date_of_birth}
+                                            onChange={(e) => setData('date_of_birth', e.target.value)}
+                                            className={errors.date_of_birth ? 'border-red-500' : ''}
+                                        />
+                                        {errors.date_of_birth && <p className="text-sm text-red-600">{errors.date_of_birth}</p>}
+                                    </div>
+                                </div>
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="customer_email">Email Address *</Label>
-                                    <Input
-                                        id="customer_email"
-                                        type="email"
-                                        value={formData.customer_email}
-                                        onChange={(e) => handleInputChange('customer_email', e.target.value)}
-                                        placeholder="customer@email.com"
-                                    />
+                                    <Label htmlFor="gender">Gender</Label>
+                                    <Select value={data.gender} onValueChange={(value) => setData('gender', value)}>
+                                        <SelectTrigger className={errors.gender ? 'border-red-500' : ''}>
+                                            <SelectValue placeholder="Select gender" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="male">Male</SelectItem>
+                                            <SelectItem value="female">Female</SelectItem>
+                                            <SelectItem value="other">Other</SelectItem>
+                                            <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.gender && <p className="text-sm text-red-600">{errors.gender}</p>}
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Survey Configuration */}
+                        {/* Address Information */}
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center">
-                                    <MessageSquare className="h-5 w-5 mr-2" />
-                                    Survey Configuration
+                                    <MapPin className="h-5 w-5 mr-2" />
+                                    Address Information
                                 </CardTitle>
-                                <CardDescription>
-                                    Survey type, trigger event, and template selection
-                                </CardDescription>
+                                <CardDescription>Customer location details</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="survey_type">Survey Type *</Label>
-                                        <Select value={formData.survey_type} onValueChange={(value) => handleInputChange('survey_type', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select survey type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="test_drive">Test Drive Experience</SelectItem>
-                                                <SelectItem value="delivery">Vehicle Delivery</SelectItem>
-                                                <SelectItem value="service_completion">Service Completion</SelectItem>
-                                                <SelectItem value="sales_process">Sales Process</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="trigger_event">Trigger Event</Label>
-                                        <Input
-                                            id="trigger_event"
-                                            value={formData.trigger_event}
-                                            onChange={(e) => handleInputChange('trigger_event', e.target.value)}
-                                            placeholder="e.g., Test Drive Completed"
-                                        />
-                                    </div>
-                                </div>
-                                
-                                {formData.survey_type && (
-                                    <div className="p-4 border rounded-lg bg-blue-50">
-                                        <h4 className="font-medium mb-2">Survey Template Preview</h4>
-                                        {surveyTemplates
-                                            .filter(template => template.type === formData.survey_type)
-                                            .map((template, index) => (
-                                                <div key={index} className="text-sm text-blue-800">
-                                                    <p><strong>{template.name}</strong></p>
-                                                    <p>{template.questions} questions • {template.avg_completion} completion time</p>
-                                                </div>
-                                            ))}
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="sales_rep">Sales Representative</Label>
-                                        <Select value={formData.sales_rep} onValueChange={(value) => handleInputChange('sales_rep', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select sales rep" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {mockSalesReps.map((rep, index) => (
-                                                    <SelectItem key={index} value={rep}>
-                                                        {rep}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="vehicle">Vehicle</Label>
-                                        <Select value={formData.vehicle} onValueChange={(value) => handleInputChange('vehicle', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select vehicle" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {mockVehicles.map((vehicle, index) => (
-                                                    <SelectItem key={index} value={vehicle}>
-                                                        {vehicle}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Dispatch Settings */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Send className="h-5 w-5 mr-2" />
-                                    Dispatch Settings
-                                </CardTitle>
-                                <CardDescription>
-                                    Configure how and when the survey is sent
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="dispatch_method">Dispatch Method</Label>
-                                        <Select value={formData.dispatch_method} onValueChange={(value) => handleInputChange('dispatch_method', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select method" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="email">Email Only</SelectItem>
-                                                <SelectItem value="sms">SMS Only</SelectItem>
-                                                <SelectItem value="both">Both Email & SMS</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="dispatch_delay">Dispatch Delay (minutes)</Label>
-                                        <Input
-                                            id="dispatch_delay"
-                                            type="number"
-                                            min="1"
-                                            max="60"
-                                            value={formData.dispatch_delay}
-                                            onChange={(e) => handleInputChange('dispatch_delay', parseInt(e.target.value) || 5)}
-                                            placeholder="5"
-                                        />
-                                    </div>
-                                </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="link_expires_days">Link Expiration (days)</Label>
-                                    <Input
-                                        id="link_expires_days"
-                                        type="number"
-                                        min="1"
-                                        max="30"
-                                        value={formData.link_expires_days}
-                                        onChange={(e) => handleInputChange('link_expires_days', parseInt(e.target.value) || 7)}
-                                        placeholder="7"
+                                    <Label htmlFor="address">Street Address</Label>
+                                    <Textarea
+                                        id="address"
+                                        value={data.address}
+                                        onChange={(e) => setData('address', e.target.value)}
+                                        className={errors.address ? 'border-red-500' : ''}
+                                        rows={2}
                                     />
+                                    {errors.address && <p className="text-sm text-red-600">{errors.address}</p>}
                                 </div>
-                                <div className="space-y-4">
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                            id="auto_dispatch"
-                                            checked={formData.auto_dispatch}
-                                            onCheckedChange={(checked) => handleInputChange('auto_dispatch', checked === true)}
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="city">City</Label>
+                                        <Input
+                                            id="city"
+                                            value={data.city}
+                                            onChange={(e) => setData('city', e.target.value)}
+                                            className={errors.city ? 'border-red-500' : ''}
                                         />
-                                        <Label htmlFor="auto_dispatch" className="text-sm">
-                                            Enable automatic dispatch
-                                        </Label>
+                                        {errors.city && <p className="text-sm text-red-600">{errors.city}</p>}
                                     </div>
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                            id="auto_resend"
-                                            checked={formData.auto_resend}
-                                            onCheckedChange={(checked) => handleInputChange('auto_resend', checked === true)}
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="state">State/Province</Label>
+                                        <Input
+                                            id="state"
+                                            value={data.state}
+                                            onChange={(e) => setData('state', e.target.value)}
+                                            className={errors.state ? 'border-red-500' : ''}
                                         />
-                                        <Label htmlFor="auto_resend" className="text-sm">
-                                            Auto-resend if no response within 24 hours
-                                        </Label>
+                                        {errors.state && <p className="text-sm text-red-600">{errors.state}</p>}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="postal_code">Postal Code</Label>
+                                        <Input
+                                            id="postal_code"
+                                            value={data.postal_code}
+                                            onChange={(e) => setData('postal_code', e.target.value)}
+                                            className={errors.postal_code ? 'border-red-500' : ''}
+                                        />
+                                        {errors.postal_code && <p className="text-sm text-red-600">{errors.postal_code}</p>}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="country">Country</Label>
+                                        <Input
+                                            id="country"
+                                            value={data.country}
+                                            onChange={(e) => setData('country', e.target.value)}
+                                            className={errors.country ? 'border-red-500' : ''}
+                                        />
+                                        {errors.country && <p className="text-sm text-red-600">{errors.country}</p>}
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Follow-up Configuration */}
+                        {/* Business Information */}
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center">
-                                    <Calendar className="h-5 w-5 mr-2" />
-                                    Follow-up Configuration
+                                    <Building2 className="h-5 w-5 mr-2" />
+                                    Business Information
                                 </CardTitle>
-                                <CardDescription>
-                                    Set up automated follow-up tasks and reminders
-                                </CardDescription>
+                                <CardDescription>Corporate customer details</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="follow_up_required"
-                                        checked={formData.follow_up_required}
-                                        onCheckedChange={(checked) => handleInputChange('follow_up_required', checked === true)}
-                                    />
-                                    <Label htmlFor="follow_up_required" className="text-sm">
-                                        Enable follow-up tasks
-                                    </Label>
+                                <div className="space-y-2">
+                                    <Label htmlFor="customer_type">Customer Type *</Label>
+                                    <Select value={data.customer_type} onValueChange={(value) => setData('customer_type', value)} required>
+                                        <SelectTrigger className={errors.customer_type ? 'border-red-500' : ''}>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="individual">Individual</SelectItem>
+                                            <SelectItem value="corporate">Corporate</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.customer_type && <p className="text-sm text-red-600">{errors.customer_type}</p>}
                                 </div>
-                                {formData.follow_up_required && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                {data.customer_type === 'corporate' && (
+                                    <>
                                         <div className="space-y-2">
-                                            <Label htmlFor="follow_up_due">Default Follow-up Due (hours)</Label>
+                                            <Label htmlFor="company_name">Company Name *</Label>
                                             <Input
-                                                id="follow_up_due"
-                                                type="number"
-                                                min="1"
-                                                max="168"
-                                                value={formData.follow_up_due}
-                                                onChange={(e) => handleInputChange('follow_up_due', e.target.value)}
-                                                placeholder="48"
+                                                id="company_name"
+                                                value={data.company_name}
+                                                onChange={(e) => setData('company_name', e.target.value)}
+                                                className={errors.company_name ? 'border-red-500' : ''}
+                                                required={data.customer_type === 'corporate'}
                                             />
+                                            {errors.company_name && <p className="text-sm text-red-600">{errors.company_name}</p>}
                                         </div>
+
                                         <div className="space-y-2">
-                                            <Label htmlFor="assigned_to">Default Assignee</Label>
-                                            <Select value={formData.assigned_to} onValueChange={(value) => handleInputChange('assigned_to', value)}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Assign to" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Customer Service">Customer Service</SelectItem>
-                                                    <SelectItem value="Sales Manager">Sales Manager</SelectItem>
-                                                    <SelectItem value="Service Manager">Service Manager</SelectItem>
-                                                    <SelectItem value="Finance Manager">Finance Manager</SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                            <Label htmlFor="tax_id">Tax ID (TIN)</Label>
+                                            <Input
+                                                id="tax_id"
+                                                value={data.tax_id}
+                                                onChange={(e) => setData('tax_id', e.target.value)}
+                                                className={errors.tax_id ? 'border-red-500' : ''}
+                                                placeholder="XXX-XXX-XXX-XXX"
+                                            />
+                                            {errors.tax_id && <p className="text-sm text-red-600">{errors.tax_id}</p>}
                                         </div>
-                                    </div>
+                                    </>
                                 )}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="priority">Default Priority</Label>
-                                        <Select value={formData.priority} onValueChange={(value) => handleInputChange('priority', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select priority" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="high">High Priority</SelectItem>
-                                                <SelectItem value="medium">Medium Priority</SelectItem>
-                                                <SelectItem value="low">Low Priority</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="reminder_frequency">Reminder Frequency</Label>
-                                        <Select value={formData.reminder_frequency} onValueChange={(value) => handleInputChange('reminder_frequency', value)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select frequency" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="daily">Daily</SelectItem>
-                                                <SelectItem value="weekly">Weekly</SelectItem>
-                                                <SelectItem value="biweekly">Bi-weekly</SelectItem>
-                                                <SelectItem value="monthly">Monthly</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Additional Notes */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Additional Notes</CardTitle>
+                                <CardDescription>Internal notes and comments</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-2">
+                                    <Label htmlFor="notes">Notes</Label>
+                                    <Textarea
+                                        id="notes"
+                                        value={data.notes}
+                                        onChange={(e) => setData('notes', e.target.value)}
+                                        className={errors.notes ? 'border-red-500' : ''}
+                                        rows={4}
+                                        placeholder="Add any additional information about this customer..."
+                                    />
+                                    {errors.notes && <p className="text-sm text-red-600">{errors.notes}</p>}
                                 </div>
                             </CardContent>
                         </Card>
@@ -504,173 +471,160 @@ export default function CustomerExperienceCreate() {
 
                     {/* Sidebar */}
                     <div className="space-y-6">
-                        {/* Survey Preview */}
+                        {/* Status & Classification */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-sm flex items-center">
-                                    <Activity className="h-4 w-4 mr-2" />
-                                    Survey Preview
+                                <CardTitle className="flex items-center">
+                                    <Star className="h-5 w-5 mr-2" />
+                                    Status & Classification
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="text-center">
-                                    {formData.survey_type && getSurveyTypeBadge(formData.survey_type)}
-                                </div>
+                            <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span>Response Rate:</span>
-                                        {getResponseRateBadge(surveyPreview.estimated_response_rate)}
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span>Auto-Link:</span>
-                                        <span className={surveyPreview.auto_link_generated ? 'text-green-600' : 'text-gray-400'}>
-                                            {surveyPreview.auto_link_generated ? 'Generated' : 'Pending'}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span>Dispatch Ready:</span>
-                                        <span className={surveyPreview.dispatch_ready ? 'text-green-600' : 'text-orange-600'}>
-                                            {surveyPreview.dispatch_ready ? 'Ready' : 'Incomplete'}
-                                        </span>
-                                    </div>
+                                    <Label htmlFor="status">Status *</Label>
+                                    <Select value={data.status} onValueChange={(value) => setData('status', value)} required>
+                                        <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="active">Active</SelectItem>
+                                            <SelectItem value="vip">VIP</SelectItem>
+                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                            <SelectItem value="blacklisted">Blacklisted</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.status && <p className="text-sm text-red-600">{errors.status}</p>}
                                 </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div 
-                                        className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                                        style={{ width: `${surveyPreview.estimated_response_rate}%` }}
-                                    ></div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="assigned_to">Assigned Manager</Label>
+                                    <Select value={data.assigned_to} onValueChange={(value) => setData('assigned_to', value)}>
+                                        <SelectTrigger className={errors.assigned_to ? 'border-red-500' : ''}>
+                                            <SelectValue placeholder="Unassigned" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                                            {managers.map((manager) => (
+                                                <SelectItem key={manager.id} value={manager.id.toString()}>
+                                                    {manager.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.assigned_to && <p className="text-sm text-red-600">{errors.assigned_to}</p>}
                                 </div>
-                                <p className="text-xs text-muted-foreground text-center">
-                                    Estimated {surveyPreview.estimated_response_rate}% response rate
-                                </p>
                             </CardContent>
                         </Card>
 
-                        {/* Automation Preview */}
+                        {/* Communication Preferences */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-sm flex items-center">
-                                    <Zap className="h-4 w-4 mr-2" />
-                                    Automation Preview
+                                <CardTitle className="flex items-center">
+                                    <Mail className="h-5 w-5 mr-2" />
+                                    Communication
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                <div className="p-3 border rounded-lg">
-                                    <div className="flex items-center space-x-2 mb-2">
-                                        <CheckCircle className="h-4 w-4 text-green-600" />
-                                        <span className="text-sm font-medium">Auto-Dispatch</span>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        {formData.auto_dispatch ? 
-                                            `Survey sent ${formData.dispatch_delay} min after trigger` : 
-                                            'Manual dispatch required'}
-                                    </p>
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="email_notifications"
+                                        checked={data.email_notifications}
+                                        onCheckedChange={(checked) => setData('email_notifications', checked === true)}
+                                    />
+                                    <label htmlFor="email_notifications" className="text-sm font-medium">
+                                        Email Notifications
+                                    </label>
                                 </div>
-                                <div className="p-3 border rounded-lg">
-                                    <div className="flex items-center space-x-2 mb-2">
-                                        <Clock className="h-4 w-4 text-blue-600" />
-                                        <span className="text-sm font-medium">Auto-Resend</span>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        {formData.auto_resend ? 'Resend after 24h if no response' : 'Disabled'}
-                                    </p>
+
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="sms_notifications"
+                                        checked={data.sms_notifications}
+                                        onCheckedChange={(checked) => setData('sms_notifications', checked === true)}
+                                    />
+                                    <label htmlFor="sms_notifications" className="text-sm font-medium">
+                                        SMS Notifications
+                                    </label>
                                 </div>
-                                <div className="p-3 border rounded-lg">
-                                    <div className="flex items-center space-x-2 mb-2">
-                                        <Calendar className="h-4 w-4 text-purple-600" />
-                                        <span className="text-sm font-medium">Follow-up Tasks</span>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        {formData.follow_up_required ? 
-                                            `Auto-create tasks for ${formData.assigned_to}` : 
-                                            'No automatic follow-up'}
-                                    </p>
+
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="marketing_consent"
+                                        checked={data.marketing_consent}
+                                        onCheckedChange={(checked) => setData('marketing_consent', checked === true)}
+                                    />
+                                    <label htmlFor="marketing_consent" className="text-sm font-medium">
+                                        Marketing Consent
+                                    </label>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Survey Templates */}
+                        {/* Tags */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-sm">Available Templates</CardTitle>
+                                <CardTitle>Tags</CardTitle>
+                                <CardDescription>Categorize this customer</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-2">
-                                {surveyTemplates.map((template, index) => (
-                                    <div 
-                                        key={index} 
-                                        className={`p-2 border rounded text-xs cursor-pointer transition-colors ${
-                                            formData.survey_type === template.type ? 
-                                            'border-blue-500 bg-blue-50' : 
-                                            'hover:bg-gray-50'
-                                        }`}
-                                        onClick={() => handleInputChange('survey_type', template.type)}
-                                    >
-                                        <div className="font-medium">{template.name}</div>
-                                        <div className="text-muted-foreground">
-                                            {template.questions} questions • {template.avg_completion}
-                                        </div>
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-
-                        {/* Integration Status */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Integration Status</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="p-2 border rounded text-xs">
-                                    <div className="font-medium flex items-center">
-                                        <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
-                                        CRM Integration
-                                    </div>
-                                    <div className="text-muted-foreground">Customer data auto-populated</div>
-                                </div>
-                                <div className="p-2 border rounded text-xs">
-                                    <div className="font-medium flex items-center">
-                                        <Activity className="h-3 w-3 mr-1 text-blue-600" />
-                                        Event Triggers
-                                    </div>
-                                    <div className="text-muted-foreground">Connected to system events</div>
-                                </div>
-                                <div className="p-2 border rounded text-xs">
-                                    <div className="font-medium flex items-center">
-                                        <Mail className="h-3 w-3 mr-1 text-purple-600" />
-                                        Email/SMS Service
-                                    </div>
-                                    <div className="text-muted-foreground">Ready for dispatch</div>
+                            <CardContent>
+                                <div className="flex flex-wrap gap-2">
+                                    {availableTags.map((tag) => (
+                                        <Badge
+                                            key={tag.id}
+                                            variant={data.tags.includes(tag.id) ? 'default' : 'outline'}
+                                            className="cursor-pointer"
+                                            onClick={() => toggleTag(tag.id)}
+                                        >
+                                            {tag.name}
+                                        </Badge>
+                                    ))}
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Quick Actions */}
+                        {/* Referral Information */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-sm">Quick Actions</CardTitle>
+                                <CardTitle className="flex items-center">
+                                    <Users className="h-5 w-5 mr-2" />
+                                    Referral Information
+                                </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-2">
-                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <User className="h-4 w-4 mr-2" />
-                                    Import from CRM
-                                </Button>
-                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <FileText className="h-4 w-4 mr-2" />
-                                    Preview Template
-                                </Button>
-                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <Settings className="h-4 w-4 mr-2" />
-                                    Test Dispatch
-                                </Button>
-                                <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <LinkIcon className="h-4 w-4 mr-2" />
-                                    Generate Link
-                                </Button>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="referred_by">Referred By</Label>
+                                    <Select value={data.referred_by} onValueChange={(value) => setData('referred_by', value)}>
+                                        <SelectTrigger className={errors.referred_by ? 'border-red-500' : ''}>
+                                            <SelectValue placeholder="None" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">None</SelectItem>
+                                            {existingCustomers.map((customer) => (
+                                                <SelectItem key={customer.id} value={customer.id.toString()}>
+                                                    {customer.customer_id} - {customer.first_name} {customer.last_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.referred_by && <p className="text-sm text-red-600">{errors.referred_by}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="referral_source">Referral Source</Label>
+                                    <Input
+                                        id="referral_source"
+                                        value={data.referral_source}
+                                        onChange={(e) => setData('referral_source', e.target.value)}
+                                        className={errors.referral_source ? 'border-red-500' : ''}
+                                        placeholder="How did they find us?"
+                                    />
+                                    {errors.referral_source && <p className="text-sm text-red-600">{errors.referral_source}</p>}
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
                 </div>
-            </div>
+            </form>
         </AppLayout>
     );
 }

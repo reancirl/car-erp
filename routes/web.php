@@ -11,6 +11,12 @@ Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
+// Public Survey Routes (No Authentication Required)
+Route::prefix('survey')->name('survey.')->group(function () {
+    Route::get('/{token}', [\App\Http\Controllers\PublicSurveyController::class, 'show'])->name('show');
+    Route::post('/{token}', [\App\Http\Controllers\PublicSurveyController::class, 'submit'])->name('submit');
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
@@ -150,31 +156,17 @@ Route::middleware(['auth', 'verified', 'permission:sales.view'])->prefix('sales'
 
 // Customer Experience Routes - Separate from sales (uses customer.view permission)
 Route::middleware(['auth', 'verified', 'permission:customer.view'])->prefix('sales')->name('sales.')->group(function () {
-    // Customer Experience CRUD routes
-    Route::get('/customer-experience', function () {
-        return Inertia::render('sales/customer-experience');
-    })->name('customer-experience.index');
-    
-    Route::get('/customer-experience/create', function () {
-        return Inertia::render('sales/customer-experience-create');
-    })->name('customer-experience.create');
-    
-    Route::get('/customer-experience/{id}', function ($id) {
-        return Inertia::render('sales/customer-experience-view', ['id' => $id]);
-    })->name('customer-experience.show');
-    
-    Route::get('/customer-experience/{id}/edit', function ($id) {
-        return Inertia::render('sales/customer-experience-edit', ['id' => $id]);
-    })->name('customer-experience.edit');
-    
-    // Customer Experience Task CRUD routes
-    Route::get('/customer-experience/task/{id}', function ($id) {
-        return Inertia::render('sales/customer-experience-task-view', ['id' => $id]);
-    })->name('customer-experience.task.show');
-    
-    Route::get('/customer-experience/task/{id}/edit', function ($id) {
-        return Inertia::render('sales/customer-experience-task-edit', ['id' => $id]);
-    })->name('customer-experience.task.edit');
+    // Customer Experience CRUD routes (Resource Controller)
+    Route::get('/customer-experience', [\App\Http\Controllers\CustomerController::class, 'index'])->name('customer-experience.index');
+    Route::get('/customer-experience/create', [\App\Http\Controllers\CustomerController::class, 'create'])->name('customer-experience.create')->middleware('permission:customer.create');
+    Route::post('/customer-experience', [\App\Http\Controllers\CustomerController::class, 'store'])->name('customer-experience.store')->middleware('permission:customer.create');
+    Route::get('/customer-experience/{customer}', [\App\Http\Controllers\CustomerController::class, 'show'])->name('customer-experience.show');
+    Route::get('/customer-experience/{customer}/edit', [\App\Http\Controllers\CustomerController::class, 'edit'])->name('customer-experience.edit')->middleware('permission:customer.edit');
+    Route::put('/customer-experience/{customer}', [\App\Http\Controllers\CustomerController::class, 'update'])->name('customer-experience.update')->middleware('permission:customer.edit');
+    Route::delete('/customer-experience/{customer}', [\App\Http\Controllers\CustomerController::class, 'destroy'])->name('customer-experience.destroy')->middleware('permission:customer.delete');
+    Route::post('/customer-experience/{id}/restore', [\App\Http\Controllers\CustomerController::class, 'restore'])->name('customer-experience.restore')->middleware('permission:customer.create');
+    Route::post('/customer-experience/{customer}/generate-survey', [\App\Http\Controllers\CustomerController::class, 'generateSurvey'])->name('customer-experience.generate-survey')->middleware('permission:customer.send_survey');
+    Route::post('/customer-experience/{customer}/survey/{customerSurvey}/send-email', [\App\Http\Controllers\CustomerController::class, 'sendSurveyEmail'])->name('customer-experience.send-survey-email')->middleware('permission:customer.send_survey');
 });
 
 // Administration Routes

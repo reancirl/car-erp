@@ -285,7 +285,545 @@ const getStatusBadge = (status: string) => {
 
 ---
 
-## 5. Implementation Checklist
+## 5. Form Request Validation (Laravel)
+
+### Overview
+Use dedicated Form Request classes for validation instead of inline validation in controllers. This provides better organization, reusability, and separation of concerns.
+
+### Implementation Pattern
+
+**5.1 Create Form Request Classes**
+- Store: `app/Http/Requests/Store[Model]Request.php`
+- Update: `app/Http/Requests/Update[Model]Request.php`
+
+**5.2 Structure**
+```php
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreLeadRequest extends FormRequest
+{
+    /**
+     * Authorization check
+     */
+    public function authorize(): bool {
+        return $this->user()->can('module.create');
+    }
+
+    /**
+     * Prepare data before validation
+     */
+    protected function prepareForValidation(): void {
+        // Auto-assign branch for non-admin
+        if (!auth()->user()->hasRole('admin')) {
+            $this->merge(['branch_id' => auth()->user()->branch_id]);
+        }
+        
+        // Transform data (e.g., 'unassigned' -> null)
+        if ($this->field === 'unassigned') {
+            $this->merge(['field' => null]);
+        }
+    }
+
+    /**
+     * Validation rules
+     */
+    public function rules(): array {
+        $rules = [
+            'name' => 'required|string|min:2|max:255',
+            'email' => 'required|email:rfc,dns|max:255',
+            'phone' => 'required|string|min:10|max:20',
+            'status' => 'required|in:new,active,inactive',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string|max:100',
+        ];
+
+        // Conditional rules based on role
+        if ($this->user()->hasRole('admin')) {
+            $rules['branch_id'] = 'required|exists:branches,id';
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Custom error messages
+     */
+    public function messages(): array {
+        return [
+            'name.required' => 'Name is required.',
+            'name.min' => 'Name must be at least 2 characters.',
+            'email.required' => 'Email address is required.',
+            'email.email' => 'Please enter a valid email address.',
+            'branch_id.required' => 'Branch is required.',
+            'branch_id.exists' => 'Selected branch does not exist.',
+        ];
+    }
+}
+```
+
+**5.3 Update Request Pattern**
+```php
+class UpdateLeadRequest extends FormRequest
+{
+    public function authorize(): bool {
+        $model = $this->route('model');
+        
+        // Check permission
+        if (!$this->user()->can('module.edit')) {
+            return false;
+        }
+
+        // Branch-level authorization
+        if (!$this->user()->hasRole('admin') && $model->branch_id !== $this->user()->branch_id) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function rules(): array {
+        return [
+            // Same as Store, but branch_id is NOT updatable
+            'name' => 'required|string|min:2|max:255',
+            // ... other fields
+        ];
+    }
+}
+```
+
+**5.4 Controller Usage**
+```php
+public function store(StoreLeadRequest $request): RedirectResponse {
+    $data = $request->validated(); // Already validated and authorized
+    $model = Model::create($data);
+    // ... log activity
+    return redirect()->route('route.name')->with('success', 'Created!');
+}
+
+public function update(UpdateLeadRequest $request, Model $model): RedirectResponse {
+    $data = $request->validated();
+    $model->update($data);
+    // ... log activity
+    return redirect()->route('route.name')->with('success', 'Updated!');
+}
+```
+
+**Key Features:**
+- Authorization in `authorize()` method
+- Data transformation in `prepareForValidation()`
+- Conditional rules based on user role
+- Custom error messages
+- Auto-merge branch_id for non-admin users
+- Route model binding authorization
+
+---
+
+## 6. UI Validation Error Display
+
+### Overview
+Consistent validation error display across all forms with prominent error banner and inline field errors.
+
+### Implementation Pattern
+
+**6.1 Validation Error Banner**
+Display at the top of the form when errors exist:
+
+```tsx
+{Object.keys(errors).length > 0 && (
+    <Card className="border-red-200 bg-red-50">
+        <CardContent className="pt-6">
+            <div className="flex items-start space-x-3">
+                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                <div className="flex-1">
+                    <h3 className="font-semibold text-red-900">Validation Error</h3>
+                    <p className="text-sm text-red-800 mt-1">
+                        Please correct the following errors before submitting:
+                    </p>
+                    <ul className="list-disc list-inside text-sm text-red-700 mt-2 space-y-1">
+                        {Object.entries(errors).map(([field, message]) => (
+                            <li key={field}>
+                                <strong className="capitalize">
+                                    {field.replace(/_/g, ' ')}
+                                </strong>: {message}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+)}
+```
+
+**6.2 Inline Field Errors**
+Show errors below each field:
+
+```tsx
+<div className="space-y-2">
+    <Label htmlFor="email">Email *</Label>
+    <Input
+        id="email"
+        type="email"
+        value={data.email}
+        onChange={(e) => setData('email', e.target.value)}
+        className={errors.email ? 'border-red-500' : ''}
+        required
+    />
+    {errors.email && (
+        <p className="text-sm text-red-600">{errors.email}</p>
+    )}
+</div>
+```
+
+**6.3 Select Field Errors**
+```tsx
+<Select 
+    value={data.status} 
+    onValueChange={(value) => setData('status', value)}
+    required
+>
+    <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+        <SelectValue placeholder="Select status" />
+    </SelectTrigger>
+    <SelectContent>
+        <SelectItem value="active">Active</SelectItem>
+        <SelectItem value="inactive">Inactive</SelectItem>
+    </SelectContent>
+</Select>
+{errors.status && <p className="text-sm text-red-600">{errors.status}</p>}
+```
+
+**6.4 Form Submit Button State**
+```tsx
+<Button type="submit" disabled={processing}>
+    <Save className="h-4 w-4 mr-2" />
+    {processing ? 'Creating...' : 'Create Record'}
+</Button>
+```
+
+**Key Features:**
+- Prominent error banner at top of form
+- List all validation errors with field names
+- Red border on invalid fields (`border-red-500`)
+- Inline error messages below fields
+- Disabled submit button during processing
+- Loading state text change
+
+---
+
+## 7. Complete CRUD Implementation Pattern
+
+### Overview
+Standardized CRUD implementation based on Lead Management (the best reference implementation).
+
+### 7.1 Model Implementation
+
+**Required Elements:**
+```php
+class Lead extends Model {
+    use HasFactory, SoftDeletes;
+
+    // 1. Fillable fields
+    protected $fillable = [
+        'branch_id',
+        'name',
+        'email',
+        // ... all editable fields
+    ];
+
+    // 2. Casts for type safety
+    protected $casts = [
+        'tags' => 'array',
+        'created_at' => 'datetime',
+        'amount' => 'decimal:2',
+        'count' => 'integer',
+    ];
+
+    // 3. Relationships
+    public function branch() {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function assignedUser() {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    // 4. Query Scopes for branch filtering
+    public function scopeForBranch($query, $branchId) {
+        return $query->where('branch_id', $branchId);
+    }
+
+    public function scopeForUserBranch($query, User $user) {
+        return $query->where('branch_id', $user->branch_id);
+    }
+
+    // 5. Boot method for auto-generation and observers
+    protected static function boot() {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (!$model->model_id) {
+                $model->model_id = self::generateModelId();
+            }
+        });
+    }
+
+    // 6. Helper methods
+    private static function generateModelId(): string {
+        $year = date('Y');
+        $lastRecord = self::whereYear('created_at', $year)
+            ->orderBy('id', 'desc')
+            ->first();
+        $number = $lastRecord ? intval(substr($lastRecord->model_id, -3)) + 1 : 1;
+        return sprintf('PREFIX-%s-%03d', $year, $number);
+    }
+
+    // 7. Accessor for formatted data
+    public function getFormattedFieldAttribute(): ?string {
+        return $this->field ? number_format($this->field, 2) : null;
+    }
+}
+```
+
+### 7.2 Controller Implementation
+
+**Complete CRUD Controller:**
+```php
+class LeadController extends Controller {
+    use LogsActivity;
+
+    /**
+     * Index - List with filtering
+     */
+    public function index(Request $request): Response {
+        $user = $request->user();
+
+        // Base query with relationships
+        $query = Model::with(['branch', 'assignedUser'])
+            ->when($request->include_deleted, fn($q) => $q->withTrashed())
+            ->when(!$user->hasRole('admin'), fn($q) => $q->forUserBranch($user))
+            ->when($request->branch_id && $user->hasRole('admin'), 
+                fn($q) => $q->where('branch_id', $request->branch_id))
+            ->when($request->search, function ($q, $search) {
+                $q->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('model_id', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->status, fn($q, $status) => $q->where('status', $status));
+
+        $records = $query->orderBy('created_at', 'desc')
+            ->paginate(15)
+            ->withQueryString();
+
+        // Calculate stats
+        $statsQuery = clone $query;
+        $stats = [
+            'total' => $statsQuery->count(),
+            'active' => (clone $statsQuery)->where('status', 'active')->count(),
+            // ... other stats
+        ];
+
+        return Inertia::render('module/index', [
+            'records' => $records,
+            'stats' => $stats,
+            'filters' => $request->only(['search', 'status', 'branch_id', 'include_deleted']),
+            'branches' => $user->hasRole('admin') ? Branch::where('status', 'active')->get() : null,
+        ]);
+    }
+
+    /**
+     * Create - Show form
+     */
+    public function create(Request $request): Response {
+        $user = $request->user();
+
+        return Inertia::render('module/create', [
+            'branches' => $user->hasRole('admin') ? Branch::where('status', 'active')->get() : null,
+            // ... other related data
+        ]);
+    }
+
+    /**
+     * Store - Create new record
+     */
+    public function store(StoreRequest $request): RedirectResponse {
+        $data = $request->validated();
+
+        // Business logic (calculations, transformations)
+        $data['calculated_field'] = $this->calculateSomething($data);
+
+        $model = Model::create($data);
+
+        // Log activity
+        $this->logCreated(
+            module: 'ModuleName',
+            subject: $model,
+            description: "Created {$model->name}",
+            properties: ['key' => 'value']
+        );
+
+        return redirect()
+            ->route('route.index')
+            ->with('success', 'Created successfully!');
+    }
+
+    /**
+     * Show - Display single record
+     */
+    public function show(Request $request, Model $model): Response {
+        // Authorization
+        if (!$request->user()->hasRole('admin') && 
+            $model->branch_id !== $request->user()->branch_id) {
+            abort(403, 'You can only view records from your branch.');
+        }
+
+        $model->load(['branch', 'assignedUser']);
+
+        return Inertia::render('module/view', [
+            'record' => $model,
+            'can' => [
+                'edit' => $request->user()->can('module.edit'),
+                'delete' => $request->user()->can('module.delete'),
+            ],
+        ]);
+    }
+
+    /**
+     * Edit - Show edit form
+     */
+    public function edit(Request $request, Model $model): Response {
+        // Authorization
+        if (!$request->user()->hasRole('admin') && 
+            $model->branch_id !== $request->user()->branch_id) {
+            abort(403, 'You can only edit records from your branch.');
+        }
+
+        $model->load(['branch', 'assignedUser']);
+
+        return Inertia::render('module/edit', [
+            'record' => $model,
+            // ... related data
+        ]);
+    }
+
+    /**
+     * Update - Save changes
+     */
+    public function update(UpdateRequest $request, Model $model): RedirectResponse {
+        $data = $request->validated();
+
+        // Recalculate if needed
+        if (isset($data['relevant_field'])) {
+            $data['calculated'] = $this->calculate(array_merge($model->toArray(), $data));
+        }
+
+        // Track changes
+        $changes = [];
+        foreach ($data as $key => $value) {
+            if ($model->{$key} != $value) {
+                $changes[$key] = ['old' => $model->{$key}, 'new' => $value];
+            }
+        }
+
+        $model->update($data);
+
+        // Log activity
+        $this->logUpdated(
+            module: 'ModuleName',
+            subject: $model,
+            description: "Updated {$model->name}",
+            properties: ['changes' => $changes]
+        );
+
+        return redirect()
+            ->route('route.index')
+            ->with('success', 'Updated successfully!');
+    }
+
+    /**
+     * Destroy - Soft delete
+     */
+    public function destroy(Request $request, Model $model): RedirectResponse {
+        // Authorization
+        if (!$request->user()->hasRole('admin') && 
+            $model->branch_id !== $request->user()->branch_id) {
+            abort(403, 'You can only delete records from your branch.');
+        }
+
+        $name = $model->name;
+
+        // Log before deletion
+        $this->logDeleted(
+            module: 'ModuleName',
+            subject: $model,
+            description: "Deleted {$name}",
+            properties: ['name' => $name]
+        );
+
+        $model->delete();
+
+        return redirect()
+            ->route('route.index')
+            ->with('success', 'Deleted successfully!');
+    }
+
+    /**
+     * Restore - Restore soft-deleted
+     */
+    public function restore(Request $request, $id): RedirectResponse {
+        try {
+            $model = Model::withTrashed()->findOrFail($id);
+            
+            // Authorization
+            if (!$request->user()->hasRole('admin') && 
+                $model->branch_id !== $request->user()->branch_id) {
+                abort(403, 'You can only restore records from your branch.');
+            }
+            
+            if (!$model->trashed()) {
+                return redirect()->back()->with('error', 'Record is not deleted.');
+            }
+            
+            $name = $model->name;
+            $model->restore();
+
+            // Log activity
+            $this->logRestored(
+                module: 'ModuleName',
+                subject: $model,
+                description: "Restored {$name}",
+                properties: ['name' => $name]
+            );
+
+            return redirect()
+                ->route('route.index')
+                ->with('success', 'Restored successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Failed to restore. Please try again.');
+        }
+    }
+}
+```
+
+**Key Patterns:**
+- Use Form Requests for validation
+- Branch filtering in all queries
+- Authorization checks in show/edit/destroy/restore
+- Track changes in update method
+- Log all CRUD operations
+- Include relationships with `->with()`
+- Clone query for stats calculation
+- Preserve query string in pagination
+- Try-catch in restore method
+
+---
+
+## 8. Implementation Checklist
 
 ### Backend (Laravel/PHP)
 
@@ -323,9 +861,12 @@ const getStatusBadge = (status: string) => {
 - [ ] Group by prefix if needed
 
 **Validation:**
-- [ ] Create Form Request classes (optional but recommended)
-- [ ] Define validation rules
-- [ ] Add custom error messages
+- [ ] Create `StoreRequest` class with authorization and rules
+- [ ] Create `UpdateRequest` class with route model authorization
+- [ ] Implement `prepareForValidation()` for data transformation
+- [ ] Add conditional rules based on user role
+- [ ] Define custom error messages in `messages()` method
+- [ ] Auto-merge branch_id for non-admin users
 
 ### Frontend (React/TypeScript)
 
@@ -337,24 +878,33 @@ const getStatusBadge = (status: string) => {
 **Pages:**
 - [ ] **Index** (`module-name.tsx`):
   - [ ] Page header with title and create button
-  - [ ] Stats cards (4 metrics)
+  - [ ] Stats cards (4 metrics with icons)
   - [ ] Filter section with search and selects
-  - [ ] Data table with actions
+  - [ ] Data table with actions (View, Edit, Delete)
+  - [ ] Badge components for status display
   - [ ] Pagination links
   - [ ] Empty state message
+  - [ ] Delete confirmation dialog
 - [ ] **Create** (`module-name-create.tsx`):
-  - [ ] Form with Inertia useForm
-  - [ ] Grid layout (2/3 + 1/3)
-  - [ ] Validation error display
-  - [ ] Loading states
-  - [ ] Cancel and Submit buttons
+  - [ ] **Validation error banner at top** (red card with all errors)
+  - [ ] Form with Inertia useForm hook
+  - [ ] Grid layout (2/3 main + 1/3 sidebar)
+  - [ ] Branch selection for admin (required)
+  - [ ] Inline field validation errors (red border + message)
+  - [ ] Loading states on submit button
+  - [ ] Cancel and Submit buttons with icons
+  - [ ] Required field indicators (*)
 - [ ] **Edit** (`module-name-edit.tsx`):
+  - [ ] Same validation error banner as create
   - [ ] Similar to create, with pre-filled data
   - [ ] Handle existing relationships
+  - [ ] Branch field disabled (not editable)
+  - [ ] Inline validation errors
 - [ ] **View** (`module-name-view.tsx`):
   - [ ] Display-only layout
-  - [ ] Show all relevant data
-  - [ ] Action buttons (Edit, Delete)
+  - [ ] Show all relevant data with proper formatting
+  - [ ] Action buttons (Edit, Delete) based on permissions
+  - [ ] Badge components for status/categories
 
 **State Management:**
 - [ ] Local state for filters

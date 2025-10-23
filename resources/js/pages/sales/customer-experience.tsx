@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,8 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Search, Filter, Download, Plus, Eye, Edit, Mail, Phone, Clock, CheckCircle, AlertTriangle, FileText, Link as LinkIcon, Calendar, Star } from 'lucide-react';
+import { Users, Search, Plus, Eye, Edit, Trash2, Star, Building2, Mail, Phone, TrendingUp, CheckCircle, AlertTriangle, XCircle, Crown } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+import { useState, FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -20,152 +21,128 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function CustomerExperience() {
-    // Mock data for demonstration
-    const mockSurveys = [
-        {
-            id: 1,
-            customer_name: 'John Smith',
-            customer_email: 'john.smith@email.com',
-            customer_phone: '+1-555-0123',
-            survey_type: 'test_drive',
-            trigger_event: 'Test Drive Completed',
-            trigger_timestamp: '2025-01-13 17:35:00',
-            dispatch_timestamp: '2025-01-13 17:40:00',
-            dispatch_method: 'sms',
-            survey_link: 'https://survey.dealership.com/td/abc123',
-            link_expires: '2025-01-20 17:40:00',
-            status: 'completed',
-            response_timestamp: '2025-01-13 19:15:00',
-            rating: 5,
-            feedback: 'Excellent service, very professional staff',
-            sales_rep: 'Lisa Sales Rep',
-            vehicle: '2024 BMW X3',
-            follow_up_required: false,
-            follow_up_due: null
-        },
-        {
-            id: 2,
-            customer_name: 'Maria Rodriguez',
-            customer_email: 'maria.r@email.com',
-            customer_phone: '+1-555-0124',
-            survey_type: 'delivery',
-            trigger_event: 'Vehicle Delivered',
-            trigger_timestamp: '2025-01-12 15:30:00',
-            dispatch_timestamp: '2025-01-12 15:35:00',
-            dispatch_method: 'email',
-            survey_link: 'https://survey.dealership.com/del/def456',
-            link_expires: '2025-01-19 15:35:00',
-            status: 'pending',
-            response_timestamp: null,
-            rating: null,
-            feedback: null,
-            sales_rep: 'Mike Sales Rep',
-            vehicle: '2023 Toyota Camry',
-            follow_up_required: true,
-            follow_up_due: '2025-01-15 10:00:00'
-        },
-        {
-            id: 3,
-            customer_name: 'Robert Johnson',
-            customer_email: 'robert.j@email.com',
-            customer_phone: '+1-555-0125',
-            survey_type: 'service_completion',
-            trigger_event: 'Service Work Completed',
-            trigger_timestamp: '2025-01-11 14:20:00',
-            dispatch_timestamp: '2025-01-11 14:25:00',
-            dispatch_method: 'sms',
-            survey_link: 'https://survey.dealership.com/svc/ghi789',
-            link_expires: '2025-01-18 14:25:00',
-            status: 'expired',
-            response_timestamp: null,
-            rating: null,
-            feedback: null,
-            sales_rep: null,
-            vehicle: '2022 Honda Civic',
-            follow_up_required: true,
-            follow_up_due: '2025-01-14 09:00:00'
-        },
-        {
-            id: 4,
-            customer_name: 'Emily Davis',
-            customer_email: 'emily.davis@company.com',
-            customer_phone: '+1-555-0126',
-            survey_type: 'sales_process',
-            trigger_event: 'Purchase Completed',
-            trigger_timestamp: '2025-01-13 16:45:00',
-            dispatch_timestamp: '2025-01-13 16:50:00',
-            dispatch_method: 'email',
-            survey_link: 'https://survey.dealership.com/sale/jkl012',
-            link_expires: '2025-01-20 16:50:00',
-            status: 'completed',
-            response_timestamp: '2025-01-13 20:30:00',
-            rating: 4,
-            feedback: 'Good experience overall, financing process was a bit slow',
-            sales_rep: 'Tom Sales Rep',
-            vehicle: '2024 Hyundai Elantra',
-            follow_up_required: true,
-            follow_up_due: '2025-01-16 11:00:00'
-        }
-    ];
+interface Customer {
+    id: number;
+    customer_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    customer_type: string;
+    company_name: string | null;
+    status: string;
+    satisfaction_rating: string | null;
+    total_purchases: number;
+    total_spent: number;
+    loyalty_points: number;
+    customer_lifetime_value: number;
+    created_at: string;
+    deleted_at: string | null;
+    branch: {
+        id: number;
+        name: string;
+        code: string;
+    };
+    assigned_user: {
+        id: number;
+        name: string;
+    } | null;
+}
 
-    const mockFollowUps = [
-        {
-            id: 1,
-            customer_name: 'Maria Rodriguez',
-            task_type: 'survey_reminder',
-            task_description: 'Send delivery survey reminder',
-            due_date: '2025-01-15 10:00:00',
-            assigned_to: 'Mike Sales Rep',
-            priority: 'medium',
-            status: 'pending',
-            created_at: '2025-01-12 15:35:00'
-        },
-        {
-            id: 2,
-            customer_name: 'Robert Johnson',
-            task_type: 'manual_follow_up',
-            task_description: 'Call customer about expired service survey',
-            due_date: '2025-01-14 09:00:00',
-            assigned_to: 'Service Manager',
-            priority: 'high',
-            status: 'overdue',
-            created_at: '2025-01-11 14:25:00'
-        },
-        {
-            id: 3,
-            customer_name: 'Emily Davis',
-            task_type: 'feedback_follow_up',
-            task_description: 'Address financing process feedback',
-            due_date: '2025-01-16 11:00:00',
-            assigned_to: 'Finance Manager',
-            priority: 'medium',
-            status: 'pending',
-            created_at: '2025-01-13 20:30:00'
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
+}
+
+interface Stats {
+    total: number;
+    active: number;
+    vip: number;
+    total_lifetime_value: number;
+}
+
+interface Props {
+    customers: {
+        data: Customer[];
+        links: any;
+        meta: any;
+    };
+    stats: Stats;
+    filters: {
+        search?: string;
+        status?: string;
+        customer_type?: string;
+        satisfaction_rating?: string;
+        branch_id?: number;
+        include_deleted?: boolean;
+    };
+    branches: Branch[] | null;
+}
+
+export default function CustomerExperience({ customers, stats, filters, branches }: Props) {
+    const [search, setSearch] = useState(filters.search || '');
+    const [status, setStatus] = useState(filters.status || 'all');
+    const [customerType, setCustomerType] = useState(filters.customer_type || 'all');
+    const [satisfactionRating, setSatisfactionRating] = useState(filters.satisfaction_rating || 'all');
+    const [branchId, setBranchId] = useState<string>(filters.branch_id?.toString() || 'all');
+    const [includeDeleted, setIncludeDeleted] = useState(filters.include_deleted || false);
+
+    const handleFilter = (e: FormEvent) => {
+        e.preventDefault();
+        router.get('/sales/customer-experience', {
+            search: search || undefined,
+            status: status !== 'all' ? status : undefined,
+            customer_type: customerType !== 'all' ? customerType : undefined,
+            satisfaction_rating: satisfactionRating !== 'all' ? satisfactionRating : undefined,
+            branch_id: branchId !== 'all' ? branchId : undefined,
+            include_deleted: includeDeleted || undefined,
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const handleDelete = (customer: Customer) => {
+        if (confirm(`Are you sure you want to delete customer ${customer.customer_id}?`)) {
+            router.delete(`/sales/customer-experience/${customer.id}`);
         }
-    ];
+    };
+
+    const handleRestore = (customer: Customer) => {
+        if (confirm(`Restore customer ${customer.customer_id}?`)) {
+            router.post(`/sales/customer-experience/${customer.id}/restore`);
+        }
+    };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'completed':
+            case 'active':
                 return (
-                    <Badge variant="default" className="bg-green-100 text-green-800">
+                    <Badge className="bg-green-100 text-green-800">
                         <CheckCircle className="h-3 w-3 mr-1" />
-                        Completed
+                        Active
                     </Badge>
                 );
-            case 'pending':
+            case 'vip':
                 return (
-                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
-                        <Clock className="h-3 w-3 mr-1" />
-                        Pending
+                    <Badge className="bg-purple-100 text-purple-800">
+                        <Crown className="h-3 w-3 mr-1" />
+                        VIP
                     </Badge>
                 );
-            case 'expired':
+            case 'inactive':
+                return (
+                    <Badge variant="secondary">
+                        <XCircle className="h-3 w-3 mr-1" />
+                        Inactive
+                    </Badge>
+                );
+            case 'blacklisted':
                 return (
                     <Badge variant="destructive">
                         <AlertTriangle className="h-3 w-3 mr-1" />
-                        Expired
+                        Blacklisted
                     </Badge>
                 );
             default:
@@ -173,96 +150,65 @@ export default function CustomerExperience() {
         }
     };
 
-    const getDispatchMethodBadge = (method: string) => {
-        switch (method) {
-            case 'email':
+    const getSatisfactionBadge = (rating: string | null) => {
+        if (!rating) return <span className="text-sm text-muted-foreground">N/A</span>;
+        
+        switch (rating) {
+            case 'very_satisfied':
                 return (
-                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                        <Mail className="h-3 w-3 mr-1" />
-                        Email
+                    <Badge className="bg-green-100 text-green-800">
+                        <Star className="h-3 w-3 mr-1 fill-green-800" />
+                        Very Satisfied
                     </Badge>
                 );
-            case 'sms':
+            case 'satisfied':
                 return (
-                    <Badge variant="outline" className="bg-green-100 text-green-800">
-                        <Phone className="h-3 w-3 mr-1" />
-                        SMS
+                    <Badge className="bg-blue-100 text-blue-800">
+                        <Star className="h-3 w-3 mr-1" />
+                        Satisfied
+                    </Badge>
+                );
+            case 'neutral':
+                return (
+                    <Badge variant="secondary">
+                        Neutral
+                    </Badge>
+                );
+            case 'dissatisfied':
+                return (
+                    <Badge className="bg-orange-100 text-orange-800">
+                        Dissatisfied
+                    </Badge>
+                );
+            case 'very_dissatisfied':
+                return (
+                    <Badge variant="destructive">
+                        Very Dissatisfied
                     </Badge>
                 );
             default:
-                return <Badge variant="secondary">{method}</Badge>;
+                return <Badge variant="secondary">{rating}</Badge>;
         }
     };
 
-    const getSurveyTypeBadge = (type: string) => {
+    const getCustomerTypeBadge = (type: string) => {
         switch (type) {
-            case 'test_drive':
-                return <Badge variant="outline" className="bg-purple-100 text-purple-800">Test Drive</Badge>;
-            case 'delivery':
-                return <Badge variant="outline" className="bg-blue-100 text-blue-800">Delivery</Badge>;
-            case 'service_completion':
-                return <Badge variant="outline" className="bg-orange-100 text-orange-800">Service</Badge>;
-            case 'sales_process':
-                return <Badge variant="outline" className="bg-green-100 text-green-800">Sales</Badge>;
+            case 'individual':
+                return (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                        <Users className="h-3 w-3 mr-1" />
+                        Individual
+                    </Badge>
+                );
+            case 'corporate':
+                return (
+                    <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                        <Building2 className="h-3 w-3 mr-1" />
+                        Corporate
+                    </Badge>
+                );
             default:
                 return <Badge variant="secondary">{type}</Badge>;
-        }
-    };
-
-    const getRatingStars = (rating: number | null) => {
-        if (!rating) return <span className="text-muted-foreground">No rating</span>;
-        
-        return (
-            <div className="flex items-center space-x-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                    <Star 
-                        key={star} 
-                        className={`h-3 w-3 ${star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-                    />
-                ))}
-                <span className="text-sm ml-1">({rating}/5)</span>
-            </div>
-        );
-    };
-
-    const getTaskStatusBadge = (status: string) => {
-        switch (status) {
-            case 'pending':
-                return (
-                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
-                        <Clock className="h-3 w-3 mr-1" />
-                        Pending
-                    </Badge>
-                );
-            case 'overdue':
-                return (
-                    <Badge variant="destructive">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        Overdue
-                    </Badge>
-                );
-            case 'completed':
-                return (
-                    <Badge variant="default" className="bg-green-100 text-green-800">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Completed
-                    </Badge>
-                );
-            default:
-                return <Badge variant="secondary">{status}</Badge>;
-        }
-    };
-
-    const getPriorityBadge = (priority: string) => {
-        switch (priority) {
-            case 'high':
-                return <Badge variant="destructive" className="bg-red-100 text-red-800">High</Badge>;
-            case 'medium':
-                return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Medium</Badge>;
-            case 'low':
-                return <Badge variant="outline">Low</Badge>;
-            default:
-                return <Badge variant="secondary">{priority}</Badge>;
         }
     };
 
@@ -271,62 +217,70 @@ export default function CustomerExperience() {
             <Head title="Customer Experience" />
             
             <div className="space-y-6 p-6">
-                {/* Header */}
+                {/* Page Header */}
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                        <MessageSquare className="h-6 w-6" />
-                        <h1 className="text-2xl font-bold">Customer Experience</h1>
+                    <div>
+                        <h1 className="text-3xl font-bold flex items-center">
+                            <Users className="h-8 w-8 mr-3 text-primary" />
+                            Customer Experience
+                        </h1>
+                        <p className="text-muted-foreground mt-1">
+                            Manage customer relationships and track satisfaction
+                        </p>
                     </div>
-                    <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export Feedback
+                    <Link href="/sales/customer-experience/create">
+                        <Button>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Customer
                         </Button>
-                        <Link href="/sales/customer-experience/create">
-                            <Button size="sm">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Manual Survey
-                            </Button>
-                        </Link>
-                    </div>
+                    </Link>
                 </div>
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Surveys Sent</CardTitle>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">4</div>
-                            <p className="text-xs text-muted-foreground">This week</p>
+                            <div className="text-2xl font-bold">{stats.total.toLocaleString()}</div>
+                            <p className="text-xs text-muted-foreground">All registered customers</p>
                         </CardContent>
                     </Card>
+
                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Response Rate</CardTitle>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
+                            <CheckCircle className="h-4 w-4 text-green-600" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">50%</div>
-                            <p className="text-xs text-muted-foreground">2 of 4 responded</p>
+                            <div className="text-2xl font-bold text-green-600">{stats.active.toLocaleString()}</div>
+                            <p className="text-xs text-muted-foreground">Currently active</p>
                         </CardContent>
                     </Card>
+
                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Avg. Rating</CardTitle>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">VIP Customers</CardTitle>
+                            <Crown className="h-4 w-4 text-purple-600" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">4.5</div>
-                            <p className="text-xs text-muted-foreground">Out of 5 stars</p>
+                            <div className="text-2xl font-bold text-purple-600">{stats.vip.toLocaleString()}</div>
+                            <p className="text-xs text-muted-foreground">Premium tier</p>
                         </CardContent>
                     </Card>
+
                     <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Follow-ups Due</CardTitle>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Lifetime Value</CardTitle>
+                            <TrendingUp className="h-4 w-4 text-blue-600" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-orange-600">3</div>
-                            <p className="text-xs text-muted-foreground">Require attention</p>
+                            <div className="text-2xl font-bold text-blue-600">
+                                ₱{stats.total_lifetime_value.toLocaleString()}
+                            </div>
+                            <p className="text-xs text-muted-foreground">Combined CLV</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -334,302 +288,256 @@ export default function CustomerExperience() {
                 {/* Filters */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Filter & Search</CardTitle>
-                        <CardDescription>Automated survey dispatch with SMS/email links and CRM task reminders</CardDescription>
+                        <CardTitle>Filter Customers</CardTitle>
+                        <CardDescription>Search and filter customer records</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex flex-col md:flex-row gap-4">
-                            <div className="flex-1">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input placeholder="Search by customer name, email, or survey type..." className="pl-10" />
+                        <form onSubmit={handleFilter} className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Search</label>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            type="text"
+                                            placeholder="Name, email, phone, ID..."
+                                            value={search}
+                                            onChange={(e) => setSearch(e.target.value)}
+                                            className="pl-10"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Status</label>
+                                    <Select value={status} onValueChange={setStatus}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="All statuses" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Statuses</SelectItem>
+                                            <SelectItem value="active">Active</SelectItem>
+                                            <SelectItem value="vip">VIP</SelectItem>
+                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                            <SelectItem value="blacklisted">Blacklisted</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Customer Type</label>
+                                    <Select value={customerType} onValueChange={setCustomerType}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="All types" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Types</SelectItem>
+                                            <SelectItem value="individual">Individual</SelectItem>
+                                            <SelectItem value="corporate">Corporate</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Satisfaction</label>
+                                    <Select value={satisfactionRating} onValueChange={setSatisfactionRating}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="All ratings" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Ratings</SelectItem>
+                                            <SelectItem value="very_satisfied">Very Satisfied</SelectItem>
+                                            <SelectItem value="satisfied">Satisfied</SelectItem>
+                                            <SelectItem value="neutral">Neutral</SelectItem>
+                                            <SelectItem value="dissatisfied">Dissatisfied</SelectItem>
+                                            <SelectItem value="very_dissatisfied">Very Dissatisfied</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {branches && (
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Branch</label>
+                                        <Select value={branchId} onValueChange={setBranchId}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="All branches" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Branches</SelectItem>
+                                                {branches.map((branch) => (
+                                                    <SelectItem key={branch.id} value={branch.id.toString()}>
+                                                        {branch.name} ({branch.code})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Include Deleted</label>
+                                    <div className="flex items-center space-x-2 h-10">
+                                        <input
+                                            type="checkbox"
+                                            id="include_deleted"
+                                            checked={includeDeleted}
+                                            onChange={(e) => setIncludeDeleted(e.target.checked)}
+                                            className="h-4 w-4"
+                                        />
+                                        <label htmlFor="include_deleted" className="text-sm text-muted-foreground">
+                                            Show deleted customers
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                            <Select>
-                                <SelectTrigger className="w-full md:w-[180px]">
-                                    <SelectValue placeholder="Survey Type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Types</SelectItem>
-                                    <SelectItem value="test_drive">Test Drive</SelectItem>
-                                    <SelectItem value="delivery">Delivery</SelectItem>
-                                    <SelectItem value="service_completion">Service</SelectItem>
-                                    <SelectItem value="sales_process">Sales Process</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Select>
-                                <SelectTrigger className="w-full md:w-[180px]">
-                                    <SelectValue placeholder="Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="completed">Completed</SelectItem>
-                                    <SelectItem value="pending">Pending</SelectItem>
-                                    <SelectItem value="expired">Expired</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Select>
-                                <SelectTrigger className="w-full md:w-[180px]">
-                                    <SelectValue placeholder="Method" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Methods</SelectItem>
-                                    <SelectItem value="email">Email</SelectItem>
-                                    <SelectItem value="sms">SMS</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Button variant="outline">
-                                <Filter className="h-4 w-4 mr-2" />
-                                Apply
-                            </Button>
-                        </div>
+
+                            <div className="flex justify-end">
+                                <Button type="submit">Apply Filters</Button>
+                            </div>
+                        </form>
                     </CardContent>
                 </Card>
 
-                {/* Surveys Table */}
+                {/* Customers Table */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Customer Surveys</CardTitle>
-                        <CardDescription>Automated dispatch based on system events with expiring survey links</CardDescription>
+                        <CardTitle>Customers ({customers.meta?.total || 0})</CardTitle>
+                        <CardDescription>View and manage all customer records</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Customer</TableHead>
-                                    <TableHead>Survey Details</TableHead>
-                                    <TableHead>Trigger Event</TableHead>
-                                    <TableHead>Dispatch Info</TableHead>
-                                    <TableHead>Response</TableHead>
-                                    <TableHead>Rating & Feedback</TableHead>
-                                    <TableHead>Follow-up</TableHead>
-                                    <TableHead>Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {mockSurveys.map((survey) => (
-                                    <TableRow key={survey.id}>
-                                        <TableCell className="font-medium">
-                                            <div>
-                                                <div className="font-medium">{survey.customer_name}</div>
-                                                <div className="text-xs text-muted-foreground">{survey.customer_email}</div>
-                                                <div className="text-xs text-muted-foreground">{survey.customer_phone}</div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                {getSurveyTypeBadge(survey.survey_type)}
-                                                <div className="text-xs text-muted-foreground mt-1">
-                                                    {survey.vehicle}
-                                                </div>
-                                                {survey.sales_rep && (
-                                                    <div className="text-xs text-muted-foreground">
-                                                        Rep: {survey.sales_rep}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <div className="font-medium">{survey.trigger_event}</div>
-                                                <div className="text-xs text-muted-foreground">{survey.trigger_timestamp}</div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                {getDispatchMethodBadge(survey.dispatch_method)}
-                                                <div className="text-xs text-muted-foreground mt-1">
-                                                    Sent: {survey.dispatch_timestamp}
-                                                </div>
-                                                <div className="flex items-center space-x-1 mt-1">
-                                                    <LinkIcon className="h-3 w-3" />
-                                                    <span className="text-xs">Expires: {survey.link_expires}</span>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                {getStatusBadge(survey.status)}
-                                                {survey.response_timestamp && (
-                                                    <div className="text-xs text-muted-foreground mt-1">
-                                                        {survey.response_timestamp}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                {getRatingStars(survey.rating)}
-                                                {survey.feedback && (
-                                                    <div className="text-xs text-muted-foreground mt-1 max-w-xs truncate" title={survey.feedback}>
-                                                        "{survey.feedback}"
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            {survey.follow_up_required ? (
-                                                <div>
-                                                    <Badge variant="outline" className="bg-orange-100 text-orange-800">
-                                                        <Calendar className="h-3 w-3 mr-1" />
-                                                        Required
-                                                    </Badge>
-                                                    {survey.follow_up_due && (
-                                                        <div className="text-xs text-muted-foreground mt-1">
-                                                            Due: {survey.follow_up_due}
+                        {!customers.data || customers.data.length === 0 ? (
+                            <div className="text-center py-12">
+                                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                <h3 className="text-lg font-semibold mb-2">No customers found</h3>
+                                <p className="text-muted-foreground mb-4">
+                                    {search || status !== 'all' || customerType !== 'all'
+                                        ? 'Try adjusting your filters'
+                                        : 'Get started by adding your first customer'}
+                                </p>
+                                <Link href="/sales/customer-experience/create">
+                                    <Button>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Customer
+                                    </Button>
+                                </Link>
+                            </div>
+                        ) : (
+                            <>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Customer ID</TableHead>
+                                            <TableHead>Name</TableHead>
+                                            <TableHead>Type</TableHead>
+                                            <TableHead>Contact</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Satisfaction</TableHead>
+                                            <TableHead>Purchases</TableHead>
+                                            <TableHead>Total Spent</TableHead>
+                                            <TableHead>Branch</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {customers.data.map((customer) => (
+                                            <TableRow key={customer.id} className={customer.deleted_at ? 'opacity-50' : ''}>
+                                                <TableCell className="font-medium">{customer.customer_id}</TableCell>
+                                                <TableCell>
+                                                    <div>
+                                                        <div className="font-medium">
+                                                            {customer.first_name} {customer.last_name}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <Badge variant="outline" className="bg-green-100 text-green-800">
-                                                    Complete
-                                                </Badge>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex space-x-1">
-                                                <Link href={`/sales/customer-experience/${survey.id}`}>
-                                                    <Button variant="ghost" size="sm">
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                                <Link href={`/sales/customer-experience/${survey.id}/edit`}>
-                                                    <Button variant="ghost" size="sm">
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                                        {customer.company_name && (
+                                                            <div className="text-sm text-muted-foreground">
+                                                                {customer.company_name}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>{getCustomerTypeBadge(customer.customer_type)}</TableCell>
+                                                <TableCell>
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center text-sm">
+                                                            <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
+                                                            {customer.email}
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
+                                                            {customer.phone}
+                                                        </div>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>{getStatusBadge(customer.status)}</TableCell>
+                                                <TableCell>{getSatisfactionBadge(customer.satisfaction_rating)}</TableCell>
+                                                <TableCell>{customer.total_purchases}</TableCell>
+                                                <TableCell>₱{customer.total_spent.toLocaleString()}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant="outline">{customer.branch.code}</Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex justify-end space-x-1">
+                                                        {customer.deleted_at ? (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleRestore(customer)}
+                                                                title="Restore"
+                                                            >
+                                                                <CheckCircle className="h-4 w-4" />
+                                                            </Button>
+                                                        ) : (
+                                                            <>
+                                                                <Link href={`/sales/customer-experience/${customer.id}`}>
+                                                                    <Button variant="ghost" size="sm" title="View">
+                                                                        <Eye className="h-4 w-4" />
+                                                                    </Button>
+                                                                </Link>
+                                                                <Link href={`/sales/customer-experience/${customer.id}/edit`}>
+                                                                    <Button variant="ghost" size="sm" title="Edit">
+                                                                        <Edit className="h-4 w-4" />
+                                                                    </Button>
+                                                                </Link>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => handleDelete(customer)}
+                                                                    title="Delete"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+
+                                {/* Pagination */}
+                                {customers.meta?.last_page > 1 && (
+                                    <div className="flex items-center justify-between mt-4">
+                                        <div className="text-sm text-muted-foreground">
+                                            Showing {customers.meta.from} to {customers.meta.to} of {customers.meta.total} customers
+                                        </div>
+                                        <div className="flex space-x-2">
+                                            {customers.links?.map((link: any, index: number) => (
+                                                <Button
+                                                    key={index}
+                                                    variant={link.active ? 'default' : 'outline'}
+                                                    size="sm"
+                                                    onClick={() => link.url && router.get(link.url)}
+                                                    disabled={!link.url}
+                                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </CardContent>
                 </Card>
-
-                {/* CRM Follow-up Tasks */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>CRM Follow-up Tasks</CardTitle>
-                        <CardDescription>Automated task creation for survey reminders and feedback follow-ups</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Customer</TableHead>
-                                    <TableHead>Task Type</TableHead>
-                                    <TableHead>Description</TableHead>
-                                    <TableHead>Assigned To</TableHead>
-                                    <TableHead>Due Date</TableHead>
-                                    <TableHead>Priority</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {mockFollowUps.map((task) => (
-                                    <TableRow key={task.id} className={task.status === 'overdue' ? 'bg-red-50' : ''}>
-                                        <TableCell className="font-medium">{task.customer_name}</TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                                                {task.task_type.replace('_', ' ')}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>{task.task_description}</TableCell>
-                                        <TableCell>{task.assigned_to}</TableCell>
-                                        <TableCell>
-                                            <div className="text-sm">{task.due_date}</div>
-                                        </TableCell>
-                                        <TableCell>{getPriorityBadge(task.priority)}</TableCell>
-                                        <TableCell>{getTaskStatusBadge(task.status)}</TableCell>
-                                        <TableCell>
-                                            <div className="flex space-x-1">
-                                                <Link href={`/sales/customer-experience/task/${task.id}`}>
-                                                    <Button variant="ghost" size="sm">
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                                <Link href={`/sales/customer-experience/task/${task.id}/edit`}>
-                                                    <Button variant="ghost" size="sm">
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-
-                {/* Survey Automation & Integration */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Survey Automation</CardTitle>
-                            <CardDescription>Trigger-based survey dispatch system</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Test Drive Completion</div>
-                                        <div className="text-sm text-muted-foreground">Auto-send within 5 minutes</div>
-                                    </div>
-                                    <Badge variant="default" className="bg-green-100 text-green-800">Active</Badge>
-                                </div>
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Vehicle Delivery</div>
-                                        <div className="text-sm text-muted-foreground">Auto-send within 5 minutes</div>
-                                    </div>
-                                    <Badge variant="default" className="bg-green-100 text-green-800">Active</Badge>
-                                </div>
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Service Completion</div>
-                                        <div className="text-sm text-muted-foreground">Auto-send within 5 minutes</div>
-                                    </div>
-                                    <Badge variant="default" className="bg-green-100 text-green-800">Active</Badge>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Integration Systems</CardTitle>
-                            <CardDescription>Call recording and document management</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Call Recording</div>
-                                        <div className="text-sm text-muted-foreground">Auto-link recordings to customer profiles</div>
-                                    </div>
-                                    <Badge variant="outline" className="bg-blue-100 text-blue-800">Configured</Badge>
-                                </div>
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">Document Upload</div>
-                                        <div className="text-sm text-muted-foreground">Link contracts, forms, and photos</div>
-                                    </div>
-                                    <Badge variant="outline" className="bg-blue-100 text-blue-800">Available</Badge>
-                                </div>
-                                <div className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div>
-                                        <div className="font-medium">CRM Integration</div>
-                                        <div className="text-sm text-muted-foreground">Sync with customer interaction history</div>
-                                    </div>
-                                    <Badge variant="default" className="bg-green-100 text-green-800">Connected</Badge>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
             </div>
         </AppLayout>
     );
