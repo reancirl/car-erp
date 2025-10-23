@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,53 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Clock, Search, Filter, Download, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+
+interface Session {
+    id: number;
+    user: string;
+    user_email: string;
+    role: string;
+    login_time: string;
+    logout_time: string | null;
+    session_duration: string;
+    idle_time: string;
+    ip_address: string;
+    status: string;
+    activities: number;
+    logout_reason?: string;
+}
+
+interface TimeTrackingProps {
+    sessions: {
+        data: Session[];
+        pagination: {
+            current_page: number;
+            last_page: number;
+            per_page: number;
+            total: number;
+        };
+    };
+    stats: {
+        active_sessions: number;
+        avg_session_time: string;
+        idle_timeouts: number;
+        total_activities: number;
+        forced_logouts: number;
+        total_sessions: number;
+    };
+    settings: {
+        idle_warning_minutes: number;
+        auto_logout_minutes: number;
+        grace_period_minutes: number;
+    };
+    filters: {
+        search?: string;
+        role?: string;
+        status?: string;
+        start_date: string;
+        end_date: string;
+    };
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -20,70 +67,17 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function TimeTracking() {
-    // Mock data for demonstration
-    const mockSessions = [
-        {
-            id: 1,
-            user: 'John Technician',
-            role: 'technician',
-            login_time: '2025-01-13 08:00:15',
-            logout_time: '2025-01-13 17:30:42',
-            session_duration: '9h 30m',
-            idle_time: '45m',
-            ip_address: '192.168.1.100',
-            status: 'completed',
-            activities: 12
-        },
-        {
-            id: 2,
-            user: 'Sarah Parts Head',
-            role: 'parts_head',
-            login_time: '2025-01-13 07:45:22',
-            logout_time: null,
-            session_duration: '3h 45m',
-            idle_time: '12m',
-            ip_address: '192.168.1.101',
-            status: 'active',
-            activities: 8
-        },
-        {
-            id: 3,
-            user: 'Mike Auditor',
-            role: 'auditor',
-            login_time: '2025-01-13 09:15:33',
-            logout_time: '2025-01-13 11:20:18',
-            session_duration: '2h 5m',
-            idle_time: '1h 15m',
-            ip_address: '192.168.1.102',
-            status: 'idle_timeout',
-            activities: 3
-        },
-        {
-            id: 4,
-            user: 'Lisa Sales Rep',
-            role: 'sales_rep',
-            login_time: '2025-01-13 08:30:45',
-            logout_time: null,
-            session_duration: '2h 55m',
-            idle_time: '5m',
-            ip_address: '192.168.1.103',
-            status: 'active',
-            activities: 15
-        },
-        {
-            id: 5,
-            user: 'Admin User',
-            role: 'admin',
-            login_time: '2025-01-13 06:00:00',
-            logout_time: null,
-            session_duration: '5h 30m',
-            idle_time: '2m',
-            ip_address: '192.168.1.1',
-            status: 'active',
-            activities: 25
-        }
-    ];
+export default function TimeTracking({ sessions, stats, settings, filters }: TimeTrackingProps) {
+    const { data, setData, post, processing, errors } = useForm({
+        idle_warning_minutes: settings.idle_warning_minutes,
+        auto_logout_minutes: settings.auto_logout_minutes,
+        grace_period_minutes: settings.grace_period_minutes,
+    });
+
+    const handleSaveSettings = (e: React.FormEvent) => {
+        e.preventDefault();
+        post(route('audit.time-tracking.save-settings'));
+    };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -156,7 +150,7 @@ export default function TimeTracking() {
                             <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">3</div>
+                            <div className="text-2xl font-bold">{stats.active_sessions}</div>
                             <p className="text-xs text-muted-foreground">Currently logged in</p>
                         </CardContent>
                     </Card>
@@ -165,8 +159,8 @@ export default function TimeTracking() {
                             <CardTitle className="text-sm font-medium">Avg Session Time</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">4h 42m</div>
-                            <p className="text-xs text-muted-foreground">Today's average</p>
+                            <div className="text-2xl font-bold">{stats.avg_session_time}</div>
+                            <p className="text-xs text-muted-foreground">Average duration</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -174,8 +168,8 @@ export default function TimeTracking() {
                             <CardTitle className="text-sm font-medium">Idle Timeouts</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">1</div>
-                            <p className="text-xs text-muted-foreground">Today</p>
+                            <div className="text-2xl font-bold">{stats.idle_timeouts}</div>
+                            <p className="text-xs text-muted-foreground">In selected period</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -183,8 +177,8 @@ export default function TimeTracking() {
                             <CardTitle className="text-sm font-medium">Total Activities</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">63</div>
-                            <p className="text-xs text-muted-foreground">Actions logged today</p>
+                            <div className="text-2xl font-bold">{stats.total_activities}</div>
+                            <p className="text-xs text-muted-foreground">Actions logged</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -259,7 +253,14 @@ export default function TimeTracking() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {mockSessions.map((session) => (
+                                {sessions.data.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={9} className="text-center text-muted-foreground">
+                                            No sessions found for the selected period
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    sessions.data.map((session) => (
                                     <TableRow key={session.id}>
                                         <TableCell className="font-medium">{session.user}</TableCell>
                                         <TableCell>{getRoleBadge(session.role)}</TableCell>
@@ -277,7 +278,8 @@ export default function TimeTracking() {
                                         <TableCell>{getStatusBadge(session.status)}</TableCell>
                                         <TableCell className="font-mono text-sm">{session.ip_address}</TableCell>
                                     </TableRow>
-                                ))}
+                                    ))
+                                )}
                             </TableBody>
                         </Table>
                     </CardContent>
@@ -290,26 +292,60 @@ export default function TimeTracking() {
                         <CardDescription>Configure automatic idle detection and timeout policies</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Idle Warning (minutes)</label>
-                                <Input type="number" defaultValue="15" />
-                                <p className="text-xs text-muted-foreground">Show warning after inactivity</p>
+                        <form onSubmit={handleSaveSettings}>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Idle Warning (minutes)</label>
+                                    <Input 
+                                        type="number" 
+                                        value={data.idle_warning_minutes}
+                                        onChange={(e) => setData('idle_warning_minutes', parseInt(e.target.value))}
+                                        min="1"
+                                        max="120"
+                                        required
+                                    />
+                                    {errors.idle_warning_minutes && (
+                                        <p className="text-xs text-red-600">{errors.idle_warning_minutes}</p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">Show warning after inactivity</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Auto Logout (minutes)</label>
+                                    <Input 
+                                        type="number" 
+                                        value={data.auto_logout_minutes}
+                                        onChange={(e) => setData('auto_logout_minutes', parseInt(e.target.value))}
+                                        min="5"
+                                        max="240"
+                                        required
+                                    />
+                                    {errors.auto_logout_minutes && (
+                                        <p className="text-xs text-red-600">{errors.auto_logout_minutes}</p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">Force logout after inactivity</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Grace Period (minutes)</label>
+                                    <Input 
+                                        type="number" 
+                                        value={data.grace_period_minutes}
+                                        onChange={(e) => setData('grace_period_minutes', parseInt(e.target.value))}
+                                        min="1"
+                                        max="60"
+                                        required
+                                    />
+                                    {errors.grace_period_minutes && (
+                                        <p className="text-xs text-red-600">{errors.grace_period_minutes}</p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">Allow re-authentication</p>
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Auto Logout (minutes)</label>
-                                <Input type="number" defaultValue="30" />
-                                <p className="text-xs text-muted-foreground">Force logout after inactivity</p>
+                            <div className="mt-4">
+                                <Button type="submit" disabled={processing}>
+                                    {processing ? 'Saving...' : 'Save Settings'}
+                                </Button>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Grace Period (minutes)</label>
-                                <Input type="number" defaultValue="5" />
-                                <p className="text-xs text-muted-foreground">Allow re-authentication</p>
-                            </div>
-                        </div>
-                        <div className="mt-4">
-                            <Button>Save Settings</Button>
-                        </div>
+                        </form>
                     </CardContent>
                 </Card>
             </div>

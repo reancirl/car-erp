@@ -77,9 +77,10 @@ Route::middleware(['auth', 'verified', 'permission:audit.view'])->group(function
     Route::get('audit/activity-logs', [ActivityLogController::class, 'index'])->name('audit.activity-logs');
     Route::get('audit/activity-logs-export', [ActivityLogController::class, 'export'])->name('audit.activity-logs.export')->middleware('permission:audit.export');
     
-    Route::get('audit/time-tracking', function () {
-        return Inertia::render('audit/time-tracking');
-    })->name('audit.time-tracking');
+    Route::get('audit/time-tracking', [\App\Http\Controllers\TimeTrackingController::class, 'index'])->name('audit.time-tracking');
+    Route::post('audit/time-tracking/update-idle', [\App\Http\Controllers\TimeTrackingController::class, 'updateIdleTimes'])->name('audit.time-tracking.update-idle');
+    Route::post('audit/time-tracking/{session}/force-logout', [\App\Http\Controllers\TimeTrackingController::class, 'forceLogout'])->name('audit.time-tracking.force-logout')->middleware('permission:audit.supervisor_override');
+    Route::post('audit/time-tracking/settings', [\App\Http\Controllers\TimeTrackingController::class, 'saveSettings'])->name('audit.time-tracking.save-settings')->middleware('permission:audit.supervisor_override');
     
     Route::get('audit/supervisor-approvals', function () {
         return Inertia::render('audit/supervisor-approvals');
