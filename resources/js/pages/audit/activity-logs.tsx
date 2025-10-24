@@ -110,6 +110,9 @@ export default function ActivityLogs({ logs, stats, filters = {}, branches }: Pr
             case 'Inventory':
                 restoreRoute = route('inventory.units.restore', log.subject_id);
                 break;
+            case 'Parts Inventory':
+                restoreRoute = route('parts-inventory.restore', log.subject_id);
+                break;
             default:
                 return;
         }

@@ -256,10 +256,38 @@ Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->gr
 
 // Vehicle Inventory Management Routes
 Route::middleware(['auth', 'verified'])->prefix('inventory')->group(function () {
-    // Parts & Accessories Inventory
-    Route::get('/parts-inventory', function () {
-        return Inertia::render('inventory/parts-inventory');
-    })->name('inventory.parts-inventory')->middleware('permission:inventory.view');
+    // Parts Inventory CRUD Routes (order matters: specific routes before parameterized routes)
+    Route::get('/parts-inventory', [\App\Http\Controllers\PartInventoryController::class, 'index'])
+        ->name('parts-inventory.index')
+        ->middleware('permission:inventory.view');
+    
+    Route::get('/parts-inventory/create', [\App\Http\Controllers\PartInventoryController::class, 'create'])
+        ->name('parts-inventory.create')
+        ->middleware('permission:inventory.create');
+    
+    Route::post('/parts-inventory', [\App\Http\Controllers\PartInventoryController::class, 'store'])
+        ->name('parts-inventory.store')
+        ->middleware('permission:inventory.create');
+    
+    Route::get('/parts-inventory/{partsInventory}', [\App\Http\Controllers\PartInventoryController::class, 'show'])
+        ->name('parts-inventory.show')
+        ->middleware('permission:inventory.view');
+    
+    Route::get('/parts-inventory/{partsInventory}/edit', [\App\Http\Controllers\PartInventoryController::class, 'edit'])
+        ->name('parts-inventory.edit')
+        ->middleware('permission:inventory.edit');
+    
+    Route::match(['put', 'patch'], '/parts-inventory/{partsInventory}', [\App\Http\Controllers\PartInventoryController::class, 'update'])
+        ->name('parts-inventory.update')
+        ->middleware('permission:inventory.edit');
+    
+    Route::delete('/parts-inventory/{partsInventory}', [\App\Http\Controllers\PartInventoryController::class, 'destroy'])
+        ->name('parts-inventory.destroy')
+        ->middleware('permission:inventory.delete');
+    
+    Route::post('/parts-inventory/{id}/restore', [\App\Http\Controllers\PartInventoryController::class, 'restore'])
+        ->name('parts-inventory.restore')
+        ->middleware('permission:inventory.create');
     
     // Vehicle Models (Master Data) - Inertia Routes
     Route::get('/models', [\App\Http\Controllers\VehicleModelController::class, 'indexPage'])->name('inventory.models.index')->middleware('permission:vehicle_model.view');
