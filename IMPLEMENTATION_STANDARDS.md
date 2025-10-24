@@ -10,6 +10,7 @@ This document outlines the standardized implementation patterns used across the 
 3. [Activity Logs System](#3-activity-logs-system)
 4. [UI Standards (User CRUD)](#4-ui-standards-user-crud)
 5. [Implementation Checklist](#5-implementation-checklist)
+6. [Regional Defaults & Validation](#6-regional-defaults--validation)
 
 ---
 
@@ -417,6 +418,61 @@ public function update(UpdateLeadRequest $request, Model $model): RedirectRespon
 - Custom error messages
 - Auto-merge branch_id for non-admin users
 - Route model binding authorization
+
+---
+
+## 6. Regional Defaults & Validation
+
+### 6.1 Philippine Peso Currency Standard
+
+Service pricing for Service Types and Common Services is standardized to Philippine Peso (`PHP`).
+
+**Form Requests**
+- `app/Http/Requests/StoreServiceTypeRequest.php`
+- `app/Http/Requests/UpdateServiceTypeRequest.php`
+- `app/Http/Requests/StoreCommonServiceRequest.php`
+- `app/Http/Requests/UpdateCommonServiceRequest.php`
+
+**Prepare for Validation Pattern**
+```php
+protected function prepareForValidation(): void
+{
+    $currencyInput = strtoupper((string) $this->input('currency', ''));
+
+    $this->merge([
+        'currency' => $currencyInput !== '' ? $currencyInput : 'PHP',
+    ]);
+}
+```
+
+- Ensures `currency` defaults to `PHP` when the user leaves the field blank.
+- Update requests fall back to the existing model currency before defaulting to `PHP`.
+- `is_active` defaults to `true` for common services when omitted.
+- Non-admin users automatically inherit their branch when creating records.
+
+**Frontend Adjustments**
+- Currency is rendered as read-only `PHP` in:
+  - `resources/js/pages/service/common-service-create.tsx`
+  - `resources/js/pages/service/common-service-edit.tsx`
+- Service Type create/edit forms initialize `currency` to `PHP`; no free-form override required.
+
+### 6.2 Validation Summary
+
+| Module         | Required Fields                                                                 | Auto Defaults                                    | Conditional Rules                                                                                  |
+|----------------|----------------------------------------------------------------------------------|--------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| Service Type   | `name`, `category`, `interval_type`, `base_price`, `status`                      | `currency = PHP`, `is_available = true`          | `interval_value` required when `interval_type` is `mileage`/`time`; `branch_id` required for admin/auditor |
+| Common Service | `branch_id`, `name`, `category`, `estimated_duration`, `standard_price`          | `currency = PHP`, `is_active = true`             | `code` unique; `service_type_ids.*` must exist; branch auto-assigned for non-admins                |
+
+### 6.3 Activity Log Restore & Redirect Routes
+
+When redirecting after CRUD operations, use the exact named routes (no prefixed variants):
+```php
+return redirect()
+    ->route('common-services.index')
+    ->with('success', 'Common service updated successfully!');
+```
+
+The audit Activity Logs restore action maps module labels to the same named routes to keep restore flows consistent.
 
 ---
 
