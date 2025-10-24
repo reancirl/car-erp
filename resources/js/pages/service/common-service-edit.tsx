@@ -1,4 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
+import { FormEvent } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,427 +8,333 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { 
-    ArrowLeft, 
-    Wrench, 
-    Save, 
-    Clock,
-    DollarSign,
-    Package,
+import { Switch } from '@/components/ui/switch';
+import {
+    ArrowLeft,
+    Wrench,
+    Save,
     AlertCircle,
-    CheckCircle,
-    Plus,
-    X
+    X,
 } from 'lucide-react';
-import { type BreadcrumbItem } from '@/types';
-import { useState } from 'react';
+import { type BreadcrumbItem, type Branch, type CommonService, type ServiceType } from '@/types';
 
-interface CommonServiceEditProps {
-    serviceId: string;
+interface CategoryOption {
+    value: string;
+    label: string;
+}
+
+interface Props {
+    commonService: CommonService;
+    serviceTypes: ServiceType[];
+    branches?: Branch[] | null;
+    meta?: {
+        categories?: CategoryOption[];
+    };
+    auth: {
+        user: {
+            roles?: Array<{ name: string }>;
+            branch_id?: number | null;
+        };
+    };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Service & Parts',
-        href: '/service',
-    },
-    {
-        title: 'Common Services',
-        href: '/service/common-services',
-    },
-    {
-        title: 'Edit Common Service',
-        href: '/service/common-services/edit',
-    },
+    { title: 'Service & Parts', href: '/service' },
+    { title: 'Common Services', href: '/service/common-services' },
+    { title: 'Edit Common Service', href: '/service/common-services/edit' },
 ];
 
-// Mock data for editing
-const mockCommonService = {
-    id: '1',
-    name: 'Engine Oil Change',
-    code: 'OIL-CHG-001',
-    description: 'Complete engine oil replacement with high-quality synthetic oil',
-    category: 'maintenance',
-    estimated_duration: 30,
-    standard_price: 800,
-    is_active: true,
-    required_parts: ['engine-oil', 'oil-filter'],
-    service_types: ['oil-service', 'basic-maintenance']
-};
-
-export default function CommonServiceEdit({ serviceId }: CommonServiceEditProps) {
-    const [selectedCategory, setSelectedCategory] = useState(mockCommonService.category);
-    const [isActive, setIsActive] = useState(mockCommonService.is_active);
-    const [selectedParts, setSelectedParts] = useState<string[]>(mockCommonService.required_parts);
-    const [selectedServiceTypes, setSelectedServiceTypes] = useState<string[]>(mockCommonService.service_types);
-
-    const categories = [
-        { value: 'maintenance', label: 'Maintenance', description: 'Regular maintenance services' },
-        { value: 'repair', label: 'Repair', description: 'Repair and replacement services' },
-        { value: 'inspection', label: 'Inspection', description: 'Inspection and testing services' },
-        { value: 'diagnostic', label: 'Diagnostic', description: 'Diagnostic and analysis services' },
+export default function CommonServiceEdit({ commonService, serviceTypes, branches, meta, auth }: Props) {
+    const isAdmin = auth.user.roles?.some((role) => role.name === 'admin' || role.name === 'auditor') ?? false;
+    const categoryOptions = meta?.categories ?? [
+        { value: 'maintenance', label: 'Maintenance' },
+        { value: 'repair', label: 'Repair' },
+        { value: 'inspection', label: 'Inspection' },
+        { value: 'diagnostic', label: 'Diagnostic' },
     ];
 
-    const availableParts = [
-        { id: 'engine-oil', name: 'Engine Oil (5W-30)', price: 450, required: true },
-        { id: 'oil-filter', name: 'Oil Filter', price: 250, required: true },
-        { id: 'air-filter', name: 'Air Filter', price: 300, required: false },
-        { id: 'cabin-filter', name: 'Cabin Air Filter', price: 200, required: false },
-        { id: 'spark-plugs', name: 'Spark Plugs (Set of 4)', price: 800, required: false },
-        { id: 'brake-fluid', name: 'Brake Fluid', price: 150, required: false },
-    ];
+    const initialServiceTypeIds = commonService.service_types?.map((serviceType) => serviceType.id) ?? [];
 
-    const serviceTypes = [
-        { id: 'oil-service', name: 'Oil Change Service', interval: '5,000 km' },
-        { id: 'basic-maintenance', name: 'Basic Maintenance', interval: '10,000 km' },
-        { id: 'major-service', name: 'Major Service', interval: '20,000 km' },
-        { id: 'engine-service', name: 'Engine Service', interval: '15,000 km' },
-    ];
+    const { data, setData, put, processing, errors, wasSuccessful } = useForm({
+        name: commonService.name ?? '',
+        code: commonService.code ?? '',
+        description: commonService.description ?? '',
+        category: commonService.category ?? categoryOptions[0]?.value ?? '',
+        estimated_duration: commonService.estimated_duration?.toString() ?? '',
+        standard_price: commonService.standard_price?.toString() ?? '',
+        currency: commonService.currency ?? 'PHP',
+        is_active: Boolean(commonService.is_active),
+        service_type_ids: initialServiceTypeIds,
+    });
 
-    const getCategoryBadge = (category: string) => {
-        const colors = {
-            maintenance: 'bg-blue-100 text-blue-800',
-            repair: 'bg-red-100 text-red-800',
-            inspection: 'bg-yellow-100 text-yellow-800',
-            diagnostic: 'bg-purple-100 text-purple-800',
-        };
-        return <Badge className={colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>{category}</Badge>;
-    };
-
-    const togglePart = (partId: string) => {
-        setSelectedParts(prev => 
-            prev.includes(partId) 
-                ? prev.filter(id => id !== partId)
-                : [...prev, partId]
+    const toggleServiceType = (serviceTypeId: number) => {
+        setData(
+            'service_type_ids',
+            data.service_type_ids.includes(serviceTypeId)
+                ? data.service_type_ids.filter((id) => id !== serviceTypeId)
+                : [...data.service_type_ids, serviceTypeId]
         );
     };
 
-    const toggleServiceType = (serviceTypeId: string) => {
-        setSelectedServiceTypes(prev => 
-            prev.includes(serviceTypeId) 
-                ? prev.filter(id => id !== serviceTypeId)
-                : [...prev, serviceTypeId]
-        );
-    };
-
-    const calculatePartsCost = () => {
-        return availableParts
-            .filter(part => selectedParts.includes(part.id))
-            .reduce((total, part) => total + part.price, 0);
+    const handleSubmit = (event: FormEvent) => {
+        event.preventDefault();
+        put(`/service/common-services/${commonService.id}`, { preserveScroll: true });
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Edit Common Service" />
-            
-            <div className="space-y-6">
-                {/* Header */}
+            <Head title={`Edit ${commonService.name}`} />
+
+            <form onSubmit={handleSubmit} className="space-y-6 p-6">
+                {Object.keys(errors).length > 0 && (
+                    <Card className="border-red-200 bg-red-50">
+                        <CardContent className="pt-6">
+                            <div className="flex items-start space-x-3">
+                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                                <div className="flex-1 space-y-2">
+                                    <h3 className="font-semibold text-red-900">Validation Error</h3>
+                                    <p className="text-sm text-red-800">
+                                        Please correct the following errors before submitting:
+                                    </p>
+                                    <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+                                        {Object.entries(errors).map(([field, message]) => (
+                                            <li key={field}>
+                                                <strong className="capitalize">{field.replace(/_/g, ' ')}</strong>: {message}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         <Link href="/service/common-services">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" type="button">
                                 <ArrowLeft className="h-4 w-4 mr-2" />
                                 Back to Common Services
                             </Button>
                         </Link>
-                        <div>
+                        <div className="flex items-center space-x-2">
+                            <Wrench className="h-6 w-6" />
                             <h1 className="text-2xl font-bold">Edit Common Service</h1>
-                            <p className="text-muted-foreground">Update common service details and configuration</p>
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline">
-                            <X className="h-4 w-4 mr-2" />
-                            Cancel
-                        </Button>
-                        <Button>
+                        <Link href={`/service/common-services/${commonService.id}`}>
+                            <Button variant="outline" type="button">
+                                <X className="h-4 w-4 mr-2" />
+                                Cancel
+                            </Button>
+                        </Link>
+                        <Button type="submit" disabled={processing}>
                             <Save className="h-4 w-4 mr-2" />
-                            Update Service
+                            {processing ? 'Saving...' : wasSuccessful ? 'Saved' : 'Save Changes'}
                         </Button>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Form */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Basic Information */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Wrench className="h-5 w-5 mr-2" />
-                                    Basic Information
-                                </CardTitle>
-                                <CardDescription>
-                                    Update the fundamental details of this common service
-                                </CardDescription>
+                                <CardTitle>Basic Information</CardTitle>
+                                <CardDescription>Update the core details and classification</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                {isAdmin && branches && (
+                                    <div className="space-y-2">
+                                        <Label>Branch</Label>
+                                        <Input
+                                            value={
+                                                branches.find((branch) => branch.id === commonService.branch_id)?.name ??
+                                                'N/A'
+                                            }
+                                            disabled
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            Branch assignment cannot be changed after creation.
+                                        </p>
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="name">Service Name</Label>
-                                        <Input 
-                                            id="name" 
-                                            placeholder="e.g., Engine Oil Change"
-                                            defaultValue={mockCommonService.name}
+                                        <Label htmlFor="name">Service Name *</Label>
+                                        <Input
+                                            id="name"
+                                            value={data.name}
+                                            onChange={(event) => setData('name', event.target.value)}
+                                            className={errors.name ? 'border-red-500' : ''}
+                                            required
                                         />
+                                        {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="code">Service Code</Label>
-                                        <Input 
-                                            id="code" 
-                                            placeholder="e.g., OIL-CHG-001"
-                                            defaultValue={mockCommonService.code}
+                                        <Input
+                                            id="code"
+                                            value={data.code ?? ''}
+                                            onChange={(event) => setData('code', event.target.value.toUpperCase())}
+                                            maxLength={50}
+                                            className={errors.code ? 'border-red-500' : ''}
                                         />
+                                        {errors.code && <p className="text-sm text-red-600">{errors.code}</p>}
                                     </div>
                                 </div>
+
                                 <div className="space-y-2">
                                     <Label htmlFor="description">Description</Label>
-                                    <Textarea 
-                                        id="description" 
-                                        placeholder="Detailed description of the service"
-                                        defaultValue={mockCommonService.description}
+                                    <Textarea
+                                        id="description"
+                                        value={data.description ?? ''}
+                                        onChange={(event) => setData('description', event.target.value)}
+                                        className={errors.description ? 'border-red-500' : ''}
                                     />
+                                    {errors.description && <p className="text-sm text-red-600">{errors.description}</p>}
                                 </div>
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="category">Category</Label>
-                                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                        <SelectTrigger>
+                                    <Label htmlFor="category">Category *</Label>
+                                    <Select
+                                        value={data.category}
+                                        onValueChange={(value) => setData('category', value)}
+                                        required
+                                    >
+                                        <SelectTrigger className={errors.category ? 'border-red-500' : ''}>
                                             <SelectValue placeholder="Select category" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {categories.map((category) => (
-                                                <SelectItem key={category.value} value={category.value}>
-                                                    <div className="flex items-center justify-between w-full">
-                                                        <span>{category.label}</span>
-                                                        <span className="text-xs text-muted-foreground ml-2">{category.description}</span>
-                                                    </div>
+                                            {categoryOptions.map((option) => (
+                                                <SelectItem key={option.value} value={option.value}>
+                                                    {option.label}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    {errors.category && <p className="text-sm text-red-600">{errors.category}</p>}
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Duration & Pricing */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Clock className="h-5 w-5 mr-2" />
-                                    Duration & Pricing
-                                </CardTitle>
-                                <CardDescription>
-                                    Set estimated duration and standard pricing
-                                </CardDescription>
+                                <CardTitle>Duration & Pricing</CardTitle>
+                                <CardDescription>Adjust the standard duration and pricing references</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="duration">Estimated Duration (minutes)</Label>
-                                        <Input 
-                                            id="duration" 
-                                            type="number" 
-                                            placeholder="e.g., 30"
-                                            defaultValue={mockCommonService.estimated_duration}
+                                        <Label htmlFor="estimated_duration">Estimated Duration (hours) *</Label>
+                                        <Input
+                                            id="estimated_duration"
+                                            type="number"
+                                            step="0.25"
+                                            min="0"
+                                            value={data.estimated_duration}
+                                            onChange={(event) => setData('estimated_duration', event.target.value)}
+                                            className={errors.estimated_duration ? 'border-red-500' : ''}
+                                            required
                                         />
+                                        {errors.estimated_duration && (
+                                            <p className="text-sm text-red-600">{errors.estimated_duration}</p>
+                                        )}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="price">Standard Price (₱)</Label>
-                                        <Input 
-                                            id="price" 
-                                            type="number" 
-                                            placeholder="e.g., 800"
-                                            defaultValue={mockCommonService.standard_price}
+                                        <Label htmlFor="standard_price">Standard Price *</Label>
+                                        <Input
+                                            id="standard_price"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={data.standard_price}
+                                            onChange={(event) => setData('standard_price', event.target.value)}
+                                            className={errors.standard_price ? 'border-red-500' : ''}
+                                            required
                                         />
+                                        {errors.standard_price && (
+                                            <p className="text-sm text-red-600">{errors.standard_price}</p>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="p-3 bg-blue-50 rounded-lg">
-                                    <p className="text-sm text-blue-800">
-                                        <strong>Pricing Guidelines:</strong> Include labor cost and markup. Parts cost will be added separately based on selected parts.
+                                <div className="space-y-2">
+                                    <Label htmlFor="currency">Currency</Label>
+                                    <Input
+                                        id="currency"
+                                        value="PHP"
+                                        disabled
+                                        readOnly
+                                        className="bg-muted"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Currency is fixed to Philippine Peso (PHP) for all common services.
                                     </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Required Parts */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Package className="h-5 w-5 mr-2" />
-                                    Parts Required
-                                </CardTitle>
-                                <CardDescription>
-                                    Select parts that are required or optional for this service
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {availableParts.map((part) => (
-                                        <div key={part.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                                            <Checkbox 
-                                                id={part.id}
-                                                checked={selectedParts.includes(part.id)}
-                                                onCheckedChange={() => togglePart(part.id)}
-                                            />
-                                            <div className="flex-1">
-                                                <div className="flex items-center space-x-2">
-                                                    <Label htmlFor={part.id} className="font-medium cursor-pointer">
-                                                        {part.name}
-                                                    </Label>
-                                                    {part.required && (
-                                                        <Badge variant="secondary" className="text-xs">Required</Badge>
-                                                    )}
-                                                </div>
-                                                <p className="text-sm text-muted-foreground">₱{part.price.toLocaleString()}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Associated Service Types */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Plus className="h-5 w-5 mr-2" />
-                                    Associated Service Types
-                                </CardTitle>
-                                <CardDescription>
-                                    Select service types that include this common service
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {serviceTypes.map((serviceType) => (
-                                        <div key={serviceType.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                                            <Checkbox 
-                                                id={serviceType.id}
-                                                checked={selectedServiceTypes.includes(serviceType.id)}
-                                                onCheckedChange={() => toggleServiceType(serviceType.id)}
-                                            />
-                                            <div className="flex-1">
-                                                <Label htmlFor={serviceType.id} className="font-medium cursor-pointer">
-                                                    {serviceType.name}
-                                                </Label>
-                                                <p className="text-sm text-muted-foreground">Every {serviceType.interval}</p>
-                                            </div>
-                                        </div>
-                                    ))}
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
 
-                    {/* Sidebar */}
                     <div className="space-y-6">
-                        {/* Status */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-sm">Service Status</CardTitle>
+                                <CardTitle>Status</CardTitle>
+                                <CardDescription>Control the availability of this service template</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="flex items-center space-x-3">
-                                    <Checkbox 
-                                        id="active"
-                                        checked={isActive}
-                                        onCheckedChange={(checked) => setIsActive(checked as boolean)}
-                                    />
+                                <div className="flex items-center justify-between">
                                     <div>
-                                        <Label htmlFor="active" className="font-medium cursor-pointer">
-                                            Active Service
-                                        </Label>
-                                        <p className="text-xs text-muted-foreground">
-                                            Available for service types and work orders
+                                        <p className="font-medium">Active</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            Toggle to make this template selectable in workflows.
                                         </p>
                                     </div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    {isActive ? (
-                                        <>
-                                            <CheckCircle className="h-4 w-4 text-green-600" />
-                                            <span className="text-sm text-green-600">Active</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <AlertCircle className="h-4 w-4 text-red-600" />
-                                            <span className="text-sm text-red-600">Inactive</span>
-                                        </>
-                                    )}
+                                    <Switch
+                                        checked={data.is_active}
+                                        onCheckedChange={(checked) => setData('is_active', checked)}
+                                    />
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Preview */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-sm">Preview</CardTitle>
+                                <CardTitle>Service Type Associations</CardTitle>
+                                <CardDescription>Identify service types where this common service is used</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Category</p>
-                                    {selectedCategory && getCategoryBadge(selectedCategory)}
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Selected Parts</p>
-                                    <p className="text-sm font-medium">{selectedParts.length} parts</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Parts Cost</p>
-                                    <p className="text-sm font-medium">₱{calculatePartsCost().toLocaleString()}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Service Types</p>
-                                    <p className="text-sm font-medium">{selectedServiceTypes.length} types</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Total Estimated Cost</p>
-                                    <p className="text-sm font-medium text-green-600">
-                                        ₱{(mockCommonService.standard_price + calculatePartsCost()).toLocaleString()}
+                                {serviceTypes.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        No service types available for association.
                                     </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Cost Breakdown */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Cost Breakdown</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span>Service Fee:</span>
-                                    <span>₱{mockCommonService.standard_price.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span>Parts Cost:</span>
-                                    <span>₱{calculatePartsCost().toLocaleString()}</span>
-                                </div>
-                                <hr />
-                                <div className="flex justify-between text-sm font-medium">
-                                    <span>Total:</span>
-                                    <span>₱{(mockCommonService.standard_price + calculatePartsCost()).toLocaleString()}</span>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Guidelines */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Guidelines</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2 text-xs text-muted-foreground">
-                                <p>• Use descriptive names for easy identification</p>
-                                <p>• Set realistic duration estimates</p>
-                                <p>• Include all necessary parts for the service</p>
-                                <p>• Price should include labor and overhead</p>
-                                <p>• Associate with relevant service types</p>
+                                ) : (
+                                    serviceTypes.map((serviceType) => (
+                                        <div key={serviceType.id} className="flex items-start space-x-3">
+                                            <Checkbox
+                                                id={`service-type-${serviceType.id}`}
+                                                checked={data.service_type_ids.includes(serviceType.id)}
+                                                onCheckedChange={() => toggleServiceType(serviceType.id)}
+                                            />
+                                            <div>
+                                                <Label htmlFor={`service-type-${serviceType.id}`} className="font-medium">
+                                                    {serviceType.name}
+                                                </Label>
+                                                <p className="text-xs text-muted-foreground uppercase">
+                                                    {serviceType.code}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                                {errors.service_type_ids && (
+                                    <p className="text-sm text-red-600">{errors.service_type_ids}</p>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
                 </div>
-            </div>
+            </form>
         </AppLayout>
     );
 }

@@ -1,4 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
+import { FormEvent } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,87 +8,113 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { 
-    ArrowLeft, 
-    Wrench, 
-    Save, 
-    Clock,
-    DollarSign,
-    Package,
+import { Switch } from '@/components/ui/switch';
+import {
+    ArrowLeft,
+    Wrench,
+    Save,
     AlertCircle,
-    CheckCircle,
-    Plus,
-    X
+    X,
 } from 'lucide-react';
-import { type BreadcrumbItem } from '@/types';
-import { useState } from 'react';
+import { type BreadcrumbItem, type Branch, type ServiceType } from '@/types';
+
+interface CategoryOption {
+    value: string;
+    label: string;
+}
+
+interface Props {
+    branches?: Branch[] | null;
+    serviceTypes: ServiceType[];
+    meta?: {
+        categories?: CategoryOption[];
+        default_currency?: string;
+    };
+    auth: {
+        user: {
+            roles?: Array<{ name: string }>;
+            branch_id?: number | null;
+        };
+    };
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Service & Parts',
-        href: '/service',
-    },
-    {
-        title: 'Common Services',
-        href: '/service/common-services',
-    },
-    {
-        title: 'Create Common Service',
-        href: '/service/common-services/create',
-    },
+    { title: 'Service & Parts', href: '/service' },
+    { title: 'Common Services', href: '/service/common-services' },
+    { title: 'Create Common Service', href: '/service/common-services/create' },
 ];
 
-export default function CommonServiceCreate() {
-    const [selectedCategory, setSelectedCategory] = useState('');
-    const [isActive, setIsActive] = useState(true);
-    const [selectedParts, setSelectedParts] = useState<string[]>([]);
-    const [selectedServiceTypes, setSelectedServiceTypes] = useState<string[]>([]);
-
-    const categories = [
-        { value: 'maintenance', label: 'Maintenance', description: 'Regular maintenance services' },
-        { value: 'repair', label: 'Repair', description: 'Repair and replacement services' },
-        { value: 'inspection', label: 'Inspection', description: 'Inspection and testing services' },
-        { value: 'diagnostic', label: 'Diagnostic', description: 'Diagnostic and analysis services' }
+export default function CommonServiceCreate({ branches, serviceTypes, meta, auth }: Props) {
+    const isAdmin = auth.user.roles?.some((role) => role.name === 'admin' || role.name === 'auditor') ?? false;
+    const categoryOptions = meta?.categories ?? [
+        { value: 'maintenance', label: 'Maintenance' },
+        { value: 'repair', label: 'Repair' },
+        { value: 'inspection', label: 'Inspection' },
+        { value: 'diagnostic', label: 'Diagnostic' },
     ];
+    const defaultCurrency = meta?.default_currency ?? 'PHP';
 
-    const availableParts = [
-        'Engine Oil', 'Oil Filter', 'Air Filter', 'Cabin Filter', 'Fuel Filter',
-        'Spark Plugs', 'Brake Pads', 'Brake Fluid', 'Transmission Fluid',
-        'Coolant', 'Battery Terminal Cleaner', 'Windshield Washer Fluid',
-        'Power Steering Fluid', 'Differential Oil', 'Grease'
-    ];
+    const { data, setData, post, processing, errors } = useForm({
+        branch_id: !isAdmin && auth.user.branch_id ? auth.user.branch_id.toString() : '',
+        name: '',
+        code: '',
+        description: '',
+        category: categoryOptions[0]?.value ?? '',
+        estimated_duration: '',
+        standard_price: '',
+        currency: defaultCurrency,
+        is_active: true,
+        service_type_ids: [] as number[],
+    });
 
-    const availableServiceTypes = [
-        'PMS - 5K Service', 'PMS - 10K Service', 'PMS - 15K Service', 'PMS - 20K Service',
-        'General Repair', 'Warranty Service', 'Vehicle Inspection', 'Diagnostic Service'
-    ];
+    const toggleServiceType = (serviceTypeId: number) => {
+        setData(
+            'service_type_ids',
+            data.service_type_ids.includes(serviceTypeId)
+                ? data.service_type_ids.filter((id) => id !== serviceTypeId)
+                : [...data.service_type_ids, serviceTypeId]
+        );
+    };
 
-    const getCategoryBadge = (category: string) => {
-        switch (category) {
-            case 'maintenance':
-                return <Badge variant="outline" className="bg-blue-100 text-blue-800">Maintenance</Badge>;
-            case 'repair':
-                return <Badge variant="outline" className="bg-orange-100 text-orange-800">Repair</Badge>;
-            case 'inspection':
-                return <Badge variant="outline" className="bg-purple-100 text-purple-800">Inspection</Badge>;
-            case 'diagnostic':
-                return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Diagnostic</Badge>;
-            default:
-                return null;
-        }
+    const handleSubmit = (event: FormEvent) => {
+        event.preventDefault();
+        post('/service/common-services', { preserveScroll: true });
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Create Common Service" />
-            
-            <div className="space-y-6 p-6">
+
+            <form onSubmit={handleSubmit} className="space-y-6 p-6">
+                {/* Validation Errors */}
+                {Object.keys(errors).length > 0 && (
+                    <Card className="border-red-200 bg-red-50">
+                        <CardContent className="pt-6">
+                            <div className="flex items-start space-x-3">
+                                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                                <div className="flex-1 space-y-2">
+                                    <h3 className="font-semibold text-red-900">Validation Error</h3>
+                                    <p className="text-sm text-red-800">
+                                        Please correct the following errors before submitting:
+                                    </p>
+                                    <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+                                        {Object.entries(errors).map(([field, message]) => (
+                                            <li key={field}>
+                                                <strong className="capitalize">{field.replace(/_/g, ' ')}</strong>: {message}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         <Link href="/service/common-services">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" type="button">
                                 <ArrowLeft className="h-4 w-4 mr-2" />
                                 Back to Common Services
                             </Button>
@@ -98,61 +125,124 @@ export default function CommonServiceCreate() {
                         </div>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline">Cancel</Button>
-                        <Button><Save className="h-4 w-4 mr-2" />Create Service</Button>
+                        <Link href="/service/common-services">
+                            <Button variant="outline" type="button">
+                                <X className="h-4 w-4 mr-2" />
+                                Cancel
+                            </Button>
+                        </Link>
+                        <Button type="submit" disabled={processing}>
+                            <Save className="h-4 w-4 mr-2" />
+                            {processing ? 'Creating...' : 'Create Service'}
+                        </Button>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Form */}
                     <div className="lg:col-span-2 space-y-6">
+                        {/* Branch (Admin Only) */}
+                        {isAdmin && branches && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Branch Assignment</CardTitle>
+                                    <CardDescription>Select the branch this service belongs to</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="branch_id">Branch *</Label>
+                                        <Select
+                                            value={data.branch_id}
+                                            onValueChange={(value) => setData('branch_id', value)}
+                                            required
+                                        >
+                                            <SelectTrigger className={errors.branch_id ? 'border-red-500' : ''}>
+                                                <SelectValue placeholder="Select branch" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {branches.map((branch) => (
+                                                    <SelectItem key={branch.id} value={branch.id.toString()}>
+                                                        {branch.name} ({branch.code})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {errors.branch_id && (
+                                            <p className="text-sm text-red-600">{errors.branch_id}</p>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
                         {/* Basic Information */}
                         <Card>
                             <CardHeader>
                                 <CardTitle>Basic Information</CardTitle>
-                                <CardDescription>Define the service name, code, and description</CardDescription>
+                                <CardDescription>Provide the service name, category, and description</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="name">Service Name *</Label>
-                                        <Input id="name" placeholder="e.g., Oil Change" required />
+                                        <Input
+                                            id="name"
+                                            value={data.name}
+                                            onChange={(event) => setData('name', event.target.value)}
+                                            className={errors.name ? 'border-red-500' : ''}
+                                            required
+                                        />
+                                        {errors.name && (
+                                            <p className="text-sm text-red-600">{errors.name}</p>
+                                        )}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="code">Service Code *</Label>
-                                        <Input id="code" placeholder="e.g., OIL_CHANGE" className="uppercase" required />
+                                        <Label htmlFor="code">Service Code</Label>
+                                        <Input
+                                            id="code"
+                                            value={data.code}
+                                            onChange={(event) => setData('code', event.target.value.toUpperCase())}
+                                            placeholder="Leave blank to auto-generate"
+                                            maxLength={50}
+                                            className={errors.code ? 'border-red-500' : ''}
+                                        />
+                                        {errors.code && (
+                                            <p className="text-sm text-red-600">{errors.code}</p>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="description">Description *</Label>
-                                    <Textarea 
-                                        id="description" 
-                                        placeholder="Describe what this service includes..." 
-                                        rows={3} 
-                                        required 
+                                    <Label htmlFor="description">Description</Label>
+                                    <Textarea
+                                        id="description"
+                                        value={data.description}
+                                        onChange={(event) => setData('description', event.target.value)}
+                                        placeholder="Detail the inclusions and scope of this service"
+                                        className={errors.description ? 'border-red-500' : ''}
                                     />
+                                    {errors.description && (
+                                        <p className="text-sm text-red-600">{errors.description}</p>
+                                    )}
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="category">Service Category *</Label>
-                                    <Select value={selectedCategory} onValueChange={setSelectedCategory} required>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select service category" />
+                                    <Label htmlFor="category">Category *</Label>
+                                    <Select
+                                        value={data.category}
+                                        onValueChange={(value) => setData('category', value)}
+                                        required
+                                    >
+                                        <SelectTrigger className={errors.category ? 'border-red-500' : ''}>
+                                            <SelectValue placeholder="Select category" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {categories.map((category) => (
-                                                <SelectItem key={category.value} value={category.value}>
-                                                    <div className="flex items-center space-x-2">
-                                                        <span>{category.label}</span>
-                                                        <span className="text-xs text-muted-foreground">- {category.description}</span>
-                                                    </div>
+                                            {categoryOptions.map((option) => (
+                                                <SelectItem key={option.value} value={option.value}>
+                                                    {option.label}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {selectedCategory && (
-                                        <div className="mt-2">
-                                            {getCategoryBadge(selectedCategory)}
-                                        </div>
+                                    {errors.category && (
+                                        <p className="text-sm text-red-600">{errors.category}</p>
                                     )}
                                 </div>
                             </CardContent>
@@ -161,158 +251,56 @@ export default function CommonServiceCreate() {
                         {/* Duration & Pricing */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <Clock className="h-5 w-5" />
-                                    <span>Duration & Pricing</span>
-                                </CardTitle>
-                                <CardDescription>Set estimated duration and standard pricing</CardDescription>
+                                <CardTitle>Duration & Pricing</CardTitle>
+                                <CardDescription>Define the standard duration and pricing for this service</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="estimated_duration">Estimated Duration (hours) *</Label>
-                                        <div className="relative">
-                                            <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                            <Input 
-                                                id="estimated_duration" 
-                                                type="number" 
-                                                step="0.25" 
-                                                placeholder="e.g., 0.5" 
-                                                className="pl-10"
-                                                required 
-                                            />
-                                        </div>
+                                        <Input
+                                            id="estimated_duration"
+                                            type="number"
+                                            step="0.25"
+                                            min="0"
+                                            value={data.estimated_duration}
+                                            onChange={(event) => setData('estimated_duration', event.target.value)}
+                                            className={errors.estimated_duration ? 'border-red-500' : ''}
+                                            required
+                                        />
+                                        {errors.estimated_duration && (
+                                            <p className="text-sm text-red-600">{errors.estimated_duration}</p>
+                                        )}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="standard_price">Standard Price (₱) *</Label>
-                                        <div className="relative">
-                                            <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                            <Input 
-                                                id="standard_price" 
-                                                type="number" 
-                                                step="0.01" 
-                                                placeholder="e.g., 800.00" 
-                                                className="pl-10"
-                                                required 
-                                            />
-                                        </div>
+                                        <Label htmlFor="standard_price">Standard Price *</Label>
+                                        <Input
+                                            id="standard_price"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={data.standard_price}
+                                            onChange={(event) => setData('standard_price', event.target.value)}
+                                            className={errors.standard_price ? 'border-red-500' : ''}
+                                            required
+                                        />
+                                        {errors.standard_price && (
+                                            <p className="text-sm text-red-600">{errors.standard_price}</p>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="text-xs text-muted-foreground">
-                                    Duration should include setup and cleanup time. Price excludes parts cost.
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Parts Required */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <Package className="h-5 w-5" />
-                                    <span>Parts Required</span>
-                                </CardTitle>
-                                <CardDescription>Select parts typically needed for this service</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {availableParts.map((part) => (
-                                            <div key={part} className="flex items-center space-x-2">
-                                                <Checkbox 
-                                                    id={part.toLowerCase().replace(/\s+/g, '_')}
-                                                    checked={selectedParts.includes(part)}
-                                                    onCheckedChange={(checked) => {
-                                                        if (checked === true) {
-                                                            setSelectedParts([...selectedParts, part]);
-                                                        } else {
-                                                            setSelectedParts(selectedParts.filter(p => p !== part));
-                                                        }
-                                                    }}
-                                                />
-                                                <Label htmlFor={part.toLowerCase().replace(/\s+/g, '_')} className="text-sm">
-                                                    {part}
-                                                </Label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {selectedParts.length > 0 && (
-                                        <div className="mt-4">
-                                            <Label className="text-sm font-medium">Selected Parts:</Label>
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                {selectedParts.map((part) => (
-                                                    <Badge key={part} variant="outline" className="bg-blue-100 text-blue-800">
-                                                        {part}
-                                                        <button
-                                                            onClick={() => setSelectedParts(selectedParts.filter(p => p !== part))}
-                                                            className="ml-1 hover:bg-blue-200 rounded-full"
-                                                        >
-                                                            <X className="h-3 w-3" />
-                                                        </button>
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {selectedParts.length === 0 && (
-                                        <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                                            <div className="flex items-center space-x-2">
-                                                <AlertCircle className="h-4 w-4 text-gray-600" />
-                                                <span className="text-sm text-gray-600">
-                                                    No parts required - this is a labor-only service.
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Associated Service Types */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Associated Service Types</CardTitle>
-                                <CardDescription>Select service types that typically include this common service</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {availableServiceTypes.map((serviceType) => (
-                                            <div key={serviceType} className="flex items-center space-x-2">
-                                                <Checkbox 
-                                                    id={serviceType.toLowerCase().replace(/\s+/g, '_')}
-                                                    checked={selectedServiceTypes.includes(serviceType)}
-                                                    onCheckedChange={(checked) => {
-                                                        if (checked === true) {
-                                                            setSelectedServiceTypes([...selectedServiceTypes, serviceType]);
-                                                        } else {
-                                                            setSelectedServiceTypes(selectedServiceTypes.filter(st => st !== serviceType));
-                                                        }
-                                                    }}
-                                                />
-                                                <Label htmlFor={serviceType.toLowerCase().replace(/\s+/g, '_')} className="text-sm">
-                                                    {serviceType}
-                                                </Label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {selectedServiceTypes.length > 0 && (
-                                        <div className="mt-4">
-                                            <Label className="text-sm font-medium">Associated Service Types:</Label>
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                {selectedServiceTypes.map((serviceType) => (
-                                                    <Badge key={serviceType} variant="outline" className="bg-green-100 text-green-800">
-                                                        {serviceType}
-                                                        <button
-                                                            onClick={() => setSelectedServiceTypes(selectedServiceTypes.filter(st => st !== serviceType))}
-                                                            className="ml-1 hover:bg-green-200 rounded-full"
-                                                        >
-                                                            <X className="h-3 w-3" />
-                                                        </button>
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+                                <div className="space-y-2">
+                                    <Label htmlFor="currency">Currency</Label>
+                                    <Input
+                                        id="currency"
+                                        value="PHP"
+                                        disabled
+                                        readOnly
+                                        className="bg-muted"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Currency is fixed to Philippine Peso (PHP) for all service offerings.
+                                    </p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -320,108 +308,64 @@ export default function CommonServiceCreate() {
 
                     {/* Sidebar */}
                     <div className="space-y-6">
-                        {/* Status */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Status & Availability</CardTitle>
+                                <CardTitle>Status</CardTitle>
+                                <CardDescription>Control availability in service workflows</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox 
-                                        id="is_active"
-                                        checked={isActive}
-                                        onCheckedChange={(checked) => setIsActive(checked === true)}
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="font-medium">Active</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            Toggle to make this service selectable.
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        checked={data.is_active}
+                                        onCheckedChange={(checked) => setData('is_active', checked)}
                                     />
-                                    <Label htmlFor="is_active" className="text-sm">
-                                        Active Service
-                                    </Label>
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                    {isActive ? (
-                                        <div className="flex items-center space-x-1 text-green-600">
-                                            <CheckCircle className="h-3 w-3" />
-                                            <span>This service will be available for selection</span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center space-x-1 text-gray-600">
-                                            <AlertCircle className="h-3 w-3" />
-                                            <span>This service will be hidden from selection</span>
-                                        </div>
-                                    )}
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Preview */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Service Preview</CardTitle>
+                                <CardTitle>Service Type Associations</CardTitle>
+                                <CardDescription>Select service types that commonly include this activity</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Category</span>
-                                    {selectedCategory ? getCategoryBadge(selectedCategory) : <span className="text-xs text-gray-400">Not selected</span>}
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Parts Required</span>
-                                    <span className="text-sm font-medium">{selectedParts.length} parts</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Service Types</span>
-                                    <span className="text-sm font-medium">{selectedServiceTypes.length} types</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Status</span>
-                                    {isActive ? (
-                                        <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
-                                    ) : (
-                                        <Badge variant="outline" className="bg-gray-100 text-gray-800">Inactive</Badge>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Cost Estimation */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Cost Estimation</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Labor Cost</span>
-                                    <span className="text-sm font-medium">Set by price</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Parts Cost</span>
-                                    <span className="text-sm font-medium">Variable</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-muted-foreground">Total Cost</span>
-                                    <span className="text-sm font-medium">Labor + Parts</span>
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                    Final cost will include parts markup and any additional charges.
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Guidelines */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Guidelines</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2 text-sm text-muted-foreground">
-                                <p>• Use clear, descriptive service names</p>
-                                <p>• Service codes should be unique and uppercase</p>
-                                <p>• Include realistic time estimates</p>
-                                <p>• Select all required parts</p>
-                                <p>• Associate with relevant service types</p>
-                                <p>• Price should reflect labor cost only</p>
+                                {serviceTypes.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        No service types available for selection.
+                                    </p>
+                                ) : (
+                                    serviceTypes.map((serviceType) => (
+                                        <div key={serviceType.id} className="flex items-start space-x-3">
+                                            <Checkbox
+                                                id={`service-type-${serviceType.id}`}
+                                                checked={data.service_type_ids.includes(serviceType.id)}
+                                                onCheckedChange={() => toggleServiceType(serviceType.id)}
+                                            />
+                                            <div>
+                                                <Label htmlFor={`service-type-${serviceType.id}`} className="font-medium">
+                                                    {serviceType.name}
+                                                </Label>
+                                                <p className="text-xs text-muted-foreground uppercase">
+                                                    {serviceType.code}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                                {errors.service_type_ids && (
+                                    <p className="text-sm text-red-600">{errors.service_type_ids}</p>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
                 </div>
-            </div>
+            </form>
         </AppLayout>
     );
 }

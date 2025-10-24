@@ -136,6 +136,70 @@ export interface PartInventory {
     full_location?: string;
 }
 
+export interface ServiceType {
+    id: number;
+    branch_id: number;
+    branch?: Branch;
+    name: string;
+    code: string;
+    description?: string;
+    category: 'maintenance' | 'repair' | 'warranty' | 'inspection' | 'diagnostic';
+    interval_type: 'mileage' | 'time' | 'on_demand';
+    interval_value?: number;
+    estimated_duration?: number;
+    base_price: number | string;
+    currency: string;
+    status: 'active' | 'inactive' | 'discontinued';
+    is_available: boolean;
+    created_by?: number;
+    updated_by?: number;
+    creator?: User;
+    updater?: User;
+    common_services?: CommonService[];
+    created_at: string;
+    updated_at: string;
+    deleted_at?: string | null;
+    formatted_base_price?: string;
+    formatted_estimated_duration?: string;
+    interval_description?: string;
+    category_badge?: {
+        text: string;
+        color: string;
+    };
+    status_badge?: {
+        text: string;
+        color: string;
+    };
+}
+
+export interface CommonService {
+    id: number;
+    branch_id: number;
+    branch?: Branch;
+    name: string;
+    code: string;
+    description?: string;
+    category: string;
+    estimated_duration: number;
+    standard_price: number;
+    currency: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    deleted_at?: string | null;
+    formatted_standard_price?: string;
+    formatted_estimated_duration?: string;
+    status_badge?: {
+        text: string;
+        color: string;
+    };
+    category_badge?: {
+        text: string;
+        color: string;
+    };
+    service_types?: ServiceType[];
+}
+
 export interface PaginatedResponse<T> {
     data: T[];
     current_page: number;

@@ -202,39 +202,72 @@ Route::middleware(['auth', 'verified'])->prefix('pms')->name('pms.')->group(func
 });
 
 // Service & Parts Routes
-Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->group(function () {
-    // Service Types Routes
-    Route::get('/service-types', function () {
-        return Inertia::render('service/service-types');
-    })->name('service-types');
-    
-    Route::get('/service-types/create', function () {
-        return Inertia::render('service/service-type-create');
-    })->name('service-types.create');
-    
-    Route::get('/service-types/{id}/edit', function ($id) {
-        return Inertia::render('service/service-type-edit', ['serviceTypeId' => $id]);
-    })->name('service-types.edit');
-    
-    Route::get('/service-types/{id}', function ($id) {
-        return Inertia::render('service/service-type-view', ['serviceTypeId' => $id]);
-    })->name('service-types.view');
+Route::middleware(['auth', 'verified'])->prefix('service')->group(function () {
+    // Service Types CRUD Routes (RESTful resource routes)
+    Route::get('/service-types', [\App\Http\Controllers\ServiceTypeController::class, 'index'])
+        ->name('service-types.index')
+        ->middleware('permission:service-types.view');
+
+    Route::get('/service-types/create', [\App\Http\Controllers\ServiceTypeController::class, 'create'])
+        ->name('service-types.create')
+        ->middleware('permission:service-types.create');
+
+    Route::post('/service-types', [\App\Http\Controllers\ServiceTypeController::class, 'store'])
+        ->name('service-types.store')
+        ->middleware('permission:service-types.create');
+
+    Route::get('/service-types/{service_type}', [\App\Http\Controllers\ServiceTypeController::class, 'show'])
+        ->name('service-types.show')
+        ->middleware('permission:service-types.view');
+
+    Route::get('/service-types/{service_type}/edit', [\App\Http\Controllers\ServiceTypeController::class, 'edit'])
+        ->name('service-types.edit')
+        ->middleware('permission:service-types.edit');
+
+    Route::match(['put', 'patch'], '/service-types/{service_type}', [\App\Http\Controllers\ServiceTypeController::class, 'update'])
+        ->name('service-types.update')
+        ->middleware('permission:service-types.edit');
+
+    Route::delete('/service-types/{service_type}', [\App\Http\Controllers\ServiceTypeController::class, 'destroy'])
+        ->name('service-types.destroy')
+        ->middleware('permission:service-types.delete');
+
+    Route::post('/service-types/{id}/restore', [\App\Http\Controllers\ServiceTypeController::class, 'restore'])
+        ->name('service-types.restore')
+        ->middleware('permission:service-types.create');
     
     // Common Services Routes
-    Route::get('/common-services', function () {
-        return Inertia::render('service/common-services');
-    })->name('common-services');
-    
-    Route::get('/common-services/create', function () {
-        return Inertia::render('service/common-service-create');
-    })->name('common-services.create');
-    
-    Route::get('/common-services/{id}/edit', function ($id) {
-        return Inertia::render('service/common-service-edit', ['serviceId' => $id]);
-    })->name('common-services.edit');
-    Route::get('/common-services/{id}', function ($id) {
-        return Inertia::render('service/common-service-view', ['serviceId' => $id]);
-    })->name('common-services.view');
+    Route::get('/common-services', [\App\Http\Controllers\CommonServiceController::class, 'index'])
+        ->name('common-services.index')
+        ->middleware('permission:common-services.view');
+
+    Route::get('/common-services/create', [\App\Http\Controllers\CommonServiceController::class, 'create'])
+        ->name('common-services.create')
+        ->middleware('permission:common-services.create');
+
+    Route::post('/common-services', [\App\Http\Controllers\CommonServiceController::class, 'store'])
+        ->name('common-services.store')
+        ->middleware('permission:common-services.create');
+
+    Route::get('/common-services/{common_service}', [\App\Http\Controllers\CommonServiceController::class, 'show'])
+        ->name('common-services.show')
+        ->middleware('permission:common-services.view');
+
+    Route::get('/common-services/{common_service}/edit', [\App\Http\Controllers\CommonServiceController::class, 'edit'])
+        ->name('common-services.edit')
+        ->middleware('permission:common-services.edit');
+
+    Route::match(['put', 'patch'], '/common-services/{common_service}', [\App\Http\Controllers\CommonServiceController::class, 'update'])
+        ->name('common-services.update')
+        ->middleware('permission:common-services.edit');
+
+    Route::delete('/common-services/{common_service}', [\App\Http\Controllers\CommonServiceController::class, 'destroy'])
+        ->name('common-services.destroy')
+        ->middleware('permission:common-services.delete');
+
+    Route::post('/common-services/{id}/restore', [\App\Http\Controllers\CommonServiceController::class, 'restore'])
+        ->name('common-services.restore')
+        ->middleware('permission:common-services.create');
     
     // Warranty Claims Management
     Route::get('/warranty-claims', function () {

@@ -91,8 +91,8 @@ export default function ActivityLogs({ logs, stats, filters = {}, branches }: Pr
     const handleRestore = (log: ActivityLog) => {
         if (!log.subject_id || !log.module) return;
 
-        let restoreRoute = '';
-        
+        let restoreRoute: string | null = null;
+
         // Determine restore route based on module
         switch (log.module) {
             case 'Branch':
@@ -113,8 +113,18 @@ export default function ActivityLogs({ logs, stats, filters = {}, branches }: Pr
             case 'Parts Inventory':
                 restoreRoute = route('parts-inventory.restore', log.subject_id);
                 break;
+            case 'Service Types':
+                restoreRoute = route('service-types.restore', log.subject_id);
+                break;
+            case 'Common Services':
+                restoreRoute = route('common-services.restore', log.subject_id);
+                break;
             default:
-                return;
+                restoreRoute = null;
+        }
+
+        if (!restoreRoute) {
+            return;
         }
 
         if (confirm('Are you sure you want to restore this record?')) {
