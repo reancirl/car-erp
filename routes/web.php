@@ -5,6 +5,11 @@ use Inertia\Inertia;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\ChecklistReminderCenterController;
+use App\Http\Controllers\ComplianceChecklistController;
+use App\Http\Controllers\ComplianceChecklistAssignmentController;
+use App\Http\Controllers\ComplianceReminderController;
+use App\Http\Controllers\DashboardController;
 
 // redirect to login
 Route::get('/', function () {
@@ -18,9 +23,11 @@ Route::prefix('survey')->name('survey.')->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::post(
+        'dashboard/checklist-assignments/{assignment}/items/{assignmentItem}/toggle',
+        [ComplianceChecklistAssignmentController::class, 'toggleItem']
+    )->name('dashboard.checklists.items.toggle');
     
     // Role and Permission Management Routes with middleware protection
     // Create & Store must come first
@@ -70,6 +77,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
              ->name('permissions.destroy');
     });
 
+    Route::get('checklists-reminders', ChecklistReminderCenterController::class)
+        ->name('checklists-reminders');
 });
 
 // Activity & Audit Routes
@@ -88,14 +97,50 @@ Route::middleware(['auth', 'verified', 'permission:audit.view'])->group(function
 });
 
 // Compliance Routes
-Route::middleware(['auth', 'verified', 'permission:compliance.view'])->group(function () {
-    Route::get('compliance/checklists', function () {
-        return Inertia::render('compliance/checklists');
-    })->name('compliance.checklists');
-    
-    Route::get('compliance/reminders', function () {
-        return Inertia::render('compliance/reminders');
-    })->name('compliance.reminders');
+Route::middleware(['auth', 'verified'])->prefix('compliance')->name('compliance.')->group(function () {
+    // Compliance Checklists - manage_checklists permission (specific routes first)
+    Route::middleware('permission:compliance.manage_checklists')->group(function () {
+        Route::get('checklists/create', [ComplianceChecklistController::class, 'create'])
+            ->name('checklists.create');
+        Route::post('checklists', [ComplianceChecklistController::class, 'store'])
+            ->name('checklists.store');
+        Route::get('checklists/{checklist}/edit', [ComplianceChecklistController::class, 'edit'])
+            ->name('checklists.edit');
+        Route::put('checklists/{checklist}', [ComplianceChecklistController::class, 'update'])
+            ->name('checklists.update');
+        Route::delete('checklists/{checklist}', [ComplianceChecklistController::class, 'destroy'])
+            ->name('checklists.destroy');
+        Route::post('checklists/{id}/restore', [ComplianceChecklistController::class, 'restore'])
+            ->name('checklists.restore');
+    });
+
+    // Compliance Reminders - manage_reminders permission (specific routes first)
+    Route::middleware('permission:compliance.manage_reminders')->group(function () {
+        Route::get('reminders/create', [ComplianceReminderController::class, 'create'])
+            ->name('reminders.create');
+        Route::post('reminders', [ComplianceReminderController::class, 'store'])
+            ->name('reminders.store');
+        Route::get('reminders/{reminder}/edit', [ComplianceReminderController::class, 'edit'])
+            ->name('reminders.edit');
+        Route::put('reminders/{reminder}', [ComplianceReminderController::class, 'update'])
+            ->name('reminders.update');
+        Route::delete('reminders/{reminder}', [ComplianceReminderController::class, 'destroy'])
+            ->name('reminders.destroy');
+        Route::post('reminders/{id}/restore', [ComplianceReminderController::class, 'restore'])
+            ->name('reminders.restore');
+    });
+
+    // Compliance - view permission (these must come AFTER specific routes like /create)
+    Route::middleware('permission:compliance.view')->group(function () {
+        Route::get('checklists', [ComplianceChecklistController::class, 'index'])
+            ->name('checklists.index');
+        Route::get('checklists/{checklist}', [ComplianceChecklistController::class, 'show'])
+            ->name('checklists.show');
+        Route::get('reminders', [ComplianceReminderController::class, 'index'])
+            ->name('reminders.index');
+        Route::get('reminders/{reminder}', [ComplianceReminderController::class, 'show'])
+            ->name('reminders.show');
+    });
 });
 
 // Service & Parts Management Routes

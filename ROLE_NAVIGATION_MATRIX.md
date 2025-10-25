@@ -91,6 +91,7 @@ const navPermissions: Record<string, string> = {
     // Compliance
     '/compliance/checklists': 'compliance.view',
     '/compliance/reminders': 'compliance.view',
+    '/checklists-reminders': 'authenticated',
 };
 ```
 

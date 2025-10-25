@@ -200,6 +200,128 @@ export interface CommonService {
     service_types?: ServiceType[];
 }
 
+export interface ComplianceChecklistTrigger {
+    id: number;
+    compliance_checklist_id: number;
+    trigger_type: 'advance' | 'due' | 'escalation';
+    offset_hours: number;
+    channels: string[] | null;
+    escalate_to_user_id?: number | null;
+    escalate_to_role?: string | null;
+    is_active: boolean;
+    metadata?: Record<string, unknown> | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ComplianceChecklistItem {
+    id: number;
+    compliance_checklist_id: number;
+    title: string;
+    description?: string | null;
+    is_required: boolean;
+    is_active: boolean;
+    sort_order: number;
+    metadata?: Record<string, unknown> | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ComplianceChecklist {
+    id: number;
+    branch_id: number;
+    branch?: Branch;
+    title: string;
+    code?: string | null;
+    description?: string | null;
+    category?: string | null;
+    status: 'active' | 'inactive' | 'archived';
+    frequency_type: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
+    frequency_interval: number;
+    custom_frequency_unit?: 'hours' | 'days' | 'weeks' | 'months' | 'years' | null;
+    custom_frequency_value?: number | null;
+    start_date?: string | null;
+    due_time?: string | null;
+    next_due_at?: string | null;
+    last_triggered_at?: string | null;
+    last_completed_at?: string | null;
+    is_recurring: boolean;
+    assigned_user_id?: number | null;
+    assigned_user?: User | null;
+    assigned_role?: string | null;
+    escalate_to_user_id?: number | null;
+    escalation_user?: User | null;
+    escalation_offset_hours?: number | null;
+    advance_reminder_offsets?: number[] | null;
+    metadata?: Record<string, unknown> | null;
+    requires_acknowledgement: boolean;
+    allow_partial_completion: boolean;
+    created_by?: number | null;
+    updated_by?: number | null;
+    created_at: string;
+    updated_at: string;
+    deleted_at?: string | null;
+    items?: ComplianceChecklistItem[];
+    triggers?: ComplianceChecklistTrigger[];
+    items_count?: number;
+}
+
+export interface ComplianceReminderEvent {
+    id: number;
+    compliance_reminder_id: number;
+    event_type: string;
+    channel?: string | null;
+    status: string;
+    message?: string | null;
+    metadata?: Record<string, unknown> | null;
+    processed_at?: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ComplianceReminderAssignmentSummary {
+    id: number;
+    compliance_checklist_id: number;
+    user_id: number;
+    status: string;
+}
+
+export interface ComplianceReminder {
+    id: number;
+    branch_id?: number | null;
+    branch?: Branch | null;
+    compliance_checklist_id?: number | null;
+    checklist?: Pick<ComplianceChecklist, 'id' | 'title'> | null;
+    compliance_checklist_assignment_id?: number | null;
+    assignment?: ComplianceReminderAssignmentSummary | null;
+    assigned_user_id?: number | null;
+    assigned_user?: User | null;
+    assigned_role?: string | null;
+    title: string;
+    description?: string | null;
+    reminder_type: string;
+    priority: string;
+    delivery_channel: string;
+    delivery_channels?: string[] | null;
+    remind_at?: string | null;
+    due_at?: string | null;
+    escalate_at?: string | null;
+    status: string;
+    auto_escalate: boolean;
+    escalate_to_user_id?: number | null;
+    escalate_to_user?: User | null;
+    escalate_to_role?: string | null;
+    last_triggered_at?: string | null;
+    last_sent_at?: string | null;
+    last_escalated_at?: string | null;
+    sent_count?: number;
+    metadata?: Record<string, unknown> | null;
+    created_at: string;
+    updated_at: string;
+    deleted_at?: string | null;
+    events?: ComplianceReminderEvent[];
+}
+
 export interface PaginatedResponse<T> {
     data: T[];
     current_page: number;

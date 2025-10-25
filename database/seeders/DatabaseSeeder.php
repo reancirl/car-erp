@@ -27,8 +27,8 @@ class DatabaseSeeder extends Seeder
         // Create only admin user
         $admin = User::factory()->create([
             'name' => 'Admin User',
-            'email' => 'admin@admin.com',
-            'password' => 'password',
+            'email' => 'admin@mikaroerp.com',
+            'password' => 'mikaroerp2^2!5',
             'branch_id' => 1, // Assign to HQ branch
         ]);
         $admin->assignRole('admin');

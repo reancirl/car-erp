@@ -31,6 +31,11 @@ const coreNavItems: NavItem[] = [
         href: '/dashboard',
         icon: LayoutGrid,
     },
+    {
+        title: 'Checklist & Reminders',
+        href: '/checklists-reminders',
+        icon: ClipboardCheck,
+    },
 ];
 
 // Administration

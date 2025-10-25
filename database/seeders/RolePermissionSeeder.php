@@ -99,6 +99,7 @@ class RolePermissionSeeder extends Seeder
             'audit.supervisor_override',
             'compliance.view',
             'compliance.manage_checklists',
+            'compliance.manage_reminders',
         ];
 
         // Create permissions for System Administration

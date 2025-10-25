@@ -119,6 +119,12 @@ export default function ActivityLogs({ logs, stats, filters = {}, branches }: Pr
             case 'Common Services':
                 restoreRoute = route('common-services.restore', log.subject_id);
                 break;
+            case 'Compliance Checklists':
+                restoreRoute = route('compliance.checklists.restore', log.subject_id);
+                break;
+            case 'Compliance Reminders':
+                restoreRoute = route('compliance.reminders.restore', log.subject_id);
+                break;
             default:
                 restoreRoute = null;
         }
@@ -179,6 +185,8 @@ export default function ActivityLogs({ logs, stats, filters = {}, branches }: Pr
             'Sales': 'bg-green-100 text-green-800',
             'Branch': 'bg-indigo-100 text-indigo-800',
             'Users': 'bg-pink-100 text-pink-800',
+            'Compliance Checklists': 'bg-cyan-100 text-cyan-800',
+            'Compliance Reminders': 'bg-teal-100 text-teal-800',
             'System': 'bg-gray-100 text-gray-800'
         };
         return <Badge variant="outline" className={colors[module] || 'bg-gray-100 text-gray-800'}>{module}</Badge>;
@@ -290,6 +298,8 @@ export default function ActivityLogs({ logs, stats, filters = {}, branches }: Pr
                                     <SelectItem value="PMS">PMS</SelectItem>
                                     <SelectItem value="Inventory">Inventory</SelectItem>
                                     <SelectItem value="Warranty">Warranty</SelectItem>
+                                    <SelectItem value="Compliance Checklists">Compliance Checklists</SelectItem>
+                                    <SelectItem value="Compliance Reminders">Compliance Reminders</SelectItem>
                                     <SelectItem value="System">System</SelectItem>
                                 </SelectContent>
                             </Select>
