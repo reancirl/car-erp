@@ -11,7 +11,6 @@ import { useState } from 'react';
 
 interface VehicleUnit {
     id: number;
-    vehicle_master_id: number;
     vehicle_model_id: number | null;
     branch_id: number;
     assigned_user_id: number | null;
@@ -38,16 +37,6 @@ interface VehicleUnit {
     } | null;
     created_at: string;
     deleted_at: string | null;
-    master: {
-        id: number;
-        make: string;
-        model: string;
-        year: number;
-        trim?: string | null;
-        body_type: string | null;
-        transmission: string | null;
-        fuel_type: string | null;
-    };
     vehicle_model: {
         id: number;
         make: string;
@@ -85,8 +74,19 @@ interface Props {
 }
 
 export default function VehicleView({ vehicle, activityLogs }: Props) {
-    const vehicleDisplay = vehicle.vehicle_model || vehicle.master;
-    const vehicleTitle = `${vehicleDisplay.year} ${vehicleDisplay.make} ${vehicleDisplay.model}${vehicleDisplay.trim ? ' ' + vehicleDisplay.trim : ''}`;
+    const vehicleDisplay = vehicle.vehicle_model ?? {
+        year: new Date().getFullYear(),
+        make: 'Unspecified',
+        model: 'Vehicle',
+        trim: null,
+        body_type: null,
+        transmission: null,
+        fuel_type: null,
+    };
+    const vehicleTitle = [vehicleDisplay.year, vehicleDisplay.make, vehicleDisplay.model, vehicleDisplay.trim]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
 
     const breadcrumbs: BreadcrumbItem[] = [
         {

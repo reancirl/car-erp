@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             
             // Foreign keys
-            $table->foreignId('vehicle_master_id')->constrained()->onDelete('restrict');
             $table->foreignId('branch_id')->constrained()->onDelete('restrict');
             
             // Unique identifiers
@@ -60,7 +59,6 @@ return new class extends Migration
             $table->index('status');
             $table->index('vin');
             $table->index('stock_number');
-            $table->index('vehicle_master_id');
         });
     }
 

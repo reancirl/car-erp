@@ -67,7 +67,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function TimeTracking({ sessions, stats, settings, filters }: TimeTrackingProps) {
+export default function TimeTracking({ sessions, stats, settings }: TimeTrackingProps) {
     const { data, setData, post, processing, errors } = useForm({
         idle_warning_minutes: settings.idle_warning_minutes,
         auto_logout_minutes: settings.auto_logout_minutes,

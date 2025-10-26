@@ -34,7 +34,7 @@ class VehicleUnitController extends Controller
     {
         $user = $request->user();
 
-        $query = VehicleUnit::with(['master', 'branch', 'assignedUser', 'vehicleModel'])
+        $query = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel'])
             ->when($request->include_deleted, function ($q) {
                 $q->withTrashed();
             })
@@ -112,7 +112,7 @@ class VehicleUnitController extends Controller
     {
         $user = $request->user();
 
-        $unit = VehicleUnit::with(['master', 'branch', 'assignedUser', 'vehicleModel'])->findOrFail($id);
+        $unit = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel'])->findOrFail($id);
 
         // Verify user has access to this unit's branch
         if (!$user->hasRole(['admin', 'auditor']) && $unit->branch_id !== $user->branch_id) {
@@ -146,7 +146,7 @@ class VehicleUnitController extends Controller
     {
         $user = $request->user();
 
-        $query = VehicleUnit::with(['master', 'branch', 'assignedUser', 'vehicleModel'])
+        $query = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel'])
             ->when($request->include_deleted, function ($q) {
                 $q->withTrashed();
             })
@@ -245,7 +245,7 @@ class VehicleUnitController extends Controller
         if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
             return response()->json([
                 'message' => 'Vehicle unit created successfully.',
-                'data' => $unit->load(['master', 'branch']),
+                'data' => $unit->load(['branch', 'vehicleModel']),
             ], 201);
         }
 
@@ -259,7 +259,7 @@ class VehicleUnitController extends Controller
      */
     public function showPage(Request $request, $id): Response
     {
-        $unit = VehicleUnit::with(['master', 'branch', 'assignedUser', 'vehicleModel'])
+        $unit = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel'])
             ->findOrFail($id);
 
         // Verify user has access to this unit's branch
@@ -306,7 +306,7 @@ class VehicleUnitController extends Controller
         }
 
         return response()->json([
-            'data' => $unit->load(['master', 'branch', 'movements.fromBranch', 'movements.toBranch', 'movements.user']),
+            'data' => $unit->load(['branch', 'vehicleModel', 'movements.fromBranch', 'movements.toBranch', 'movements.user']),
         ]);
     }
 
@@ -457,7 +457,7 @@ class VehicleUnitController extends Controller
             return response()->json([
                 'message' => 'Vehicle unit transferred successfully.',
                 'data' => [
-                    'unit' => $unit->fresh(['master', 'branch']),
+                    'unit' => $unit->fresh(['branch', 'vehicleModel']),
                     'movement' => $movement->load(['fromBranch', 'toBranch', 'user']),
                 ],
             ]);
@@ -505,7 +505,7 @@ class VehicleUnitController extends Controller
 
         return response()->json([
             'message' => 'Vehicle unit status updated successfully.',
-            'data' => $unit->fresh(['master', 'branch']),
+            'data' => $unit->fresh(['branch', 'vehicleModel']),
         ]);
     }
 

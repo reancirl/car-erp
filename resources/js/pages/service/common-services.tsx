@@ -12,7 +12,6 @@ import {
     Wrench,
     Search,
     Filter,
-    Download,
     Plus,
     Eye,
     Edit,
@@ -197,10 +196,6 @@ export default function CommonServices({
                         <h1 className="text-2xl font-bold">Common Services</h1>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export List
-                        </Button>
                         {can.create && (
                             <Link href="/service/common-services/create">
                                 <Button size="sm">

@@ -19,7 +19,6 @@ class VehicleUnit extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'vehicle_master_id',
         'vehicle_model_id',
         'branch_id',
         'assigned_user_id',
@@ -54,14 +53,6 @@ class VehicleUnit extends Model
         'images' => 'array',
         'odometer' => 'integer',
     ];
-
-    /**
-     * Get the vehicle master for this unit.
-     */
-    public function master(): BelongsTo
-    {
-        return $this->belongsTo(VehicleMaster::class, 'vehicle_master_id');
-    }
 
     /**
      * Get the vehicle model for this unit.
@@ -165,11 +156,22 @@ class VehicleUnit extends Model
     }
 
     /**
-     * Get the full vehicle name (from master).
+     * Get the full vehicle name (from linked vehicle model data).
      */
     public function getFullNameAttribute(): string
     {
-        return $this->master ? $this->master->full_name : 'Unknown Vehicle';
+        if ($this->vehicleModel) {
+            $parts = array_filter([
+                $this->vehicleModel->year,
+                $this->vehicleModel->make,
+                $this->vehicleModel->model,
+                $this->vehicleModel->trim,
+            ]);
+
+            return trim(implode(' ', $parts));
+        }
+
+        return $this->stock_number ?? 'Unknown Vehicle';
     }
 
     /**

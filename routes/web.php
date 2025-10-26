@@ -145,10 +145,63 @@ Route::middleware(['auth', 'verified'])->prefix('compliance')->name('compliance.
 
 // Service & Parts Management Routes
 Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->group(function () {
-    Route::get('/pms-work-orders', function () {
-        return Inertia::render('service/pms-work-orders');
-    })->name('pms-work-orders')->middleware('permission:pms.view');
-    
+    // PMS Work Orders - Full CRUD with photo upload and fraud prevention
+    // IMPORTANT: Specific routes (create, edit) must come BEFORE dynamic routes ({id})
+
+    // Index (list all)
+    Route::get('/pms-work-orders', [\App\Http\Controllers\WorkOrderController::class, 'index'])
+        ->name('pms-work-orders.index')
+        ->middleware('permission:pms-work-orders.view');
+
+    // Create (show form)
+    Route::get('/pms-work-orders/create', [\App\Http\Controllers\WorkOrderController::class, 'create'])
+        ->name('pms-work-orders.create')
+        ->middleware('permission:pms-work-orders.create');
+
+    // Store (save new)
+    Route::post('/pms-work-orders', [\App\Http\Controllers\WorkOrderController::class, 'store'])
+        ->name('pms-work-orders.store')
+        ->middleware('permission:pms-work-orders.create');
+
+    // Show (view single) - comes after /create
+    Route::get('/pms-work-orders/{pms_work_order}', [\App\Http\Controllers\WorkOrderController::class, 'show'])
+        ->name('pms-work-orders.show')
+        ->middleware('permission:pms-work-orders.view');
+
+    // Edit (show form)
+    Route::get('/pms-work-orders/{pms_work_order}/edit', [\App\Http\Controllers\WorkOrderController::class, 'edit'])
+        ->name('pms-work-orders.edit')
+        ->middleware('permission:pms-work-orders.edit');
+
+    // Update (save changes)
+    Route::match(['put', 'patch'], '/pms-work-orders/{pms_work_order}', [\App\Http\Controllers\WorkOrderController::class, 'update'])
+        ->name('pms-work-orders.update')
+        ->middleware('permission:pms-work-orders.edit');
+
+    // Delete (soft delete)
+    Route::delete('/pms-work-orders/{pms_work_order}', [\App\Http\Controllers\WorkOrderController::class, 'destroy'])
+        ->name('pms-work-orders.destroy')
+        ->middleware('permission:pms-work-orders.delete');
+
+    // Restore (from soft delete)
+    Route::post('/pms-work-orders/{id}/restore', [\App\Http\Controllers\WorkOrderController::class, 'restore'])
+        ->name('pms-work-orders.restore')
+        ->middleware('permission:pms-work-orders.create');
+
+    // Photo upload
+    Route::post('/pms-work-orders/{pms_work_order}/photos', [\App\Http\Controllers\WorkOrderController::class, 'uploadPhotos'])
+        ->name('pms-work-orders.upload-photos')
+        ->middleware('permission:pms-work-orders.edit');
+
+    // Photo delete
+    Route::delete('/pms-work-orders/{pms_work_order}/photos/{photo}', [\App\Http\Controllers\WorkOrderController::class, 'deletePhoto'])
+        ->name('pms-work-orders.delete-photo')
+        ->middleware('permission:pms-work-orders.edit');
+
+    // Odometer validation API endpoint (available to all authenticated users)
+    Route::post('/validate-odometer', [\App\Http\Controllers\WorkOrderController::class, 'validateOdometer'])
+        ->name('validate-odometer');
+
     Route::get('/warranty-claims', function () {
         return Inertia::render('service/warranty-claims');
     })->name('warranty-claims');
@@ -390,25 +443,6 @@ Route::middleware(['auth', 'verified'])->prefix('inventory')->group(function () 
     Route::get('/vehicles/{id}/edit', [\App\Http\Controllers\VehicleUnitController::class, 'edit'])->name('inventory.vehicles.edit')->middleware('permission:inventory.edit');
 
     Route::get('/vehicles/{id}', [\App\Http\Controllers\VehicleUnitController::class, 'showPage'])->name('inventory.vehicles.show')->middleware('permission:inventory.view');
-    
-    // Vehicle Masters API Routes
-    Route::middleware(['permission:inventory.view'])->group(function () {
-        Route::get('/masters', [\App\Http\Controllers\VehicleMasterController::class, 'index'])->name('inventory.masters.index');
-        Route::get('/masters/{master}', [\App\Http\Controllers\VehicleMasterController::class, 'show'])->name('inventory.masters.show');
-    });
-    
-    Route::middleware(['permission:inventory.create'])->group(function () {
-        Route::post('/masters', [\App\Http\Controllers\VehicleMasterController::class, 'store'])->name('inventory.masters.store');
-        Route::post('/masters/{id}/restore', [\App\Http\Controllers\VehicleMasterController::class, 'restore'])->name('inventory.masters.restore');
-    });
-    
-    Route::middleware(['permission:inventory.edit'])->group(function () {
-        Route::match(['put', 'patch'], '/masters/{master}', [\App\Http\Controllers\VehicleMasterController::class, 'update'])->name('inventory.masters.update');
-    });
-    
-    Route::middleware(['permission:inventory.delete'])->group(function () {
-        Route::delete('/masters/{master}', [\App\Http\Controllers\VehicleMasterController::class, 'destroy'])->name('inventory.masters.destroy');
-    });
     
     // Vehicle Units API Routes
     Route::middleware(['permission:inventory.view'])->group(function () {

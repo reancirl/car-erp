@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Settings, Search, Filter, Download, Plus, Eye, Edit, Clock, CheckCircle, AlertCircle, Trash2, RotateCcw } from 'lucide-react';
+import { Settings, Search, Filter, Plus, Eye, Edit, Clock, CheckCircle, AlertCircle, Trash2, RotateCcw } from 'lucide-react';
 import { type BreadcrumbItem, type ServiceType, type PaginatedResponse, type Branch } from '@/types';
 import { useState, FormEvent } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -192,10 +192,6 @@ export default function ServiceTypes({ serviceTypes, stats, categoryStats, filte
                         <h1 className="text-2xl font-bold">Service Types</h1>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export List
-                        </Button>
                         {can.create && (
                             <Link href="/service/service-types/create">
                                 <Button size="sm">

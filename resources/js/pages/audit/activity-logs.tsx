@@ -119,6 +119,11 @@ export default function ActivityLogs({ logs, stats, filters = {}, branches }: Pr
             case 'Common Services':
                 restoreRoute = route('common-services.restore', log.subject_id);
                 break;
+            case 'PMS Work Order':
+            case 'PMS Work Orders':
+            case 'PMS':
+                restoreRoute = route('service.pms-work-orders.restore', log.subject_id);
+                break;
             case 'Compliance Checklists':
                 restoreRoute = route('compliance.checklists.restore', log.subject_id);
                 break;

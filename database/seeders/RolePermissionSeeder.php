@@ -18,13 +18,10 @@ class RolePermissionSeeder extends Seeder
 
         // Create permissions for PMS (Preventive Maintenance Service)
         $pmsPermissions = [
-            'pms.view',
-            'pms.create',
-            'pms.edit',
-            'pms.delete',
-            'pms.assign_technician',
-            'pms.complete',
-            'pms.override_schedule',
+            'pms-work-orders.view',
+            'pms-work-orders.create',
+            'pms-work-orders.edit',
+            'pms-work-orders.delete',
         ];
 
         // Create permissions for Inventory Management
@@ -219,9 +216,8 @@ class RolePermissionSeeder extends Seeder
         $technicianRole = Role::create(['name' => 'technician']);
         $technicianRole->givePermissionTo([
             // PMS permissions (limited)
-            'pms.view',
-            'pms.edit',
-            'pms.complete',
+            'pms-work-orders.view',
+            'pms-work-orders.edit',
             // Service Types view only
             'service-types.view',
             // Common Services view only
@@ -243,7 +239,7 @@ class RolePermissionSeeder extends Seeder
             // Audit permissions
             ...$auditPermissions,
             // View-only permissions for most modules
-            'pms.view',
+            'pms-work-orders.view',
             'inventory.view',
             'inventory.audit',
             'warranty.view',

@@ -46,7 +46,7 @@ class UpdateVehicleUnitRequest extends FormRequest
         $unitId = $this->route('unit');
 
         return [
-            'vehicle_master_id' => 'sometimes|required|exists:vehicle_masters,id',
+            'vehicle_model_id' => 'sometimes|required|exists:vehicle_models,id',
             'vin' => ['sometimes', 'required', 'string', 'max:17', Rule::unique('vehicle_units', 'vin')->ignore($unitId)],
             'stock_number' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('vehicle_units', 'stock_number')->ignore($unitId)],
             'status' => ['sometimes', 'required', Rule::in(['in_stock', 'reserved', 'sold', 'in_transit', 'transferred', 'disposed'])],
@@ -99,8 +99,8 @@ class UpdateVehicleUnitRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'vehicle_master_id.required' => 'Vehicle master is required.',
-            'vehicle_master_id.exists' => 'Selected vehicle master does not exist.',
+            'vehicle_model_id.required' => 'Vehicle model is required.',
+            'vehicle_model_id.exists' => 'Selected vehicle model does not exist.',
             'vin.required' => 'VIN (Vehicle Identification Number) is required.',
             'vin.unique' => 'This VIN is already registered in the system.',
             'vin.max' => 'VIN cannot exceed 17 characters.',

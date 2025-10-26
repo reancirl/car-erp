@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('vehicle_units', function (Blueprint $table) {
-            // Add vehicle_model_id foreign key after vehicle_master_id
-            $table->foreignId('vehicle_model_id')->nullable()->after('vehicle_master_id')->constrained('vehicle_models')->onDelete('restrict')->comment('Reference to vehicle model (WULING model catalog)');
+            // Add vehicle_model_id foreign key after branch_id
+            $table->foreignId('vehicle_model_id')->nullable()->after('branch_id')->constrained('vehicle_models')->onDelete('restrict')->comment('Reference to vehicle model catalog');
             $table->index('vehicle_model_id');
         });
     }

@@ -51,7 +51,6 @@ class StoreVehicleUnitRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'vehicle_master_id' => 'nullable|exists:vehicle_masters,id',
             'vehicle_model_id' => 'required|exists:vehicle_models,id',
             'assigned_user_id' => 'nullable|exists:users,id',
             'vin' => 'required|string|max:17|unique:vehicle_units,vin',
@@ -112,8 +111,6 @@ class StoreVehicleUnitRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'vehicle_master_id.required' => 'Vehicle master is required.',
-            'vehicle_master_id.exists' => 'Selected vehicle master does not exist.',
             'vin.required' => 'VIN (Vehicle Identification Number) is required.',
             'vin.unique' => 'This VIN is already registered in the system.',
             'vin.max' => 'VIN cannot exceed 17 characters.',

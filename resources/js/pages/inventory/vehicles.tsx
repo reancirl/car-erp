@@ -23,7 +23,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface VehicleUnit {
     id: number;
-    vehicle_master_id: number;
     vehicle_model_id: number | null;
     branch_id: number;
     assigned_user_id: number | null;
@@ -41,16 +40,6 @@ interface VehicleUnit {
     notes: string | null;
     created_at: string;
     deleted_at: string | null;
-    master: {
-        id: number;
-        make: string;
-        model: string;
-        year: number;
-        trim: string | null;
-        body_type: string | null;
-        transmission: string | null;
-        fuel_type: string | null;
-    };
     vehicle_model: {
         id: number;
         make: string;
@@ -398,11 +387,9 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                 <div>
                                                     <Badge variant="outline" className="mb-1">{unit.stock_number}</Badge>
                                                     <div className="font-medium">
-                                                        {unit.vehicle_model ? (
-                                                            `${unit.vehicle_model.year} ${unit.vehicle_model.make} ${unit.vehicle_model.model}`
-                                                        ) : (
-                                                            `${unit.master.year} ${unit.master.make} ${unit.master.model}`
-                                                        )}
+                                                        {unit.vehicle_model
+                                                            ? `${unit.vehicle_model.year} ${unit.vehicle_model.make} ${unit.vehicle_model.model}`
+                                                            : unit.stock_number}
                                                     </div>
                                                     <div className="text-xs text-muted-foreground font-mono">{unit.vin}</div>
                                                 </div>
@@ -411,15 +398,15 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                             <TableCell>
                                                 <div className="space-y-1">
                                                     <div className="text-sm">
-                                                        {(unit.vehicle_model?.body_type || unit.master.body_type)}
+                                                        {unit.vehicle_model?.body_type || '—'}
                                                     </div>
-                                                    {(unit.vehicle_model?.transmission || unit.master.transmission) && (
-                                                        <div className="text-sm">{unit.vehicle_model?.transmission || unit.master.transmission}</div>
+                                                    {unit.vehicle_model?.transmission && (
+                                                        <div className="text-sm">{unit.vehicle_model.transmission}</div>
                                                     )}
-                                                    {(unit.vehicle_model?.fuel_type || unit.master.fuel_type) && (
+                                                    {unit.vehicle_model?.fuel_type && (
                                                         <div className="flex items-center space-x-1">
                                                             <Fuel className="h-3 w-3" />
-                                                            <span className="text-sm">{unit.vehicle_model?.fuel_type || unit.master.fuel_type}</span>
+                                                            <span className="text-sm">{unit.vehicle_model.fuel_type}</span>
                                                         </div>
                                                     )}
                                                     {unit.color_exterior && (

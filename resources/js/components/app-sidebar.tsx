@@ -175,7 +175,7 @@ const navPermissions: Record<string, string> = {
     '/admin/branch-management': 'users.view', // Branch management requires admin access
     '/roles': 'users.view',
     '/settings/mfa': 'users.view',
-    '/service/pms-work-orders': 'pms.view',
+    '/service/pms-work-orders': 'pms-work-orders.view',
     '/service/service-types': 'service-types.view',
     '/service/common-services': 'common-services.view',
     '/service/warranty-claims': 'warranty.view',

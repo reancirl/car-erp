@@ -20,6 +20,10 @@ return new class extends Migration
             // Service relationship
             $table->foreignId('service_type_id')->nullable()->constrained('service_types')->nullOnDelete();
 
+            // Vehicle and customer relationships (foreign keys for dropdowns)
+            $table->foreignId('vehicle_unit_id')->nullable()->constrained('vehicle_units')->nullOnDelete();
+            $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
+
             // Identifiers
             $table->string('work_order_number')->unique();
             $table->string('reference_number')->nullable();
@@ -71,7 +75,6 @@ return new class extends Migration
             $table->boolean('is_warranty_claim')->default(false);
             $table->boolean('photos_uploaded')->default(false);
             $table->boolean('checklist_completed')->default(false);
-            $table->json('selected_services')->nullable();
             $table->text('customer_concerns')->nullable();
             $table->text('diagnostic_findings')->nullable();
             $table->text('notes')->nullable();

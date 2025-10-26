@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,24 +14,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed roles and permissions first
-        $this->call(RolePermissionSeeder::class);
-        
-        // Seed branches
-        $this->call(BranchSeeder::class);
-        
-        // Seed attribute definitions for inventory system
-        $this->call(AttributeDefinitionsSeeder::class);
-
-        $this->call(VehicleModelPermissionsSeeder::class);
-
-        // Create only admin user
-        $admin = User::factory()->create([
-            'name' => 'Admin User',
-            'email' => 'admin@mikaroerp.com',
-            'password' => 'mikaroerp2^2!5',
-            'branch_id' => 1, // Assign to HQ branch
+        // Seed roles, permissions, branches, and supporting data
+        $this->call([
+            RolePermissionSeeder::class,
+            BranchSeeder::class,
+            AttributeDefinitionsSeeder::class,
+            VehicleModelPermissionsSeeder::class,
         ]);
+
+        // Ensure there is a default admin user we can reference in seed data
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@mikaroerp.com'],
+            [
+                'name' => 'Admin User',
+                'password' => Hash::make('mikaroerp2^2!5'),
+                'branch_id' => 1,
+            ]
+        );
         $admin->assignRole('admin');
     }
 }
