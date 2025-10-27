@@ -32,9 +32,11 @@ import {
     Shield,
     AlertCircle,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { DashboardFilters } from '@/components/dashboard/dashboard-filters';
-import { DashboardCharts } from '@/components/dashboard/charts';
+
+// Lazy load charts to reduce initial bundle size
+const DashboardCharts = lazy(() => import('@/components/dashboard/charts').then(module => ({ default: module.DashboardCharts })));
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -507,7 +509,19 @@ export default function Dashboard({
                 </div>
 
                 {/* Charts Section - NEW */}
-                <DashboardCharts charts={charts} />
+                <Suspense fallback={
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        <Card className="lg:col-span-2">
+                            <CardContent className="p-6">
+                                <div className="flex items-center justify-center h-64">
+                                    <div className="text-muted-foreground">Loading charts...</div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                }>
+                    <DashboardCharts charts={charts} />
+                </Suspense>
 
                 {/* Main Content + Compliance Sidebar */}
                 <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">

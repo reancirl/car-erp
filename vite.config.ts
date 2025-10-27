@@ -22,4 +22,30 @@ export default defineConfig({
             'ziggy-js': resolve(__dirname, 'vendor/tightenco/ziggy'),
         },
     },
+    build: {
+        chunkSizeWarningLimit: 1000,
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    // Vendor chunks
+                    'react-vendor': ['react', 'react-dom'],
+                    'recharts-vendor': ['recharts'],
+                    'radix-vendor': [
+                        '@radix-ui/react-avatar',
+                        '@radix-ui/react-checkbox',
+                        '@radix-ui/react-dialog',
+                        '@radix-ui/react-dropdown-menu',
+                        '@radix-ui/react-label',
+                        '@radix-ui/react-popover',
+                        '@radix-ui/react-progress',
+                        '@radix-ui/react-select',
+                        '@radix-ui/react-switch',
+                        '@radix-ui/react-tooltip',
+                    ],
+                    'date-vendor': ['date-fns', 'react-day-picker'],
+                    'icons-vendor': ['lucide-react'],
+                },
+            },
+        },
+    },
 });
