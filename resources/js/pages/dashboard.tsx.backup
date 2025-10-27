@@ -34,7 +34,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { DashboardFilters } from '@/components/dashboard/dashboard-filters';
-import { DashboardCharts } from '@/components/dashboard/charts';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -505,9 +504,6 @@ export default function Dashboard({
                         </CardContent>
                     </Card>
                 </div>
-
-                {/* Charts Section - NEW */}
-                <DashboardCharts charts={charts} />
 
                 {/* Main Content + Compliance Sidebar */}
                 <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">

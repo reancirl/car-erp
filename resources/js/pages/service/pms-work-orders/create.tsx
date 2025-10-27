@@ -342,7 +342,7 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
                                             </Select>
                                             {errors.vehicle_unit_id && <p className="text-sm text-red-600 mt-1">{errors.vehicle_unit_id}</p>}
                                         </div>
-                                        <Link href="/inventory/vehicle-units/create">
+                                        <Link href="/inventory/vehicles/create">
                                             <Button type="button" variant="outline">
                                                 Create Vehicle
                                             </Button>
@@ -449,7 +449,7 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
                                             </Select>
                                             {errors.customer_id && <p className="text-sm text-red-600 mt-1">{errors.customer_id}</p>}
                                         </div>
-                                        <Link href="/crm/customers/create">
+                                        <Link href="/sales/customer-experience/create">
                                             <Button type="button" variant="outline">
                                                 Create Customer
                                             </Button>

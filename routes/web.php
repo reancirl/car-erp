@@ -202,9 +202,58 @@ Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->gr
     Route::post('/validate-odometer', [\App\Http\Controllers\WorkOrderController::class, 'validateOdometer'])
         ->name('validate-odometer');
 
-    Route::get('/warranty-claims', function () {
-        return Inertia::render('service/warranty-claims');
-    })->name('warranty-claims');
+    // Warranty Claims - Full CRUD with photo upload
+    // IMPORTANT: Specific routes (create, edit) must come BEFORE dynamic routes ({id})
+
+    // Index (list all)
+    Route::get('/warranty-claims', [\App\Http\Controllers\WarrantyClaimController::class, 'index'])
+        ->name('warranty-claims.index')
+        ->middleware('permission:service.view');
+
+    // Create (show form)
+    Route::get('/warranty-claims/create', [\App\Http\Controllers\WarrantyClaimController::class, 'create'])
+        ->name('warranty-claims.create')
+        ->middleware('permission:service.create');
+
+    // Store (save new)
+    Route::post('/warranty-claims', [\App\Http\Controllers\WarrantyClaimController::class, 'store'])
+        ->name('warranty-claims.store')
+        ->middleware('permission:service.create');
+
+    // Show (view single) - comes after /create
+    Route::get('/warranty-claims/{warranty_claim}', [\App\Http\Controllers\WarrantyClaimController::class, 'show'])
+        ->name('warranty-claims.show')
+        ->middleware('permission:service.view');
+
+    // Edit (show form)
+    Route::get('/warranty-claims/{warranty_claim}/edit', [\App\Http\Controllers\WarrantyClaimController::class, 'edit'])
+        ->name('warranty-claims.edit')
+        ->middleware('permission:service.edit');
+
+    // Update (save changes)
+    Route::match(['put', 'patch'], '/warranty-claims/{warranty_claim}', [\App\Http\Controllers\WarrantyClaimController::class, 'update'])
+        ->name('warranty-claims.update')
+        ->middleware('permission:service.edit');
+
+    // Delete (soft delete)
+    Route::delete('/warranty-claims/{warranty_claim}', [\App\Http\Controllers\WarrantyClaimController::class, 'destroy'])
+        ->name('warranty-claims.destroy')
+        ->middleware('permission:service.delete');
+
+    // Restore (from soft delete)
+    Route::post('/warranty-claims/{id}/restore', [\App\Http\Controllers\WarrantyClaimController::class, 'restore'])
+        ->name('warranty-claims.restore')
+        ->middleware('permission:service.create');
+
+    // Photo upload
+    Route::post('/warranty-claims/{warranty_claim}/photos', [\App\Http\Controllers\WarrantyClaimController::class, 'uploadPhotos'])
+        ->name('warranty-claims.upload-photos')
+        ->middleware('permission:service.edit');
+
+    // Photo delete
+    Route::delete('/warranty-claims/{warranty_claim}/photos/{photo}', [\App\Http\Controllers\WarrantyClaimController::class, 'deletePhoto'])
+        ->name('warranty-claims.delete-photo')
+        ->middleware('permission:service.edit');
 });
 
 // Sales & Customer Lifecycle Routes
