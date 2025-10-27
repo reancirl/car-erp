@@ -444,7 +444,15 @@ Route::middleware(['auth', 'verified'])->prefix('inventory')->group(function () 
     Route::get('/parts-inventory/create', [\App\Http\Controllers\PartInventoryController::class, 'create'])
         ->name('parts-inventory.create')
         ->middleware('permission:inventory.create');
-    
+
+    Route::get('/parts-inventory/scanner', [\App\Http\Controllers\PartInventoryController::class, 'scanner'])
+        ->name('parts-inventory.scanner')
+        ->middleware('permission:inventory.view');
+
+    Route::post('/parts-inventory/scan', [\App\Http\Controllers\PartInventoryController::class, 'scan'])
+        ->name('parts-inventory.scan')
+        ->middleware('permission:inventory.view');
+
     Route::post('/parts-inventory', [\App\Http\Controllers\PartInventoryController::class, 'store'])
         ->name('parts-inventory.store')
         ->middleware('permission:inventory.create');
@@ -468,7 +476,11 @@ Route::middleware(['auth', 'verified'])->prefix('inventory')->group(function () 
     Route::post('/parts-inventory/{id}/restore', [\App\Http\Controllers\PartInventoryController::class, 'restore'])
         ->name('parts-inventory.restore')
         ->middleware('permission:inventory.create');
-    
+
+    Route::post('/parts-inventory/{partsInventory}/quick-update', [\App\Http\Controllers\PartInventoryController::class, 'quickUpdate'])
+        ->name('parts-inventory.quick-update')
+        ->middleware('permission:inventory.edit');
+
     // Vehicle Models (Master Data) - Inertia Routes
     Route::get('/models', [\App\Http\Controllers\VehicleModelController::class, 'indexPage'])->name('inventory.models.index')->middleware('permission:vehicle_model.view');
     Route::get('/models/create', [\App\Http\Controllers\VehicleModelController::class, 'create'])->name('inventory.models.create')->middleware('permission:vehicle_model.create');

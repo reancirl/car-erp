@@ -280,6 +280,128 @@ class PartInventoryController extends Controller
     }
 
     /**
+     * Show the scanner interface
+     */
+    public function scanner(Request $request): Response
+    {
+        return Inertia::render('inventory/parts-inventory-scanner');
+    }
+
+    /**
+     * Scan and lookup part by barcode or QR code
+     */
+    public function scan(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string',
+        ]);
+
+        $user = $request->user();
+        $code = $request->code;
+
+        // Search for part by barcode, sku, or part_number
+        $query = PartInventory::with(['branch'])
+            ->when(!$user->hasRole('admin') && !$user->hasRole('auditor'),
+                fn($q) => $q->forUserBranch($user))
+            ->where(function ($q) use ($code) {
+                $q->where('barcode', $code)
+                  ->orWhere('sku', $code)
+                  ->orWhere('part_number', $code);
+            });
+
+        $part = $query->first();
+
+        if (!$part) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Part not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'part' => $part,
+        ]);
+    }
+
+    /**
+     * Quick update for scanner operations (stock adjustment or location update)
+     */
+    public function quickUpdate(Request $request, PartInventory $partsInventory)
+    {
+        // Authorization
+        if (!$request->user()->hasRole('admin') && !$request->user()->hasRole('auditor')) {
+            if ($partsInventory->branch_id !== $request->user()->branch_id) {
+                abort(403, 'You can only update parts from your branch.');
+            }
+        }
+
+        $validated = $request->validate([
+            'action' => 'required|in:adjust_stock,update_location',
+            'quantity_change' => 'required_if:action,adjust_stock|integer',
+            'warehouse_location' => 'nullable|string|max:100',
+            'aisle' => 'nullable|string|max:50',
+            'rack' => 'nullable|string|max:50',
+            'bin' => 'nullable|string|max:50',
+        ]);
+
+        $changes = [];
+        $description = '';
+
+        if ($validated['action'] === 'adjust_stock') {
+            $oldQuantity = $partsInventory->quantity_on_hand;
+            $newQuantity = $oldQuantity + $validated['quantity_change'];
+
+            if ($newQuantity < 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Insufficient stock. Cannot reduce below 0.',
+                ], 422);
+            }
+
+            $partsInventory->quantity_on_hand = $newQuantity;
+            $partsInventory->save();
+
+            $changes['quantity_on_hand'] = ['old' => $oldQuantity, 'new' => $newQuantity];
+            $description = "Adjusted stock for {$partsInventory->part_name}: {$validated['quantity_change']} (Scanner)";
+        } elseif ($validated['action'] === 'update_location') {
+            if (isset($validated['warehouse_location'])) {
+                $changes['warehouse_location'] = ['old' => $partsInventory->warehouse_location, 'new' => $validated['warehouse_location']];
+                $partsInventory->warehouse_location = $validated['warehouse_location'];
+            }
+            if (isset($validated['aisle'])) {
+                $changes['aisle'] = ['old' => $partsInventory->aisle, 'new' => $validated['aisle']];
+                $partsInventory->aisle = $validated['aisle'];
+            }
+            if (isset($validated['rack'])) {
+                $changes['rack'] = ['old' => $partsInventory->rack, 'new' => $validated['rack']];
+                $partsInventory->rack = $validated['rack'];
+            }
+            if (isset($validated['bin'])) {
+                $changes['bin'] = ['old' => $partsInventory->bin, 'new' => $validated['bin']];
+                $partsInventory->bin = $validated['bin'];
+            }
+
+            $partsInventory->save();
+            $description = "Updated location for {$partsInventory->part_name} (Scanner)";
+        }
+
+        // Log activity
+        $this->logUpdated(
+            module: 'Parts Inventory',
+            subject: $partsInventory,
+            description: $description,
+            properties: ['changes' => $changes]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Part updated successfully',
+            'part' => $partsInventory->fresh(['branch']),
+        ]);
+    }
+
+    /**
      * Helper methods for activity logging
      */
     protected function logCreated(string $module, $subject, string $description, array $properties = []): void

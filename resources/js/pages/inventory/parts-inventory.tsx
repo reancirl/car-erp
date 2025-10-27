@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Package, Search, Plus, Eye, Edit, Trash2, RotateCcw, AlertTriangle, CheckCircle, XCircle, TrendingDown, DollarSign } from 'lucide-react';
+import { Package, Search, Plus, Eye, Edit, Trash2, RotateCcw, AlertTriangle, CheckCircle, XCircle, TrendingDown, DollarSign, Scan } from 'lucide-react';
 import { type BreadcrumbItem, type PartInventory, type Branch, type PaginatedResponse } from '@/types';
 import { PART_CATEGORIES } from '@/constants/parts';
 
@@ -170,12 +170,20 @@ export default function PartsInventory({ parts, stats, filters, branches }: Prop
                         <Package className="h-6 w-6" />
                         <h1 className="text-2xl font-bold">Parts Inventory</h1>
                     </div>
-                    <Link href={route('parts-inventory.create')}>
-                        <Button>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Part
-                        </Button>
-                    </Link>
+                    <div className="flex space-x-2">
+                        <a href={route('parts-inventory.scanner')} target="_blank" rel="noopener noreferrer">
+                            <Button variant="outline">
+                                <Scan className="h-4 w-4 mr-2" />
+                                Scanner
+                            </Button>
+                        </a>
+                        <Link href={route('parts-inventory.create')}>
+                            <Button>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Part
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Stats Cards */}
