@@ -124,7 +124,6 @@ class WarrantyClaimController extends Controller
             'users' => User::when(!$user->hasRole('admin'), function ($q) use ($user) {
                     $q->where('branch_id', $user->branch_id);
                 })
-                ->where('status', 'active')
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']),
         ]);
@@ -168,34 +167,54 @@ class WarrantyClaimController extends Controller
             ]);
 
             // Create parts if provided
-            if (isset($data['parts']) && is_array($data['parts']) && count($data['parts']) > 0) {
-                foreach ($data['parts'] as $partData) {
-                    WarrantyClaimPart::create([
-                        'warranty_claim_id' => $claim->id,
-                        'part_inventory_id' => $partData['part_inventory_id'] ?? null,
-                        'part_number' => $partData['part_number'] ?? null,
-                        'part_name' => $partData['part_name'],
-                        'description' => $partData['description'] ?? null,
-                        'quantity' => $partData['quantity'],
-                        'unit_price' => $partData['unit_price'],
-                        'claim_status' => 'pending',
-                    ]);
+            if (!empty($data['parts'])) {
+                $partsCollection = collect($data['parts'])->filter(fn($part) => isset($part['part_inventory_id']));
+                if ($partsCollection->isNotEmpty()) {
+                    $inventoryParts = PartInventory::whereIn('id', $partsCollection->pluck('part_inventory_id'))->get()->keyBy('id');
+
+                    $partsCollection->each(function ($partData) use ($inventoryParts, $claim) {
+                        $inventory = $inventoryParts->get($partData['part_inventory_id']);
+                        if (!$inventory) {
+                            return;
+                        }
+
+                        WarrantyClaimPart::create([
+                            'warranty_claim_id' => $claim->id,
+                            'part_inventory_id' => $inventory->id,
+                            'part_number' => $inventory->part_number,
+                            'part_name' => $inventory->part_name,
+                            'description' => $partData['description'] ?? null,
+                            'quantity' => $partData['quantity'],
+                            'unit_price' => $partData['unit_price'],
+                            'claim_status' => 'pending',
+                        ]);
+                    });
                 }
             }
 
             // Create services if provided
-            if (isset($data['services']) && is_array($data['services']) && count($data['services']) > 0) {
-                foreach ($data['services'] as $serviceData) {
-                    WarrantyClaimService::create([
-                        'warranty_claim_id' => $claim->id,
-                        'service_type_id' => $serviceData['service_type_id'] ?? null,
-                        'service_code' => $serviceData['service_code'] ?? null,
-                        'service_name' => $serviceData['service_name'],
-                        'description' => $serviceData['description'] ?? null,
-                        'labor_hours' => $serviceData['labor_hours'],
-                        'labor_rate' => $serviceData['labor_rate'],
-                        'claim_status' => 'pending',
-                    ]);
+            if (!empty($data['services'])) {
+                $servicesCollection = collect($data['services'])->filter(fn($service) => isset($service['service_type_id']));
+                if ($servicesCollection->isNotEmpty()) {
+                    $serviceTypes = ServiceType::whereIn('id', $servicesCollection->pluck('service_type_id'))->get()->keyBy('id');
+
+                    $servicesCollection->each(function ($serviceData) use ($serviceTypes, $claim) {
+                        $serviceType = $serviceTypes->get($serviceData['service_type_id']);
+                        if (!$serviceType) {
+                            return;
+                        }
+
+                        WarrantyClaimService::create([
+                            'warranty_claim_id' => $claim->id,
+                            'service_type_id' => $serviceType->id,
+                            'service_code' => $serviceType->code,
+                            'service_name' => $serviceType->name,
+                            'description' => $serviceData['description'] ?? null,
+                            'labor_hours' => $serviceData['labor_hours'],
+                            'labor_rate' => $serviceData['labor_rate'],
+                            'claim_status' => 'pending',
+                        ]);
+                    });
                 }
             }
 
@@ -220,7 +239,7 @@ class WarrantyClaimController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('service.warranty-claims.index')
+                ->route('warranty-claims.index')
                 ->with('success', "Warranty claim {$claim->claim_id} created successfully!");
 
         } catch (\Exception $e) {
@@ -266,8 +285,8 @@ class WarrantyClaimController extends Controller
         return Inertia::render('service/warranty-claim-view', [
             'claim' => $warranty_claim,
             'can' => [
-                'edit' => $request->user()->can('service.edit') && $warranty_claim->canEdit(),
-                'delete' => $request->user()->can('service.delete') && $warranty_claim->canDelete(),
+                'edit' => $request->user()->can('warranty.edit') && $warranty_claim->canEdit(),
+                'delete' => $request->user()->can('warranty.delete') && $warranty_claim->canDelete(),
             ],
         ]);
     }
@@ -323,7 +342,6 @@ class WarrantyClaimController extends Controller
             'users' => User::when(!$user->hasRole('admin'), function ($q) use ($user) {
                     $q->where('branch_id', $user->branch_id);
                 })
-                ->where('status', 'active')
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']),
         ]);
@@ -390,12 +408,22 @@ class WarrantyClaimController extends Controller
 
                 // Create new parts
                 if (is_array($data['parts']) && count($data['parts']) > 0) {
-                    foreach ($data['parts'] as $partData) {
+                    $partsCollection = collect($data['parts'])->filter(fn($part) => isset($part['part_inventory_id']));
+                    $inventoryParts = $partsCollection->isNotEmpty()
+                        ? PartInventory::whereIn('id', $partsCollection->pluck('part_inventory_id'))->get()->keyBy('id')
+                        : collect();
+
+                    $partsCollection->each(function ($partData) use ($inventoryParts, $warranty_claim) {
+                        $inventory = $inventoryParts->get($partData['part_inventory_id']);
+                        if (!$inventory) {
+                            return;
+                        }
+
                         WarrantyClaimPart::create([
                             'warranty_claim_id' => $warranty_claim->id,
-                            'part_inventory_id' => $partData['part_inventory_id'] ?? null,
-                            'part_number' => $partData['part_number'] ?? null,
-                            'part_name' => $partData['part_name'],
+                            'part_inventory_id' => $inventory->id,
+                            'part_number' => $inventory->part_number,
+                            'part_name' => $inventory->part_name,
                             'description' => $partData['description'] ?? null,
                             'quantity' => $partData['quantity'],
                             'unit_price' => $partData['unit_price'],
@@ -404,7 +432,7 @@ class WarrantyClaimController extends Controller
                             'approved_amount' => $partData['approved_amount'] ?? null,
                             'rejection_reason' => $partData['rejection_reason'] ?? null,
                         ]);
-                    }
+                    });
                 }
             }
 
@@ -415,12 +443,22 @@ class WarrantyClaimController extends Controller
 
                 // Create new services
                 if (is_array($data['services']) && count($data['services']) > 0) {
-                    foreach ($data['services'] as $serviceData) {
+                    $servicesCollection = collect($data['services'])->filter(fn($service) => isset($service['service_type_id']));
+                    $serviceTypes = $servicesCollection->isNotEmpty()
+                        ? ServiceType::whereIn('id', $servicesCollection->pluck('service_type_id'))->get()->keyBy('id')
+                        : collect();
+
+                    $servicesCollection->each(function ($serviceData) use ($serviceTypes, $warranty_claim) {
+                        $serviceType = $serviceTypes->get($serviceData['service_type_id']);
+                        if (!$serviceType) {
+                            return;
+                        }
+
                         WarrantyClaimService::create([
                             'warranty_claim_id' => $warranty_claim->id,
-                            'service_type_id' => $serviceData['service_type_id'] ?? null,
-                            'service_code' => $serviceData['service_code'] ?? null,
-                            'service_name' => $serviceData['service_name'],
+                            'service_type_id' => $serviceType->id,
+                            'service_code' => $serviceType->code,
+                            'service_name' => $serviceType->name,
                             'description' => $serviceData['description'] ?? null,
                             'labor_hours' => $serviceData['labor_hours'],
                             'labor_rate' => $serviceData['labor_rate'],
@@ -429,7 +467,7 @@ class WarrantyClaimController extends Controller
                             'approved_amount' => $serviceData['approved_amount'] ?? null,
                             'rejection_reason' => $serviceData['rejection_reason'] ?? null,
                         ]);
-                    }
+                    });
                 }
             }
 
@@ -450,7 +488,7 @@ class WarrantyClaimController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('service.warranty-claims.index')
+                ->route('warranty-claims.index')
                 ->with('success', "Warranty claim {$warranty_claim->claim_id} updated successfully!");
 
         } catch (\Exception $e) {
@@ -500,7 +538,7 @@ class WarrantyClaimController extends Controller
         $warranty_claim->delete();
 
         return redirect()
-            ->route('service.warranty-claims.index')
+            ->route('warranty-claims.index')
             ->with('success', "Warranty claim {$claimId} deleted successfully!");
     }
 
@@ -535,7 +573,7 @@ class WarrantyClaimController extends Controller
             );
 
             return redirect()
-                ->route('service.warranty-claims.index')
+                ->route('warranty-claims.index')
                 ->with('success', "Warranty claim {$claimId} restored successfully!");
         } catch (\Exception $e) {
             return redirect()->back()
@@ -593,7 +631,7 @@ class WarrantyClaimController extends Controller
             );
 
             return redirect()
-                ->route('service.warranty-claims.show', $warranty_claim)
+                ->route('warranty-claims.show', $warranty_claim)
                 ->with('success', count($request->file('photos')) . ' photo(s) uploaded successfully!');
 
         } catch (\Exception $e) {

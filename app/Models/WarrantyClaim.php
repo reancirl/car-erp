@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Concerns\BranchScoped;
 
 class WarrantyClaim extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, BranchScoped;
 
     // 1. Fillable fields
     protected $fillable = [

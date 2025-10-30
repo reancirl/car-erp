@@ -1,36 +1,38 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-    ArrowLeft, 
-    FileText, 
-    Edit, 
-    Car, 
-    User, 
-    Calendar, 
-    Clock,
-    DollarSign,
-    Package,
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+    ArrowLeft,
+    Edit,
+    Trash2,
+    FileText,
+    User,
+    Car,
+    Calendar,
+    Shield,
     CheckCircle,
     AlertTriangle,
-    XCircle,
-    Phone,
-    Mail,
+    Clock,
+    Package,
+    Wrench,
     Camera,
-    Download,
-    Printer,
-    MessageSquare,
-    Upload,
-    Eye
+    DollarSign,
 } from 'lucide-react';
-import { type BreadcrumbItem } from '@/types';
-
-interface WarrantyClaimViewProps {
-    claimId: string;
-}
+import { type BreadcrumbItem, type PageProps } from '@/types';
+import { useState } from 'react';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -42,360 +44,651 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/service/warranty-claims',
     },
     {
-        title: 'View Warranty Claim',
-        href: '/service/warranty-claims/view',
+        title: 'View Claim',
+        href: '#',
     },
 ];
 
-// Mock warranty claim data
-const mockClaim = {
-    id: '1',
-    claim_number: 'WC-2024-001',
-    claim_date: '2024-01-15',
-    claim_type: 'parts',
-    priority: 'medium',
-    status: 'approved',
-    description: 'Defective brake pads causing noise and reduced braking performance. Customer reported grinding noise during braking. Inspection confirmed worn brake pads beyond normal wear pattern.',
-    customer: {
-        name: 'Juan Dela Cruz',
-        phone: '+63 912 345 6789',
-        email: 'juan.delacruz@email.com',
-        address: '123 Main Street, Makati City'
-    },
-    vehicle: {
-        make: 'Toyota',
-        model: 'Vios',
-        year: '2022',
-        plate: 'ABC 1234',
-        vin: 'JTDKB20U123456789',
-        mileage: 25000,
-        purchase_date: '2022-06-15'
-    },
-    parts_claimed: [
-        { name: 'Brake Pad Set', price: 2500, warranty: '24 months', quantity: 1 },
-        { name: 'Brake Fluid', price: 150, warranty: '12 months', quantity: 1 }
-    ],
-    labor_hours: 2.5,
-    labor_rate: 800,
-    total_parts_cost: 2650,
-    total_labor_cost: 2000,
-    total_claim_value: 4650,
-    submitted_by: 'Service Advisor - Maria Santos',
-    approved_by: 'Service Manager - Carlos Rodriguez',
-    approval_date: '2024-01-18',
-    expected_payment: '2024-01-25',
-    notes: 'Customer reported grinding noise during braking. Inspection confirmed worn brake pads beyond normal wear pattern. Parts covered under 24-month warranty.',
-    photos: [
-        { id: 1, name: 'brake_pads_before.jpg', uploaded: '2024-01-15' },
-        { id: 2, name: 'brake_pads_after.jpg', uploaded: '2024-01-15' },
-        { id: 3, name: 'invoice_receipt.pdf', uploaded: '2024-01-15' }
-    ],
-    status_history: [
-        { status: 'submitted', date: '2024-01-15', user: 'Maria Santos', notes: 'Initial claim submission' },
-        { status: 'under_review', date: '2024-01-16', user: 'Carlos Rodriguez', notes: 'Reviewing documentation and warranty coverage' },
-        { status: 'approved', date: '2024-01-18', user: 'Carlos Rodriguez', notes: 'Approved for warranty coverage. Parts and labor covered.' },
-    ]
-};
+interface Branch {
+    id: number;
+    name: string;
+}
 
-export default function WarrantyClaimView({ claimId }: WarrantyClaimViewProps) {
+interface Customer {
+    id: number;
+    customer_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+}
+
+interface VehicleModel {
+    id: number;
+    make: string;
+    model: string;
+    year: number;
+}
+
+interface VehicleUnit {
+    id: number;
+    vin: string;
+    stock_number: string;
+    odometer: number;
+    vehicle_model?: VehicleModel;
+}
+
+interface User {
+    id: number;
+    name: string;
+    email: string;
+}
+
+interface WarrantyClaimPart {
+    id: number;
+    part_number: string | null;
+    part_name: string;
+    description: string | null;
+    quantity: number;
+    unit_price: number;
+    subtotal: number;
+}
+
+interface WarrantyClaimService {
+    id: number;
+    service_code: string | null;
+    service_name: string;
+    description: string | null;
+    labor_hours: number;
+    labor_rate: number;
+    subtotal: number;
+}
+
+interface WarrantyClaimPhoto {
+    id: number;
+    file_path: string;
+    file_name: string;
+    file_type: string;
+    file_size: number;
+    caption: string | null;
+    uploaded_by: number;
+    uploaded_at: string;
+    uploaded_by_user?: User;
+}
+
+interface WarrantyClaim {
+    id: number;
+    claim_id: string;
+    branch_id: number;
+    customer_id: number | null;
+    vehicle_unit_id: number | null;
+    claim_type: string;
+    claim_date: string;
+    incident_date: string | null;
+    failure_description: string;
+    diagnosis: string | null;
+    repair_actions: string | null;
+    odometer_reading: number | null;
+    warranty_type: string | null;
+    warranty_provider: string | null;
+    warranty_number: string | null;
+    warranty_start_date: string | null;
+    warranty_end_date: string | null;
+    status: string;
+    assigned_to: number | null;
+    notes: string | null;
+    total_claimed_amount: number;
+    currency: string;
+    created_at: string;
+    updated_at: string;
+    branch?: Branch;
+    customer?: Customer;
+    vehicle_unit?: VehicleUnit;
+    assigned_to_user?: User;
+    parts?: WarrantyClaimPart[];
+    services?: WarrantyClaimService[];
+    photos?: WarrantyClaimPhoto[];
+}
+
+interface Props extends PageProps {
+    claim: WarrantyClaim;
+    can: {
+        edit: boolean;
+        delete: boolean;
+    };
+}
+
+export default function WarrantyClaimView({ claim, can, auth }: Props) {
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+    const handleDelete = () => {
+        router.delete(`/service/warranty-claims/${claim.id}`, {
+            onSuccess: () => {
+                router.visit('/service/warranty-claims');
+            },
+        });
+    };
+
     const getStatusBadge = (status: string) => {
-        const statusConfig = {
-            submitted: { color: 'bg-blue-100 text-blue-800', icon: Clock },
-            under_review: { color: 'bg-yellow-100 text-yellow-800', icon: Eye },
-            approved: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
-            rejected: { color: 'bg-red-100 text-red-800', icon: XCircle },
-            paid: { color: 'bg-purple-100 text-purple-800', icon: DollarSign },
-        };
-        
-        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.submitted;
-        const IconComponent = config.icon;
-        
-        return (
-            <Badge className={config.color}>
-                <IconComponent className="h-3 w-3 mr-1" />
-                {status.replace('_', ' ').toUpperCase()}
-            </Badge>
-        );
+        switch (status) {
+            case 'draft':
+                return (
+                    <Badge variant="outline" className="bg-gray-100 text-gray-800">
+                        Draft
+                    </Badge>
+                );
+            case 'submitted':
+                return (
+                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                        Submitted
+                    </Badge>
+                );
+            case 'under_review':
+                return (
+                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Under Review
+                    </Badge>
+                );
+            case 'approved':
+                return (
+                    <Badge variant="default" className="bg-green-100 text-green-800">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Approved
+                    </Badge>
+                );
+            case 'partially_approved':
+                return (
+                    <Badge variant="outline" className="bg-orange-100 text-orange-800">
+                        Partially Approved
+                    </Badge>
+                );
+            case 'rejected':
+                return (
+                    <Badge variant="destructive">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Rejected
+                    </Badge>
+                );
+            case 'paid':
+                return (
+                    <Badge variant="default" className="bg-purple-100 text-purple-800">
+                        Paid
+                    </Badge>
+                );
+            case 'closed':
+                return (
+                    <Badge variant="outline">
+                        Closed
+                    </Badge>
+                );
+            default:
+                return <Badge variant="secondary">{status}</Badge>;
+        }
     };
 
     const getClaimTypeBadge = (type: string) => {
-        const colors = {
-            parts: 'bg-blue-100 text-blue-800',
-            labor: 'bg-green-100 text-green-800',
-            goodwill: 'bg-yellow-100 text-yellow-800',
-            recall: 'bg-red-100 text-red-800',
-        };
-        return <Badge className={colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>{type.toUpperCase()}</Badge>;
+        switch (type) {
+            case 'parts':
+                return <Badge className="bg-blue-100 text-blue-800">Parts Only</Badge>;
+            case 'labor':
+                return <Badge className="bg-green-100 text-green-800">Labor Only</Badge>;
+            case 'both':
+                return <Badge className="bg-purple-100 text-purple-800">Parts & Labor</Badge>;
+            default:
+                return <Badge variant="secondary">{type}</Badge>;
+        }
     };
 
-    const getPriorityBadge = (priority: string) => {
-        const colors = {
-            low: 'bg-gray-100 text-gray-800',
-            medium: 'bg-blue-100 text-blue-800',
-            high: 'bg-orange-100 text-orange-800',
-            critical: 'bg-red-100 text-red-800',
-        };
-        return <Badge className={colors[priority as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>{priority.toUpperCase()}</Badge>;
+    const calculatePartsTotal = () => {
+        return claim.parts?.reduce((sum, part) => sum + part.subtotal, 0) || 0;
+    };
+
+    const calculateServicesTotal = () => {
+        return claim.services?.reduce((sum, service) => sum + service.subtotal, 0) || 0;
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Warranty Claim - ${mockClaim.claim_number}`} />
-            
-            <div className="space-y-6">
+            <Head title={`Claim ${claim.claim_id}`} />
+
+            <div className="space-y-6 p-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                        <FileText className="h-6 w-6" />
+                        <h1 className="text-2xl font-bold">Warranty Claim</h1>
+                        <Badge variant="outline">{claim.claim_id}</Badge>
+                        {getStatusBadge(claim.status)}
+                    </div>
+                    <div className="flex space-x-2">
                         <Link href="/service/warranty-claims">
                             <Button variant="outline" size="sm">
                                 <ArrowLeft className="h-4 w-4 mr-2" />
                                 Back to Claims
                             </Button>
                         </Link>
-                        <div>
-                            <h1 className="text-2xl font-bold">Warranty Claim {mockClaim.claim_number}</h1>
-                            <div className="flex items-center space-x-2 mt-1">
-                                {getStatusBadge(mockClaim.status)}
-                                {getClaimTypeBadge(mockClaim.claim_type)}
-                                {getPriorityBadge(mockClaim.priority)}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex space-x-2">
-                        <Button variant="outline">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export
-                        </Button>
-                        <Button variant="outline">
-                            <Printer className="h-4 w-4 mr-2" />
-                            Print
-                        </Button>
-                        <Link href={`/service/warranty-claims/${claimId}/edit`}>
-                            <Button>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Claim
+                        {can.edit && (
+                            <Link href={`/service/warranty-claims/${claim.id}/edit`}>
+                                <Button size="sm">
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                </Button>
+                            </Link>
+                        )}
+                        {can.delete && (
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setDeleteDialogOpen(true)}
+                            >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
                             </Button>
-                        </Link>
+                        )}
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Content */}
+                    {/* Main Content (2/3) */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Claim Overview */}
+                        {/* Claim Details */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <FileText className="h-5 w-5 mr-2" />
-                                    Claim Overview
-                                </CardTitle>
+                                <CardTitle>Claim Information</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Claim ID</p>
+                                        <p className="font-medium">{claim.claim_id}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Claim Type</p>
+                                        <div className="mt-1">{getClaimTypeBadge(claim.claim_type)}</div>
+                                    </div>
                                     <div>
                                         <p className="text-sm text-muted-foreground">Claim Date</p>
-                                        <p className="font-medium">{new Date(mockClaim.claim_date).toLocaleDateString()}</p>
+                                        <p className="font-medium">
+                                            <Calendar className="inline h-4 w-4 mr-1" />
+                                            {new Date(claim.claim_date).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    {claim.incident_date && (
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Incident Date</p>
+                                            <p className="font-medium">
+                                                {new Date(claim.incident_date).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Status</p>
+                                        <div className="mt-1">{getStatusBadge(claim.status)}</div>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Submitted By</p>
-                                        <p className="font-medium">{mockClaim.submitted_by}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Approved By</p>
-                                        <p className="font-medium">{mockClaim.approved_by}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Expected Payment</p>
-                                        <p className="font-medium">{new Date(mockClaim.expected_payment).toLocaleDateString()}</p>
+                                        <p className="text-sm text-muted-foreground">Branch</p>
+                                        <p className="font-medium">{claim.branch?.name}</p>
                                     </div>
                                 </div>
-                                <Separator />
-                                <div>
-                                    <p className="text-sm text-muted-foreground mb-2">Description</p>
-                                    <p className="text-sm">{mockClaim.description}</p>
+
+                                <div className="border-t pt-4">
+                                    <p className="text-sm text-muted-foreground mb-2">Failure Description</p>
+                                    <p className="whitespace-pre-wrap">{claim.failure_description}</p>
                                 </div>
+
+                                {claim.diagnosis && (
+                                    <div className="border-t pt-4">
+                                        <p className="text-sm text-muted-foreground mb-2">Diagnosis</p>
+                                        <p className="whitespace-pre-wrap">{claim.diagnosis}</p>
+                                    </div>
+                                )}
+
+                                {claim.repair_actions && (
+                                    <div className="border-t pt-4">
+                                        <p className="text-sm text-muted-foreground mb-2">Repair Actions</p>
+                                        <p className="whitespace-pre-wrap">{claim.repair_actions}</p>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
                         {/* Customer & Vehicle Information */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {(claim.customer || claim.vehicle_unit) && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="flex items-center">
-                                        <User className="h-5 w-5 mr-2" />
-                                        Customer Information
-                                    </CardTitle>
+                                    <CardTitle>Customer & Vehicle Information</CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <div>
-                                        <p className="font-medium">{mockClaim.customer.name}</p>
-                                        <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-1">
-                                            <Phone className="h-4 w-4" />
-                                            <span>{mockClaim.customer.phone}</span>
+                                <CardContent className="space-y-4">
+                                    {claim.customer && (
+                                        <div>
+                                            <p className="text-sm text-muted-foreground mb-2">
+                                                <User className="inline h-4 w-4 mr-1" />
+                                                Customer
+                                            </p>
+                                            <div className="p-3 bg-gray-50 rounded-md">
+                                                <p className="font-medium">
+                                                    {claim.customer.first_name} {claim.customer.last_name}
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">ID: {claim.customer.customer_id}</p>
+                                                <p className="text-sm text-muted-foreground">{claim.customer.email}</p>
+                                                <p className="text-sm text-muted-foreground">{claim.customer.phone}</p>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                                            <Mail className="h-4 w-4" />
-                                            <span>{mockClaim.customer.email}</span>
+                                    )}
+
+                                    {claim.vehicle_unit && (
+                                        <div>
+                                            <p className="text-sm text-muted-foreground mb-2">
+                                                <Car className="inline h-4 w-4 mr-1" />
+                                                Vehicle
+                                            </p>
+                                            <div className="p-3 bg-gray-50 rounded-md">
+                                                {claim.vehicle_unit.vehicle_model && (
+                                                    <p className="font-medium">
+                                                        {claim.vehicle_unit.vehicle_model.year}{' '}
+                                                        {claim.vehicle_unit.vehicle_model.make}{' '}
+                                                        {claim.vehicle_unit.vehicle_model.model}
+                                                    </p>
+                                                )}
+                                                <p className="text-sm text-muted-foreground">VIN: {claim.vehicle_unit.vin}</p>
+                                                {claim.odometer_reading && (
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Odometer: {claim.odometer_reading.toLocaleString()} km
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Address</p>
-                                        <p className="text-sm">{mockClaim.customer.address}</p>
-                                    </div>
+                                    )}
                                 </CardContent>
                             </Card>
+                        )}
 
+                        {/* Warranty Information */}
+                        {(claim.warranty_type || claim.warranty_provider) && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="flex items-center">
-                                        <Car className="h-5 w-5 mr-2" />
-                                        Vehicle Information
+                                    <CardTitle>
+                                        <Shield className="inline h-5 w-5 mr-2" />
+                                        Warranty Information
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <div>
-                                        <p className="font-medium">{mockClaim.vehicle.year} {mockClaim.vehicle.make} {mockClaim.vehicle.model}</p>
-                                        <p className="text-sm text-muted-foreground">Plate: {mockClaim.vehicle.plate}</p>
-                                        <p className="text-sm text-muted-foreground">VIN: {mockClaim.vehicle.vin}</p>
-                                    </div>
+                                <CardContent>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Mileage</p>
-                                            <p className="text-sm font-medium">{mockClaim.vehicle.mileage.toLocaleString()} km</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Purchase Date</p>
-                                            <p className="text-sm font-medium">{new Date(mockClaim.vehicle.purchase_date).toLocaleDateString()}</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        {/* Parts & Labor Details */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Package className="h-5 w-5 mr-2" />
-                                    Parts & Labor Details
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div>
-                                        <h4 className="font-medium mb-3">Parts Claimed</h4>
-                                        <div className="space-y-2">
-                                            {mockClaim.parts_claimed.map((part, index) => (
-                                                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                                                    <div>
-                                                        <p className="font-medium">{part.name}</p>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            Warranty: {part.warranty} | Qty: {part.quantity}
-                                                        </p>
-                                                    </div>
-                                                    <p className="font-medium">₱{part.price.toLocaleString()}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    
-                                    <Separator />
-                                    
-                                    <div>
-                                        <h4 className="font-medium mb-3">Labor Details</h4>
-                                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                                        {claim.warranty_type && (
                                             <div>
-                                                <p className="font-medium">Labor Hours</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {mockClaim.labor_hours} hours @ ₱{mockClaim.labor_rate}/hour
+                                                <p className="text-sm text-muted-foreground">Warranty Type</p>
+                                                <p className="font-medium">{claim.warranty_type}</p>
+                                            </div>
+                                        )}
+                                        {claim.warranty_provider && (
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Provider</p>
+                                                <p className="font-medium">{claim.warranty_provider}</p>
+                                            </div>
+                                        )}
+                                        {claim.warranty_number && (
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Warranty Number</p>
+                                                <p className="font-medium">{claim.warranty_number}</p>
+                                            </div>
+                                        )}
+                                        {claim.warranty_start_date && (
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Start Date</p>
+                                                <p className="font-medium">
+                                                    {new Date(claim.warranty_start_date).toLocaleDateString()}
                                                 </p>
                                             </div>
-                                            <p className="font-medium">₱{mockClaim.total_labor_cost.toLocaleString()}</p>
-                                        </div>
+                                        )}
+                                        {claim.warranty_end_date && (
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">End Date</p>
+                                                <p className="font-medium">
+                                                    {new Date(claim.warranty_end_date).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
+                        )}
 
-                        {/* Documentation */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Camera className="h-5 w-5 mr-2" />
-                                    Documentation
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    {mockClaim.photos.map((photo) => (
-                                        <div key={photo.id} className="border rounded-lg p-4">
-                                            <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center mb-2">
-                                                <Camera className="h-8 w-8 text-gray-400" />
-                                            </div>
-                                            <p className="text-sm font-medium">{photo.name}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                                Uploaded: {new Date(photo.uploaded).toLocaleDateString()}
-                                            </p>
-                                            <Button variant="outline" size="sm" className="w-full mt-2">
-                                                <Download className="h-4 w-4 mr-2" />
-                                                Download
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
+                        {/* Parts */}
+                        {claim.parts && claim.parts.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>
+                                        <Package className="inline h-5 w-5 mr-2" />
+                                        Parts ({claim.parts.length})
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Part Number</TableHead>
+                                                <TableHead>Part Name</TableHead>
+                                                <TableHead className="text-right">Qty</TableHead>
+                                                <TableHead className="text-right">Unit Price</TableHead>
+                                                <TableHead className="text-right">Subtotal</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {claim.parts.map((part, index) => (
+                                                <TableRow key={index}>
+                                                    <TableCell className="font-mono text-sm">
+                                                        {part.part_number || '-'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div>
+                                                            <div className="font-medium">{part.part_name}</div>
+                                                            {part.description && (
+                                                                <div className="text-sm text-muted-foreground">
+                                                                    {part.description}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">{part.quantity}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        ₱{part.unit_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-medium">
+                                                        ₱{part.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="text-right font-bold">
+                                                    Parts Total:
+                                                </TableCell>
+                                                <TableCell className="text-right font-bold">
+                                                    ₱{calculatePartsTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </TableCell>
+                                            </TableRow>
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        )}
 
-                        {/* Status History */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center">
-                                    <Clock className="h-5 w-5 mr-2" />
-                                    Status History
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    {mockClaim.status_history.map((entry, index) => (
-                                        <div key={index} className="flex items-start space-x-3">
-                                            <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center justify-between">
-                                                    <p className="font-medium">{entry.status.replace('_', ' ').toUpperCase()}</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {new Date(entry.date).toLocaleDateString()}
-                                                    </p>
+                        {/* Services */}
+                        {claim.services && claim.services.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>
+                                        <Wrench className="inline h-5 w-5 mr-2" />
+                                        Labor / Services ({claim.services.length})
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Service Code</TableHead>
+                                                <TableHead>Service Name</TableHead>
+                                                <TableHead className="text-right">Hours</TableHead>
+                                                <TableHead className="text-right">Rate</TableHead>
+                                                <TableHead className="text-right">Subtotal</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {claim.services.map((service, index) => (
+                                                <TableRow key={index}>
+                                                    <TableCell className="font-mono text-sm">
+                                                        {service.service_code || '-'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div>
+                                                            <div className="font-medium">{service.service_name}</div>
+                                                            {service.description && (
+                                                                <div className="text-sm text-muted-foreground">
+                                                                    {service.description}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">{service.labor_hours}h</TableCell>
+                                                    <TableCell className="text-right">
+                                                        ₱{service.labor_rate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/h
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-medium">
+                                                        ₱{service.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="text-right font-bold">
+                                                    Services Total:
+                                                </TableCell>
+                                                <TableCell className="text-right font-bold">
+                                                    ₱{calculateServicesTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </TableCell>
+                                            </TableRow>
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Photos */}
+                        {claim.photos && claim.photos.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>
+                                        <Camera className="inline h-5 w-5 mr-2" />
+                                        Photos ({claim.photos.length})
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        {claim.photos.map((photo) => (
+                                            <div key={photo.id} className="space-y-2">
+                                                <div className="aspect-square rounded-md overflow-hidden bg-gray-100">
+                                                    <img
+                                                        src={`/storage/${photo.file_path}`}
+                                                        alt={photo.caption || 'Claim photo'}
+                                                        className="w-full h-full object-cover"
+                                                    />
                                                 </div>
-                                                <p className="text-sm text-muted-foreground">By: {entry.user}</p>
-                                                <p className="text-sm">{entry.notes}</p>
+                                                {photo.caption && (
+                                                    <p className="text-sm text-muted-foreground">{photo.caption}</p>
+                                                )}
+                                                <p className="text-xs text-muted-foreground">
+                                                    {new Date(photo.uploaded_at).toLocaleDateString()}
+                                                </p>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Notes */}
+                        {claim.notes && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Additional Notes</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="whitespace-pre-wrap">{claim.notes}</p>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
 
-                    {/* Sidebar */}
+                    {/* Sidebar (1/3) */}
                     <div className="space-y-6">
                         {/* Claim Summary */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-sm">Claim Summary</CardTitle>
+                                <CardTitle>
+                                    <DollarSign className="inline h-5 w-5 mr-2" />
+                                    Claim Summary
+                                </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className="flex justify-between">
-                                    <span className="text-sm">Parts Cost:</span>
-                                    <span className="text-sm font-medium">₱{mockClaim.total_parts_cost.toLocaleString()}</span>
+                                    <span className="text-sm">Currency:</span>
+                                    <Badge>{claim.currency}</Badge>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-sm">Labor Cost:</span>
-                                    <span className="text-sm font-medium">₱{mockClaim.total_labor_cost.toLocaleString()}</span>
+                                    <span className="text-sm">Parts:</span>
+                                    <span className="font-medium">
+                                        ₱{calculatePartsTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
                                 </div>
-                                <Separator />
                                 <div className="flex justify-between">
-                                    <span className="font-medium">Total Claim:</span>
-                                    <span className="font-medium text-green-600">₱{mockClaim.total_claim_value.toLocaleString()}</span>
+                                    <span className="text-sm">Labor:</span>
+                                    <span className="font-medium">
+                                        ₱{calculateServicesTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                </div>
+                                <div className="border-t pt-3 flex justify-between">
+                                    <span className="font-bold">Total Claimed:</span>
+                                    <span className="text-lg font-bold">
+                                        ₱{claim.total_claimed_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Assignment */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Assignment</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {claim.assigned_to_user ? (
+                                    <div className="p-3 bg-gray-50 rounded-md">
+                                        <p className="text-sm text-muted-foreground">Assigned To</p>
+                                        <p className="font-medium">{claim.assigned_to_user.name}</p>
+                                        <p className="text-xs text-muted-foreground">{claim.assigned_to_user.email}</p>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">Unassigned</p>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Timestamps */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Timestamps</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Created</p>
+                                    <p className="text-sm font-medium">
+                                        {new Date(claim.created_at).toLocaleString()}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Last Updated</p>
+                                    <p className="text-sm font-medium">
+                                        {new Date(claim.updated_at).toLocaleString()}
+                                    </p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -403,65 +696,47 @@ export default function WarrantyClaimView({ claimId }: WarrantyClaimViewProps) {
                         {/* Quick Actions */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-sm">Quick Actions</CardTitle>
+                                <CardTitle>Quick Actions</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2">
-                                <Button variant="outline" className="w-full justify-start">
-                                    <MessageSquare className="h-4 w-4 mr-2" />
-                                    Add Note
-                                </Button>
-                                <Button variant="outline" className="w-full justify-start">
-                                    <Upload className="h-4 w-4 mr-2" />
-                                    Upload Document
-                                </Button>
-                                <Button variant="outline" className="w-full justify-start">
-                                    <Phone className="h-4 w-4 mr-2" />
-                                    Contact Customer
-                                </Button>
-                                <Button variant="outline" className="w-full justify-start">
-                                    <Mail className="h-4 w-4 mr-2" />
-                                    Send Update
-                                </Button>
-                            </CardContent>
-                        </Card>
-
-                        {/* Warranty Information */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Warranty Coverage</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Coverage Type</p>
-                                    <p className="text-sm font-medium">Parts & Labor</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Remaining Coverage</p>
-                                    <p className="text-sm font-medium">18 months</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Mileage Limit</p>
-                                    <p className="text-sm font-medium">100,000 km</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Coverage Status</p>
-                                    <Badge className="bg-green-100 text-green-800">Active</Badge>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Notes */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Additional Notes</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm text-muted-foreground">{mockClaim.notes}</p>
+                                {can.edit && (
+                                    <Link href={`/service/warranty-claims/${claim.id}/edit`}>
+                                        <Button className="w-full" variant="outline">
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit Claim
+                                        </Button>
+                                    </Link>
+                                )}
+                                <Link href="/service/warranty-claims">
+                                    <Button variant="outline" className="w-full">
+                                        <ArrowLeft className="h-4 w-4 mr-2" />
+                                        Back to List
+                                    </Button>
+                                </Link>
                             </CardContent>
                         </Card>
                     </div>
                 </div>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Warranty Claim</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete claim <strong>{claim.claim_id}</strong>?
+                            This action can be undone by restoring the claim later.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }

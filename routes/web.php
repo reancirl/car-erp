@@ -208,52 +208,52 @@ Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->gr
     // Index (list all)
     Route::get('/warranty-claims', [\App\Http\Controllers\WarrantyClaimController::class, 'index'])
         ->name('warranty-claims.index')
-        ->middleware('permission:service.view');
+        ->middleware('permission:warranty.view');
 
     // Create (show form)
     Route::get('/warranty-claims/create', [\App\Http\Controllers\WarrantyClaimController::class, 'create'])
         ->name('warranty-claims.create')
-        ->middleware('permission:service.create');
+        ->middleware('permission:warranty.create');
 
     // Store (save new)
     Route::post('/warranty-claims', [\App\Http\Controllers\WarrantyClaimController::class, 'store'])
         ->name('warranty-claims.store')
-        ->middleware('permission:service.create');
+        ->middleware('permission:warranty.create');
 
     // Show (view single) - comes after /create
     Route::get('/warranty-claims/{warranty_claim}', [\App\Http\Controllers\WarrantyClaimController::class, 'show'])
         ->name('warranty-claims.show')
-        ->middleware('permission:service.view');
+        ->middleware('permission:warranty.view');
 
     // Edit (show form)
     Route::get('/warranty-claims/{warranty_claim}/edit', [\App\Http\Controllers\WarrantyClaimController::class, 'edit'])
         ->name('warranty-claims.edit')
-        ->middleware('permission:service.edit');
+        ->middleware('permission:warranty.edit');
 
     // Update (save changes)
     Route::match(['put', 'patch'], '/warranty-claims/{warranty_claim}', [\App\Http\Controllers\WarrantyClaimController::class, 'update'])
         ->name('warranty-claims.update')
-        ->middleware('permission:service.edit');
+        ->middleware('permission:warranty.edit');
 
     // Delete (soft delete)
     Route::delete('/warranty-claims/{warranty_claim}', [\App\Http\Controllers\WarrantyClaimController::class, 'destroy'])
         ->name('warranty-claims.destroy')
-        ->middleware('permission:service.delete');
+        ->middleware('permission:warranty.delete');
 
     // Restore (from soft delete)
     Route::post('/warranty-claims/{id}/restore', [\App\Http\Controllers\WarrantyClaimController::class, 'restore'])
         ->name('warranty-claims.restore')
-        ->middleware('permission:service.create');
+        ->middleware('permission:warranty.create');
 
     // Photo upload
     Route::post('/warranty-claims/{warranty_claim}/photos', [\App\Http\Controllers\WarrantyClaimController::class, 'uploadPhotos'])
         ->name('warranty-claims.upload-photos')
-        ->middleware('permission:service.edit');
+        ->middleware('permission:warranty.edit');
 
     // Photo delete
     Route::delete('/warranty-claims/{warranty_claim}/photos/{photo}', [\App\Http\Controllers\WarrantyClaimController::class, 'deletePhoto'])
         ->name('warranty-claims.delete-photo')
-        ->middleware('permission:service.edit');
+        ->middleware('permission:warranty.edit');
 });
 
 // Sales & Customer Lifecycle Routes
@@ -415,23 +415,6 @@ Route::middleware(['auth', 'verified'])->prefix('service')->group(function () {
     Route::post('/common-services/{id}/restore', [\App\Http\Controllers\CommonServiceController::class, 'restore'])
         ->name('common-services.restore')
         ->middleware('permission:common-services.create');
-    
-    // Warranty Claims Management
-    Route::get('/warranty-claims', function () {
-        return Inertia::render('service/warranty-claims');
-    })->name('service.warranty-claims.index');
-
-    Route::get('/warranty-claims/create', function () {
-        return Inertia::render('service/warranty-claim-create');
-    })->name('service.warranty-claims.create');
-
-    Route::get('/warranty-claims/{id}/edit', function ($id) {
-        return Inertia::render('service/warranty-claim-edit', ['id' => $id]);
-    })->name('service.warranty-claims.edit');
-
-    Route::get('/warranty-claims/{id}', function ($id) {
-        return Inertia::render('service/warranty-claim-view', ['id' => $id]);
-    })->name('service.warranty-claims.show');
 });
 
 // Vehicle Inventory Management Routes

@@ -33,6 +33,10 @@ class WarrantyClaimService extends Model
         'approved_amount' => 'decimal:2',
     ];
 
+    protected $appends = [
+        'subtotal',
+    ];
+
     // Relationships
     public function warrantyClaim(): BelongsTo
     {
@@ -81,5 +85,10 @@ class WarrantyClaimService extends Model
         ];
 
         return $badges[$this->claim_status] ?? ['text' => 'Unknown', 'color' => 'gray'];
+    }
+
+    public function getSubtotalAttribute(): float
+    {
+        return (float) $this->total_labor_cost;
     }
 }

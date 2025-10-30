@@ -11,7 +11,7 @@ class StoreWarrantyClaimRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('service.create');
+        return $this->user()->can('warranty.create');
     }
 
     /**
@@ -32,7 +32,7 @@ class StoreWarrantyClaimRequest extends FormRequest
         ]);
 
         // Convert empty strings to null
-        $nullableFields = ['customer_id', 'vehicle_unit_id', 'assigned_to', 'incident_date',
+        $nullableFields = ['assigned_to', 'incident_date',
                           'warranty_number', 'warranty_start_date', 'warranty_end_date',
                           'odometer_reading', 'diagnosis', 'repair_actions', 'notes'];
 
@@ -70,8 +70,8 @@ class StoreWarrantyClaimRequest extends FormRequest
             'repair_actions' => 'nullable|string|max:2000',
 
             // Customer & Vehicle
-            'customer_id' => 'nullable|exists:customers,id',
-            'vehicle_unit_id' => 'nullable|exists:vehicle_units,id',
+            'customer_id' => 'required|exists:customers,id',
+            'vehicle_unit_id' => 'required|exists:vehicle_units,id',
             'odometer_reading' => 'nullable|integer|min:0|max:9999999',
 
             // Warranty info
@@ -93,7 +93,7 @@ class StoreWarrantyClaimRequest extends FormRequest
 
             // Parts array
             'parts' => 'nullable|array',
-            'parts.*.part_inventory_id' => 'nullable|exists:parts_inventory,id',
+            'parts.*.part_inventory_id' => 'required|exists:parts_inventory,id',
             'parts.*.part_name' => 'required|string|max:255',
             'parts.*.part_number' => 'nullable|string|max:255',
             'parts.*.description' => 'nullable|string|max:500',
@@ -102,7 +102,7 @@ class StoreWarrantyClaimRequest extends FormRequest
 
             // Services array
             'services' => 'nullable|array',
-            'services.*.service_type_id' => 'nullable|exists:service_types,id',
+            'services.*.service_type_id' => 'required|exists:service_types,id',
             'services.*.service_name' => 'required|string|max:255',
             'services.*.service_code' => 'nullable|string|max:255',
             'services.*.description' => 'nullable|string|max:500',
@@ -130,7 +130,9 @@ class StoreWarrantyClaimRequest extends FormRequest
             'incident_date.before_or_equal' => 'Incident date cannot be in the future.',
             'failure_description.required' => 'Failure description is required.',
             'failure_description.min' => 'Failure description must be at least 10 characters.',
+            'customer_id.required' => 'Customer is required.',
             'customer_id.exists' => 'Selected customer does not exist.',
+            'vehicle_unit_id.required' => 'Vehicle is required.',
             'vehicle_unit_id.exists' => 'Selected vehicle does not exist.',
             'warranty_end_date.after' => 'Warranty end date must be after start date.',
             'status.required' => 'Claim status is required.',
@@ -139,12 +141,14 @@ class StoreWarrantyClaimRequest extends FormRequest
             'branch_id.exists' => 'Selected branch does not exist.',
 
             // Parts validation messages
+            'parts.*.part_inventory_id.required' => 'Please select an inventory part for each entry.',
             'parts.*.part_name.required' => 'Part name is required for all parts.',
             'parts.*.quantity.required' => 'Part quantity is required.',
             'parts.*.quantity.min' => 'Part quantity must be at least 1.',
             'parts.*.unit_price.required' => 'Part unit price is required.',
 
             // Services validation messages
+            'services.*.service_type_id.required' => 'Please select a service type for each entry.',
             'services.*.service_name.required' => 'Service name is required for all services.',
             'services.*.labor_hours.required' => 'Labor hours is required.',
             'services.*.labor_hours.min' => 'Labor hours must be at least 0.01.',
