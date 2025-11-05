@@ -1,0 +1,21 @@
+import type { Page } from '@playwright/test';
+
+const defaultEmail = process.env.PLAYWRIGHT_LOGIN_EMAIL ?? 'playwright.login.tester@car-erp.test';
+const defaultPassword = process.env.PLAYWRIGHT_LOGIN_PASSWORD ?? 'password';
+
+export async function loginAsPlaywrightUser(
+    page: Page,
+    overrides?: { email?: string; password?: string }
+) {
+    const email = overrides?.email ?? defaultEmail;
+    const password = overrides?.password ?? defaultPassword;
+
+    await page.goto('/login');
+    await page.getByLabel('Email address').fill(email);
+    await page.getByLabel('Password', { exact: true }).fill(password);
+
+    await Promise.all([
+        page.waitForURL('**/dashboard'),
+        page.getByRole('button', { name: 'Log in' }).click(),
+    ]);
+}
