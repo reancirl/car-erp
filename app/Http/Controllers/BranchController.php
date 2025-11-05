@@ -17,7 +17,7 @@ class BranchController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $branches = Branch::query()
             ->when(request('include_deleted'), function ($query) {
@@ -38,6 +38,11 @@ class BranchController extends Controller
         return Inertia::render('admin/branch-management', [
             'branches' => $branches,
             'filters' => request()->only(['search', 'status', 'include_deleted']),
+            'can' => [
+                'create' => $request->user()->can('users.create'),
+                'edit' => $request->user()->can('users.edit'),
+                'delete' => $request->user()->can('users.delete'),
+            ],
         ]);
     }
 

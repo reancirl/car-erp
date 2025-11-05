@@ -25,7 +25,8 @@ import {
     Clock,
     Crown,
     Building,
-    UserPlus
+    UserPlus,
+    Trash2
 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
@@ -60,6 +61,11 @@ interface Props {
         search?: string;
         status?: string;
     };
+    can: {
+        create: boolean;
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -73,9 +79,10 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function BranchManagement({ branches, filters }: Props) {
+export default function BranchManagement({ branches, filters, can }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || '');
+    const [deletingId, setDeletingId] = useState<number | null>(null);
 
     const handleSearch = (value: string) => {
         setSearch(value);
@@ -117,6 +124,20 @@ export default function BranchManagement({ branches, filters }: Props) {
     const activeBranches = branches.data.filter(branch => branch.status === 'active');
     const totalBranches = branches.data.length;
 
+    const handleDelete = (branch: Branch) => {
+        if (!can.delete) {
+            return;
+        }
+
+        if (confirm(`Are you sure you want to delete ${branch.name}? This action cannot be undone.`)) {
+            setDeletingId(branch.id);
+            router.delete(`/admin/branch-management/${branch.id}`, {
+                preserveScroll: true,
+                onFinish: () => setDeletingId(null),
+            });
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Branch Management" />
@@ -129,12 +150,14 @@ export default function BranchManagement({ branches, filters }: Props) {
                         <h1 className="text-2xl font-bold">Branch Management</h1>
                     </div>
                     <div className="flex space-x-2">
-                        <Link href="/admin/branch-management/create">
-                            <Button size="sm">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Create Branch
-                            </Button>
-                        </Link>
+                        {can.create && (
+                            <Link href="/admin/branch-management/create">
+                                <Button size="sm">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Create Branch
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </div>
 
@@ -232,7 +255,16 @@ export default function BranchManagement({ branches, filters }: Props) {
                                 {branches.data.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                                            No branches found. <Link href="/admin/branch-management/create" className="text-primary hover:underline">Create your first branch</Link>
+                                            {can.create ? (
+                                                <>
+                                                    No branches found.{" "}
+                                                    <Link href="/admin/branch-management/create" className="text-primary hover:underline">
+                                                        Create your first branch
+                                                    </Link>
+                                                </>
+                                            ) : (
+                                                'No branches found.'
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -280,11 +312,23 @@ export default function BranchManagement({ branches, filters }: Props) {
                                                             <Eye className="h-4 w-4" />
                                                         </Button>
                                                     </Link>
-                                                    <Link href={`/admin/branch-management/${branch.id}/edit`}>
-                                                        <Button variant="ghost" size="sm">
-                                                            <Edit className="h-4 w-4" />
+                                                    {can.edit && (
+                                                        <Link href={`/admin/branch-management/${branch.id}/edit`}>
+                                                            <Button variant="ghost" size="sm">
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                        </Link>
+                                                    )}
+                                                    {can.delete && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleDelete(branch)}
+                                                            disabled={deletingId === branch.id}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
                                                         </Button>
-                                                    </Link>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>

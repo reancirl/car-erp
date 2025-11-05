@@ -19,7 +19,7 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $users = User::query()
             ->excludeSuperAdmin()
@@ -54,6 +54,11 @@ class UserController extends Controller
             'branches' => $branches,
             'roles' => $roles,
             'filters' => request()->only(['search', 'branch_id', 'role', 'include_deleted']),
+            'can' => [
+                'create' => $request->user()->can('users.create'),
+                'edit' => $request->user()->can('users.edit'),
+                'delete' => $request->user()->can('users.delete'),
+            ],
         ]);
     }
 

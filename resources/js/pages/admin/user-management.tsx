@@ -52,6 +52,11 @@ interface Props {
         branch_id?: string;
         role?: string;
     };
+    can: {
+        create: boolean;
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -65,7 +70,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function UserManagement({ users, branches, roles, filters }: Props) {
+export default function UserManagement({ users, branches, roles, filters, can }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [branchId, setBranchId] = useState(filters.branch_id || '');
     const [role, setRole] = useState(filters.role || '');
@@ -95,6 +100,10 @@ export default function UserManagement({ users, branches, roles, filters }: Prop
     };
 
     const handleDelete = (userId: number, userName: string) => {
+        if (!can.delete) {
+            return;
+        }
+
         if (confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
             router.delete(`/admin/user-management/${userId}`, {
                 preserveScroll: true,
@@ -138,12 +147,14 @@ export default function UserManagement({ users, branches, roles, filters }: Prop
                         <h1 className="text-2xl font-bold">User Management</h1>
                     </div>
                     <div className="flex space-x-2">
-                        <Link href="/admin/user-management/create">
-                            <Button size="sm">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Create User
-                            </Button>
-                        </Link>
+                        {can.create && (
+                            <Link href="/admin/user-management/create">
+                                <Button size="sm">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Create User
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </div>
 
@@ -258,7 +269,16 @@ export default function UserManagement({ users, branches, roles, filters }: Prop
                                 {users.data.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                            No users found. <Link href="/admin/user-management/create" className="text-primary hover:underline">Create your first user</Link>
+                                            {can.create ? (
+                                                <>
+                                                    No users found.{' '}
+                                                    <Link href="/admin/user-management/create" className="text-primary hover:underline">
+                                                        Create your first user
+                                                    </Link>
+                                                </>
+                                            ) : (
+                                                'No users found.'
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -303,18 +323,22 @@ export default function UserManagement({ users, branches, roles, filters }: Prop
                                                             <Eye className="h-4 w-4" />
                                                         </Button>
                                                     </Link>
-                                                    <Link href={`/admin/user-management/${user.id}/edit`}>
-                                                        <Button variant="ghost" size="sm">
-                                                            <Edit className="h-4 w-4" />
+                                                    {can.edit && (
+                                                        <Link href={`/admin/user-management/${user.id}/edit`}>
+                                                            <Button variant="ghost" size="sm">
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                        </Link>
+                                                    )}
+                                                    {can.delete && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleDelete(user.id, user.name)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
                                                         </Button>
-                                                    </Link>
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="sm"
-                                                        onClick={() => handleDelete(user.id, user.name)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>

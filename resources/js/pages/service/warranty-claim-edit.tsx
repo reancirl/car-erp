@@ -729,10 +729,11 @@ export default function WarrantyClaimEdit({ claim, customers, vehicleUnits, part
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                    </Card>
-                                                );
-                                            })
-                                        )}
+                                                    </div>
+                                                </Card>
+                                            );
+                                        })
+                                    )}
 
                                         {data.parts.length > 0 && (
                                             <div className="border-t pt-4">
