@@ -6,8 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Car, Search, Filter, Plus, Eye, Edit, Trash2, RotateCcw, CheckCircle, XCircle, Star, Zap } from 'lucide-react';
-import { type BreadcrumbItem } from '@/types';
+import { Car, Search, Filter, Plus, Edit, RotateCcw, CheckCircle, XCircle, Star, Zap } from 'lucide-react';
+import { type BreadcrumbItem, type PageProps } from '@/types';
 import { useState, FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -48,7 +48,7 @@ interface Stats {
     electric: number;
 }
 
-interface Props {
+interface Props extends PageProps {
     records: {
         data: VehicleModel[];
         links: any;
@@ -65,13 +65,18 @@ interface Props {
     };
 }
 
-export default function VehicleModels({ records, stats, filters }: Props) {
+export default function VehicleModels({ records, stats, filters, auth }: Props) {
     const [search, setSearch] = useState(filters?.search || '');
     const [year, setYear] = useState(filters?.year?.toString() || 'all');
     const [bodyType, setBodyType] = useState(filters?.body_type || 'all');
     const [fuelType, setFuelType] = useState(filters?.fuel_type || 'all');
     const [isActive, setIsActive] = useState(filters?.is_active !== undefined ? filters.is_active.toString() : 'all');
     const [includeDeleted, setIncludeDeleted] = useState(filters?.include_deleted || false);
+
+    const permissions = auth?.permissions ?? [];
+    const canCreate = permissions.includes('vehicle_model.create');
+    const canEdit = permissions.includes('vehicle_model.edit');
+    const canRestore = permissions.includes('vehicle_model.create');
 
     const handleFilter = (e: FormEvent) => {
         e.preventDefault();
@@ -131,12 +136,14 @@ export default function VehicleModels({ records, stats, filters }: Props) {
                         <Car className="h-6 w-6" />
                         <h1 className="text-2xl font-bold">Vehicle Models</h1>
                     </div>
-                    <Link href="/inventory/models/create">
-                        <Button size="sm">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Model
-                        </Button>
-                    </Link>
+                    {canCreate && (
+                        <Link href="/inventory/models/create">
+                            <Button size="sm">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Model
+                            </Button>
+                        </Link>
+                    )}
                 </div>
 
                 {/* Stats Cards */}
@@ -302,7 +309,19 @@ export default function VehicleModels({ records, stats, filters }: Props) {
                                 {!records?.data || records.data.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                                            No vehicle models found. Try adjusting your filters or create a new model.
+                                            <div className="space-y-3">
+                                                <div>No vehicle models found. Try adjusting your filters.</div>
+                                                {canCreate && (
+                                                    <div>
+                                                        <Link href="/inventory/models/create">
+                                                            <Button size="sm">
+                                                                <Plus className="h-4 w-4 mr-2" />
+                                                                Add Model
+                                                            </Button>
+                                                        </Link>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -368,12 +387,14 @@ export default function VehicleModels({ records, stats, filters }: Props) {
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center space-x-2">
-                                                    <Link href={`/inventory/models/${model.id}/edit`}>
-                                                        <Button variant="ghost" size="sm">
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                    </Link>
-                                                    {model.deleted_at && (
+                                                    {canEdit && (
+                                                        <Link href={`/inventory/models/${model.id}/edit`}>
+                                                            <Button variant="ghost" size="sm">
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                        </Link>
+                                                    )}
+                                                    {model.deleted_at && canRestore && (
                                                         <Button 
                                                             variant="ghost" 
                                                             size="sm"

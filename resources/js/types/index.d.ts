@@ -3,6 +3,8 @@ import type { Config } from 'ziggy-js';
 
 export interface Auth {
     user: User;
+    permissions: string[];
+    roles: string[];
 }
 
 export interface BreadcrumbItem {
@@ -29,6 +31,11 @@ export interface SharedData {
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
     [key: string]: unknown;
+}
+
+export interface PageProps<T = Record<string, unknown>> extends SharedData {
+    errors: Record<string, string | string[]>;
+    props?: T;
 }
 
 export interface User {

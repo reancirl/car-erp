@@ -71,33 +71,46 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function UserManagement({ users, branches, roles, filters, can }: Props) {
+    const initialBranch = filters.branch_id && filters.branch_id !== '' ? filters.branch_id : 'all';
+    const initialRole = filters.role && filters.role !== '' ? filters.role : 'all';
+
     const [search, setSearch] = useState(filters.search || '');
-    const [branchId, setBranchId] = useState(filters.branch_id || '');
-    const [role, setRole] = useState(filters.role || '');
+    const [branchId, setBranchId] = useState(initialBranch);
+    const [role, setRole] = useState(initialRole);
 
-    const handleSearch = (value: string) => {
-        setSearch(value);
-        router.get('/admin/user-management', { search: value, branch_id: branchId, role }, { 
-            preserveState: true, 
-            replace: true 
+    const applyFilters = () => {
+        const trimmedSearch = search.trim();
+        const query: Record<string, string> = {};
+
+        if (trimmedSearch) {
+            query.search = trimmedSearch;
+        }
+
+        if (branchId !== 'all') {
+            query.branch_id = branchId;
+        }
+
+        if (role !== 'all') {
+            query.role = role;
+        }
+
+        router.get('/admin/user-management', query, {
+            preserveState: true,
+            replace: true,
         });
     };
 
-    const handleBranchFilter = (value: string) => {
-        setBranchId(value);
-        router.get('/admin/user-management', { search, branch_id: value === 'all' ? '' : value, role }, { 
-            preserveState: true, 
-            replace: true 
+    const resetFilters = () => {
+        setSearch('');
+        setBranchId('all');
+        setRole('all');
+
+        router.get('/admin/user-management', {}, {
+            replace: true,
         });
     };
 
-    const handleRoleFilter = (value: string) => {
-        setRole(value);
-        router.get('/admin/user-management', { search, branch_id: branchId, role: value === 'all' ? '' : value }, { 
-            preserveState: true, 
-            replace: true 
-        });
-    };
+    const hasActiveFilters = search.trim() !== '' || branchId !== 'all' || role !== 'all';
 
     const handleDelete = (userId: number, userName: string) => {
         if (!can.delete) {
@@ -209,15 +222,21 @@ export default function UserManagement({ users, branches, roles, filters, can }:
                             <div className="flex-1">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <Input 
-                                        placeholder="Search by name or email..." 
+                                    <Input
+                                        placeholder="Search by name or email..."
                                         className="pl-10"
                                         value={search}
-                                        onChange={(e) => handleSearch(e.target.value)}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        onKeyDown={(event) => {
+                                            if (event.key === 'Enter') {
+                                                event.preventDefault();
+                                                applyFilters();
+                                            }
+                                        }}
                                     />
                                 </div>
                             </div>
-                            <Select value={branchId || 'all'} onValueChange={handleBranchFilter}>
+                            <Select value={branchId} onValueChange={setBranchId}>
                                 <SelectTrigger className="w-full md:w-[200px]">
                                     <SelectValue placeholder="Branch" />
                                 </SelectTrigger>
@@ -230,7 +249,7 @@ export default function UserManagement({ users, branches, roles, filters, can }:
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Select value={role || 'all'} onValueChange={handleRoleFilter}>
+                            <Select value={role} onValueChange={setRole}>
                                 <SelectTrigger className="w-full md:w-[200px]">
                                     <SelectValue placeholder="Role" />
                                 </SelectTrigger>
@@ -243,6 +262,14 @@ export default function UserManagement({ users, branches, roles, filters, can }:
                                     ))}
                                 </SelectContent>
                             </Select>
+                            <div className="flex gap-2 md:justify-end">
+                                <Button variant="outline" onClick={resetFilters} disabled={!hasActiveFilters}>
+                                    Reset
+                                </Button>
+                                <Button onClick={applyFilters}>
+                                    Apply
+                                </Button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

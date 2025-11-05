@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Car, Search, Filter, Plus, Eye, Edit, CheckCircle, Clock, MapPin, FileSignature, Calendar, Smartphone, Navigation, User, Trash2 } from 'lucide-react';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type PageProps } from '@/types';
 import { useState } from 'react';
 
 interface TestDrive {
@@ -53,7 +53,7 @@ interface Branch {
     code: string;
 }
 
-interface Props {
+interface Props extends PageProps {
     testDrives: {
         data: TestDrive[];
         links: any[];
@@ -88,7 +88,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function TestDrives({ testDrives, stats, filters, branches }: Props) {
+export default function TestDrives({ testDrives, stats, filters, branches, auth }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || '');
     const [reservationType, setReservationType] = useState(filters.reservation_type || '');
@@ -165,7 +165,16 @@ export default function TestDrives({ testDrives, stats, filters, branches }: Pro
         });
     };
 
+    const permissions = auth?.permissions ?? [];
+    const canCreate = permissions.includes('sales.create');
+    const canEdit = permissions.includes('sales.edit');
+    const canDelete = permissions.includes('sales.delete');
+
     const handleDelete = (id: number, reservationId: string) => {
+        if (!canDelete) {
+            return;
+        }
+
         if (confirm(`Are you sure you want to delete test drive ${reservationId}?`)) {
             router.delete(`/sales/test-drives/${id}`, {
                 preserveScroll: true,
@@ -275,12 +284,14 @@ export default function TestDrives({ testDrives, stats, filters, branches }: Pro
                                 Calendar View
                             </Button>
                         </Link>
-                        <Link href="/sales/test-drives/create">
-                            <Button size="sm">
-                                <Plus className="h-4 w-4 mr-2" />
-                                New Reservation
-                            </Button>
-                        </Link>
+                        {canCreate && (
+                            <Link href="/sales/test-drives/create">
+                                <Button size="sm">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    New Reservation
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </div>
 
@@ -422,7 +433,14 @@ export default function TestDrives({ testDrives, stats, filters, branches }: Pro
                                 {testDrives.data.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                                            No test drives found. <Link href="/sales/test-drives/create" className="text-primary hover:underline">Create your first reservation</Link>
+                                            <div className="space-y-2">
+                                                <div>No test drives found.</div>
+                                                {canCreate && (
+                                                    <Link href="/sales/test-drives/create" className="text-primary hover:underline">
+                                                        Create your first reservation
+                                                    </Link>
+                                                )}
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ) : (

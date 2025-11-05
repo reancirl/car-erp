@@ -306,7 +306,7 @@ class PerformanceMetricsController extends Controller
 
             // Test drives conducted
             $testDrivesConducted = TestDrive::query()
-                ->where('sales_rep_id', $rep->id)
+                ->where('assigned_user_id', $rep->id)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->count();
 

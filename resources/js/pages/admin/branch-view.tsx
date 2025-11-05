@@ -25,6 +25,7 @@ import {
     Clock3
 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
+import { formatOperatingHoursInput, type BusinessHours } from '@/utils/business-hours';
 
 interface Branch {
     id: number;
@@ -37,8 +38,8 @@ interface Branch {
     country: string;
     phone?: string;
     email?: string;
-    status: 'active' | 'inactive';
-    business_hours?: any;
+    status: 'active' | 'inactive' | 'maintenance';
+    business_hours?: BusinessHours;
     latitude?: number;
     longitude?: number;
     notes?: string;
@@ -63,6 +64,18 @@ const breadcrumbs: BreadcrumbItem[] = [
         title: 'Branch Details',
         href: '/admin/branch-management/view',
     },
+];
+
+type BusinessDayKey = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+const BUSINESS_DAY_ORDER: Array<{ key: BusinessDayKey; label: string }> = [
+    { key: 'monday', label: 'Monday' },
+    { key: 'tuesday', label: 'Tuesday' },
+    { key: 'wednesday', label: 'Wednesday' },
+    { key: 'thursday', label: 'Thursday' },
+    { key: 'friday', label: 'Friday' },
+    { key: 'saturday', label: 'Saturday' },
+    { key: 'sunday', label: 'Sunday' },
 ];
 
 export default function BranchView({ branch }: BranchViewProps) {
@@ -398,14 +411,18 @@ export default function BranchView({ branch }: BranchViewProps) {
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 {branch.business_hours ? (
-                                    Object.entries(branch.business_hours).map(([day, hours]: [string, any]) => (
-                                        <div key={day} className="flex items-center justify-between">
-                                            <span className="text-sm font-medium capitalize">{day}</span>
-                                            <span className="text-sm text-muted-foreground">
-                                                {hours?.open && hours?.close ? `${hours.open} - ${hours.close}` : 'Closed'}
-                                            </span>
-                                        </div>
-                                    ))
+                                    BUSINESS_DAY_ORDER.map(({ key, label }) => {
+                                        const formattedHours = formatOperatingHoursInput(branch.business_hours?.[key] ?? null);
+
+                                        return (
+                                            <div key={key} className="flex items-center justify-between">
+                                                <span className="text-sm font-medium">{label}</span>
+                                                <span className="text-sm text-muted-foreground">
+                                                    {formattedHours}
+                                                </span>
+                                            </div>
+                                        );
+                                    })
                                 ) : (
                                     <p className="text-sm text-muted-foreground">No business hours set</p>
                                 )}

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type PageProps } from '@/types';
 import axios from 'axios';
 import { AlertTriangle, Bell, Calendar, ClipboardCheck, Mail, MessageSquare, Radio } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -42,7 +42,7 @@ interface AssignedReminder {
     checklist?: { id: number; title: string } | null;
 }
 
-interface Props {
+interface Props extends PageProps {
     assignedChecklists: AssignedChecklist[];
     assignedReminders: AssignedReminder[];
 }
@@ -63,8 +63,11 @@ const formatDateTime = (value?: string | null): string => {
     });
 };
 
-const ChecklistReminderCenter = ({ assignedChecklists, assignedReminders }: Props) => {
+const ChecklistReminderCenter = ({ assignedChecklists, assignedReminders, auth }: Props) => {
     const [activeChecklistId, setActiveChecklistId] = useState<number | null>(assignedChecklists[0]?.id ?? null);
+    const userPermissions = auth?.permissions ?? [];
+    const canManageChecklists = userPermissions.includes('compliance.manage_checklists');
+    const canManageReminders = userPermissions.includes('compliance.manage_reminders');
     const [checklistProgress, setChecklistProgress] = useState<Record<number, Record<number, boolean>>>(() => {
         const initial: Record<number, Record<number, boolean>> = {};
         assignedChecklists.forEach((checklist) => {
@@ -247,16 +250,20 @@ const ChecklistReminderCenter = ({ assignedChecklists, assignedReminders }: Prop
                         <p className="text-muted-foreground">Complete outstanding checklist items and stay ahead of reminders.</p>
                     </div>
                     <div className="flex gap-2">
-                        <Link href="/compliance/checklists">
-                            <Button variant="outline">
-                                <ClipboardCheck className="mr-2 h-4 w-4" /> Manage Checklists
-                            </Button>
-                        </Link>
-                        <Link href="/compliance/reminders">
-                            <Button>
-                                <Radio className="mr-2 h-4 w-4" /> Reminder Queue
-                            </Button>
-                        </Link>
+                        {canManageChecklists && (
+                            <Link href="/compliance/checklists">
+                                <Button variant="outline">
+                                    <ClipboardCheck className="mr-2 h-4 w-4" /> Manage Checklists
+                                </Button>
+                            </Link>
+                        )}
+                        {canManageReminders && (
+                            <Link href="/compliance/reminders">
+                                <Button>
+                                    <Radio className="mr-2 h-4 w-4" /> Reminder Queue
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </div>
 

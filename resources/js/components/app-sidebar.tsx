@@ -180,12 +180,13 @@ const navPermissions: Record<string, string> = {
     '/service/common-services': 'common-services.view',
     '/service/warranty-claims': 'warranty.view',
     '/inventory/parts-inventory': 'inventory.view',
+    '/inventory/models': 'vehicle_model.view',
     '/inventory/vehicles': 'inventory.view',
     '/sales/lead-management': 'sales.view',
     '/sales/test-drives': 'sales.view',
     '/sales/pipeline': 'sales.view',
     '/sales/customer-experience': 'customer.view',
-    '/sales/performance-metrics': 'reports.view',
+    '/sales/performance-metrics': 'sales.view&reports.view',
     '/audit/activity-logs': 'audit.view',
     '/audit/time-tracking': 'audit.view',
     '/audit/supervisor-approvals': 'audit.supervisor_override',
@@ -197,7 +198,9 @@ function filterNavItemsByPermissions(items: NavItem[], permissions: string[]): N
     return items.filter(item => {
         const requiredPermission = navPermissions[item.href];
         if (!requiredPermission) return true; // Dashboard and other unprotected routes
-        return permissions.includes(requiredPermission);
+
+        const requiredAll = requiredPermission.split('&').map(p => p.trim()).filter(Boolean);
+        return requiredAll.every(permission => permissions.includes(permission));
     });
 }
 

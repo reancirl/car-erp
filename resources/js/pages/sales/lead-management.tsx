@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserPlus, Search, Plus, Eye, Edit, AlertTriangle, CheckCircle, Phone, MapPin, Star, Users, Mail, Globe, Trash2 } from 'lucide-react';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type PageProps } from '@/types';
 import { useState, FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -63,7 +63,7 @@ interface Stats {
     suspicious: number;
 }
 
-interface Props {
+interface Props extends PageProps {
     leads: {
         data: Lead[];
         links: any;
@@ -80,12 +80,17 @@ interface Props {
     branches: Branch[] | null;
 }
 
-export default function LeadManagement({ leads, stats, filters, branches }: Props) {
+export default function LeadManagement({ leads, stats, filters, branches, auth }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || 'all');
     const [source, setSource] = useState(filters.source || 'all');
     const [branchId, setBranchId] = useState<string>(filters.branch_id?.toString() || 'all');
     const [leadScore, setLeadScore] = useState(filters.lead_score || 'all');
+
+    const permissions = auth?.permissions ?? [];
+    const canCreate = permissions.includes('sales.create');
+    const canEdit = permissions.includes('sales.edit');
+    const canDelete = permissions.includes('sales.delete');
 
     const handleFilter = (e: FormEvent) => {
         e.preventDefault();
@@ -102,6 +107,10 @@ export default function LeadManagement({ leads, stats, filters, branches }: Prop
     };
 
     const handleDelete = (lead: Lead) => {
+        if (!canDelete) {
+            return;
+        }
+
         if (confirm(`Are you sure you want to delete lead ${lead.lead_id}?`)) {
             router.delete(`/sales/lead-management/${lead.id}`);
         }
@@ -230,12 +239,14 @@ export default function LeadManagement({ leads, stats, filters, branches }: Prop
                         <h1 className="text-2xl font-bold">Lead Management</h1>
                     </div>
                     <div className="flex space-x-2">
-                        <Link href="/sales/lead-management/create">
-                            <Button size="sm">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Lead
-                            </Button>
-                        </Link>
+                        {canCreate && (
+                            <Link href="/sales/lead-management/create">
+                                <Button size="sm">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Lead
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </div>
 
@@ -375,12 +386,14 @@ export default function LeadManagement({ leads, stats, filters, branches }: Prop
                                 <UserPlus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                                 <h3 className="text-lg font-medium mb-2">No leads yet</h3>
                                 <p className="text-muted-foreground mb-4">Get started by creating your first lead</p>
-                                <Link href="/sales/lead-management/create">
-                                    <Button>
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Add Lead
-                                    </Button>
-                                </Link>
+                                {canCreate && (
+                                    <Link href="/sales/lead-management/create">
+                                        <Button>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Add Lead
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
                         ) : (
                             <Table>
@@ -476,18 +489,22 @@ export default function LeadManagement({ leads, stats, filters, branches }: Prop
                                                             <Eye className="h-4 w-4" />
                                                         </Button>
                                                     </Link>
-                                                    <Link href={`/sales/lead-management/${lead.id}/edit`}>
-                                                        <Button variant="ghost" size="sm">
-                                                            <Edit className="h-4 w-4" />
+                                                    {canEdit && (
+                                                        <Link href={`/sales/lead-management/${lead.id}/edit`}>
+                                                            <Button variant="ghost" size="sm">
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                        </Link>
+                                                    )}
+                                                    {canDelete && (
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="sm"
+                                                            onClick={() => handleDelete(lead)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 text-red-600" />
                                                         </Button>
-                                                    </Link>
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="sm"
-                                                        onClick={() => handleDelete(lead)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4 text-red-600" />
-                                                    </Button>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>

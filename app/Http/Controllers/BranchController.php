@@ -14,6 +14,16 @@ use Inertia\Response;
 class BranchController extends Controller
 {
     use LogsActivity;
+
+    private const BUSINESS_HOUR_DAYS = [
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday',
+    ];
     /**
      * Display a listing of the resource.
      */
@@ -73,6 +83,8 @@ class BranchController extends Controller
             'email' => 'required|email:rfc,dns|max:255',
             'status' => 'required|in:active,inactive',
             'business_hours' => 'nullable|array',
+            'business_hours.*.open' => 'nullable|string|max:50',
+            'business_hours.*.close' => 'nullable|string|max:50',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'notes' => 'nullable|string|max:1000',
@@ -88,6 +100,8 @@ class BranchController extends Controller
             'email.required' => 'Email address is required.',
             'email.email' => 'Please enter a valid email address.',
         ]);
+
+        $validated['business_hours'] = $this->sanitizeBusinessHours($validated['business_hours'] ?? null);
 
         try {
             $branch = Branch::create($validated);
@@ -151,6 +165,8 @@ class BranchController extends Controller
             'email' => 'required|email:rfc,dns|max:255',
             'status' => 'required|in:active,inactive',
             'business_hours' => 'nullable|array',
+            'business_hours.*.open' => 'nullable|string|max:50',
+            'business_hours.*.close' => 'nullable|string|max:50',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'notes' => 'nullable|string|max:1000',
@@ -166,6 +182,8 @@ class BranchController extends Controller
             'email.required' => 'Email address is required.',
             'email.email' => 'Please enter a valid email address.',
         ]);
+
+        $validated['business_hours'] = $this->sanitizeBusinessHours($validated['business_hours'] ?? null);
 
         try {
             // Track changes for logging
@@ -268,4 +286,55 @@ class BranchController extends Controller
         }
     }
 
+    /**
+     * Normalize business hours payload for storage.
+     */
+    private function sanitizeBusinessHours(?array $businessHours): ?array
+    {
+        if (empty($businessHours)) {
+            return null;
+        }
+
+        $normalized = [];
+        $hasAny = false;
+
+        foreach (self::BUSINESS_HOUR_DAYS as $day) {
+            $hours = $businessHours[$day] ?? null;
+
+            if (!is_array($hours)) {
+                $normalized[$day] = null;
+                continue;
+            }
+
+            $open = $this->normalizeHoursValue($hours['open'] ?? null);
+            $close = $this->normalizeHoursValue($hours['close'] ?? null);
+
+            if ($open && $close) {
+                $normalized[$day] = [
+                    'open' => $open,
+                    'close' => $close,
+                ];
+                $hasAny = true;
+            } else {
+                $normalized[$day] = null;
+            }
+        }
+
+        return $hasAny ? $normalized : null;
+    }
+
+    private function normalizeHoursValue(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        if ($trimmed === '' || strcasecmp($trimmed, 'closed') === 0) {
+            return null;
+        }
+
+        return $trimmed;
+    }
 }

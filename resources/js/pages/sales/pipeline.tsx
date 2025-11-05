@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrendingUp, Search, Filter, Download, Plus, Eye, Edit, ArrowRight, CheckCircle, Clock, DollarSign, User, Calendar, FileText, Trash2, AlertTriangle, Play, ChevronDown, ChevronUp } from 'lucide-react';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type PageProps } from '@/types';
 import { useState, FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -82,7 +82,7 @@ interface AutoLoggingStats {
     activities_tracked: number;
 }
 
-interface Props {
+interface Props extends PageProps {
     pipelines: {
         data: Pipeline[];
         links: any;
@@ -102,7 +102,7 @@ interface Props {
     salesReps: SalesRep[];
 }
 
-export default function Pipeline({ pipelines, stats, autoLoggingStats, filters, branches, salesReps }: Props) {
+export default function Pipeline({ pipelines, stats, autoLoggingStats, filters, branches, salesReps, auth }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [currentStage, setCurrentStage] = useState(filters.current_stage || 'all');
     const [priority, setPriority] = useState(filters.priority || 'all');
@@ -110,6 +110,11 @@ export default function Pipeline({ pipelines, stats, autoLoggingStats, filters, 
     const [branchId, setBranchId] = useState<string>(filters.branch_id?.toString() || 'all');
     const [probabilityFilter, setProbabilityFilter] = useState(filters.probability || 'all');
     const [isRulesExpanded, setIsRulesExpanded] = useState(false);
+
+    const permissions = auth?.permissions ?? [];
+    const canCreate = permissions.includes('sales.create');
+    const canEdit = permissions.includes('sales.edit');
+    const canDelete = permissions.includes('sales.delete');
 
     const handleFilter = (e: FormEvent) => {
         e.preventDefault();
@@ -127,6 +132,10 @@ export default function Pipeline({ pipelines, stats, autoLoggingStats, filters, 
     };
 
     const handleDelete = (pipeline: Pipeline) => {
+        if (!canDelete) {
+            return;
+        }
+
         if (confirm(`Are you sure you want to delete pipeline ${pipeline.pipeline_id}?`)) {
             router.delete(`/sales/pipeline/${pipeline.id}`);
         }
@@ -145,6 +154,10 @@ export default function Pipeline({ pipelines, stats, autoLoggingStats, filters, 
     };
 
     const handleAutoLossDetection = () => {
+        if (!canEdit) {
+            return;
+        }
+
         if (confirm('This will mark all pipelines inactive for 7+ days as lost. Continue?')) {
             router.post('/sales/pipeline-auto-loss-detection');
         }
@@ -235,12 +248,14 @@ export default function Pipeline({ pipelines, stats, autoLoggingStats, filters, 
                             <Download className="h-4 w-4 mr-2" />
                             Export Pipeline
                         </Button>
-                        <Link href="/sales/pipeline/create">
-                            <Button size="sm">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Manual Entry
-                            </Button>
-                        </Link>
+                        {canCreate && (
+                            <Link href="/sales/pipeline/create">
+                                <Button size="sm">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Manual Entry
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </div>
 
@@ -463,12 +478,14 @@ export default function Pipeline({ pipelines, stats, autoLoggingStats, filters, 
                                             <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                                             <h3 className="text-lg font-medium mb-2">No pipeline opportunities yet</h3>
                                             <p className="text-muted-foreground mb-4">Get started by creating your first pipeline entry</p>
-                                            <Link href="/sales/pipeline/create">
-                                                <Button>
-                                                    <Plus className="h-4 w-4 mr-2" />
-                                                    Manual Entry
-                                                </Button>
-                                            </Link>
+                                            {canCreate && (
+                                                <Link href="/sales/pipeline/create">
+                                                    <Button>
+                                                        <Plus className="h-4 w-4 mr-2" />
+                                                        Manual Entry
+                                                    </Button>
+                                                </Link>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -577,18 +594,22 @@ export default function Pipeline({ pipelines, stats, autoLoggingStats, filters, 
                                                             <Eye className="h-4 w-4" />
                                                         </Button>
                                                     </Link>
-                                                    <Link href={`/sales/pipeline/${pipeline.id}/edit`}>
-                                                        <Button variant="ghost" size="sm">
-                                                            <Edit className="h-4 w-4" />
+                                                    {canEdit && (
+                                                        <Link href={`/sales/pipeline/${pipeline.id}/edit`}>
+                                                            <Button variant="ghost" size="sm">
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                        </Link>
+                                                    )}
+                                                    {canDelete && (
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="sm"
+                                                            onClick={() => handleDelete(pipeline)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 text-red-600" />
                                                         </Button>
-                                                    </Link>
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="sm"
-                                                        onClick={() => handleDelete(pipeline)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4 text-red-600" />
-                                                    </Button>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>

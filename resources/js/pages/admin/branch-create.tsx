@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Building2, Save, MapPin, Phone, Mail, User, Calendar, Loader2 } from 'lucide-react';
+import { ArrowLeft, Building2, Save, MapPin, Phone, Loader2 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState, FormEvent } from 'react';
+import { buildBusinessHoursPayload, type BusinessHours } from '@/utils/business-hours';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -31,7 +31,7 @@ interface BranchCreateProps {
 }
 
 export default function BranchCreate({ regions }: BranchCreateProps) {
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, transform } = useForm({
         name: '',
         code: '',
         description: '',
@@ -48,14 +48,29 @@ export default function BranchCreate({ regions }: BranchCreateProps) {
         email: '',
         fax: '',
         notes: '',
-        weekday_hours: '',
-        saturday_hours: '',
-        sunday_hours: '',
-        status: 'active'
+        status: 'active',
+        business_hours: null as BusinessHours,
     });
+
+    const [weekdayHours, setWeekdayHours] = useState('8:00 AM - 6:00 PM');
+    const [saturdayHours, setSaturdayHours] = useState('8:00 AM - 5:00 PM');
+    const [sundayHours, setSundayHours] = useState('Closed');
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
+        const businessHours = buildBusinessHoursPayload({
+            weekdays: weekdayHours,
+            saturday: saturdayHours,
+            sunday: sundayHours,
+        });
+
+        setData('business_hours', businessHours);
+
+        transform((formData) => ({
+            ...formData,
+            business_hours: businessHours,
+        }));
+
         post('/admin/branch-management', {
             preserveScroll: true,
             onError: (errors) => {
@@ -390,8 +405,8 @@ export default function BranchCreate({ regions }: BranchCreateProps) {
                                     <Input 
                                         id="weekday_hours" 
                                         placeholder="8:00 AM - 6:00 PM" 
-                                        value={data.weekday_hours}
-                                        onChange={(e) => setData('weekday_hours', e.target.value)}
+                                        value={weekdayHours}
+                                        onChange={(e) => setWeekdayHours(e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -399,8 +414,8 @@ export default function BranchCreate({ regions }: BranchCreateProps) {
                                     <Input 
                                         id="saturday_hours" 
                                         placeholder="8:00 AM - 5:00 PM" 
-                                        value={data.saturday_hours}
-                                        onChange={(e) => setData('saturday_hours', e.target.value)}
+                                        value={saturdayHours}
+                                        onChange={(e) => setSaturdayHours(e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -408,8 +423,8 @@ export default function BranchCreate({ regions }: BranchCreateProps) {
                                     <Input 
                                         id="sunday_hours" 
                                         placeholder="Closed" 
-                                        value={data.sunday_hours}
-                                        onChange={(e) => setData('sunday_hours', e.target.value)}
+                                        value={sundayHours}
+                                        onChange={(e) => setSundayHours(e.target.value)}
                                     />
                                 </div>
                             </CardContent>

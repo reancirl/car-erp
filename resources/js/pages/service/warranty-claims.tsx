@@ -111,6 +111,12 @@ export default function WarrantyClaims({ claims, stats, filters, branches, auth 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [claimToDelete, setClaimToDelete] = useState<WarrantyClaim | null>(null);
 
+    const permissions = auth?.permissions ?? [];
+    const canCreate = permissions.includes('warranty.create');
+    const canEdit = permissions.includes('warranty.edit');
+    const canDelete = permissions.includes('warranty.delete');
+    const canRestore = permissions.includes('warranty.create');
+
     const handleFilter = () => {
         router.get('/service/warranty-claims', {
             search: search || undefined,
@@ -126,11 +132,21 @@ export default function WarrantyClaims({ claims, stats, filters, branches, auth 
     };
 
     const handleDelete = (claim: WarrantyClaim) => {
+        if (!canDelete) {
+            return;
+        }
+
         setClaimToDelete(claim);
         setDeleteDialogOpen(true);
     };
 
     const confirmDelete = () => {
+        if (!claimToDelete || !canDelete) {
+            setDeleteDialogOpen(false);
+            setClaimToDelete(null);
+            return;
+        }
+
         if (claimToDelete) {
             router.delete(`/service/warranty-claims/${claimToDelete.id}`, {
                 preserveScroll: true,
@@ -143,6 +159,10 @@ export default function WarrantyClaims({ claims, stats, filters, branches, auth 
     };
 
     const handleRestore = (id: number) => {
+        if (!canRestore) {
+            return;
+        }
+
         router.post(`/service/warranty-claims/${id}/restore`, {}, {
             preserveScroll: true,
         });
@@ -235,12 +255,14 @@ export default function WarrantyClaims({ claims, stats, filters, branches, auth 
                             <Download className="h-4 w-4 mr-2" />
                             Export Report
                         </Button>
-                        <Link href="/service/warranty-claims/create">
-                            <Button size="sm">
-                                <Plus className="h-4 w-4 mr-2" />
-                                New Claim
-                            </Button>
-                        </Link>
+                        {canCreate && (
+                            <Link href="/service/warranty-claims/create">
+                                <Button size="sm">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    New Claim
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </div>
 
@@ -454,13 +476,15 @@ export default function WarrantyClaims({ claims, stats, filters, branches, auth 
                                                 <TableCell>
                                                     <div className="flex space-x-1">
                                                         {claim.deleted_at ? (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleRestore(claim.id)}
-                                                            >
-                                                                <RefreshCw className="h-4 w-4" />
-                                                            </Button>
+                                                            canRestore ? (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => handleRestore(claim.id)}
+                                                                >
+                                                                    <RefreshCw className="h-4 w-4" />
+                                                                </Button>
+                                                            ) : null
                                                         ) : (
                                                             <>
                                                                 <Link href={`/service/warranty-claims/${claim.id}`}>
@@ -468,20 +492,22 @@ export default function WarrantyClaims({ claims, stats, filters, branches, auth 
                                                                         <Eye className="h-4 w-4" />
                                                                     </Button>
                                                                 </Link>
-                                                                {claim.status === 'draft' && (
+                                                                {claim.status === 'draft' && canEdit && (
                                                                     <>
                                                                         <Link href={`/service/warranty-claims/${claim.id}/edit`}>
                                                                             <Button variant="ghost" size="sm">
                                                                                 <Edit className="h-4 w-4" />
                                                                             </Button>
                                                                         </Link>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="sm"
-                                                                            onClick={() => handleDelete(claim)}
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                        </Button>
+                                                                        {canDelete && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={() => handleDelete(claim)}
+                                                                            >
+                                                                                <Trash2 className="h-4 w-4" />
+                                                                            </Button>
+                                                                        )}
                                                                     </>
                                                                 )}
                                                             </>
@@ -527,12 +553,14 @@ export default function WarrantyClaims({ claims, stats, filters, branches, auth 
                                         ? 'Try adjusting your filters'
                                         : 'Get started by creating your first warranty claim'}
                                 </p>
-                                <Link href="/service/warranty-claims/create">
-                                    <Button>
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Create Warranty Claim
-                                    </Button>
-                                </Link>
+                                {canCreate && (
+                                    <Link href="/service/warranty-claims/create">
+                                        <Button>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Create Warranty Claim
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
                         )}
                     </CardContent>
@@ -551,7 +579,11 @@ export default function WarrantyClaims({ claims, stats, filters, branches, auth 
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+                        <AlertDialogAction
+                            onClick={confirmDelete}
+                            className="bg-red-600 hover:bg-red-700"
+                            disabled={!canDelete}
+                        >
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>

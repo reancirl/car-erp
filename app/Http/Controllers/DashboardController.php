@@ -462,7 +462,8 @@ class DashboardController extends Controller
             ->get();
 
         // Top Performing Sales Reps (by units sold)
-        $topSalesReps = VehicleUnit::whereIn('vehicle_units.branch_id', $branchFilter)
+        $topSalesReps = VehicleUnit::withoutBranchScope()
+            ->whereIn('vehicle_units.branch_id', $branchFilter)
             ->where('vehicle_units.status', 'sold')
             ->whereBetween('vehicle_units.updated_at', [$start, $end])
             ->whereNotNull('vehicle_units.assigned_user_id')

@@ -27,9 +27,13 @@ class UserController extends Controller
             ->when(request('include_deleted'), function ($query) {
                 $query->withTrashed();
             })
-            ->when(request('search'), function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = trim((string) $request->input('search'));
+
+                $query->where(function ($searchQuery) use ($search) {
+                    $searchQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
             })
             ->when(request('branch_id'), function ($query, $branchId) {
                 $query->where('branch_id', $branchId);

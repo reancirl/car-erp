@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             BranchSeeder::class,
             AttributeDefinitionsSeeder::class,
             VehicleModelPermissionsSeeder::class,
+            TestUsersSeeder::class,
         ]);
 
         // Ensure there is a default admin user we can reference in seed data

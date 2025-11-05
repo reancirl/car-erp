@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, Search, Plus, Eye, Edit, Trash2, Star, Building2, Mail, Phone, TrendingUp, CheckCircle, AlertTriangle, XCircle, Crown } from 'lucide-react';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type PageProps } from '@/types';
 import { useState, FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -62,7 +62,7 @@ interface Stats {
     total_lifetime_value: number;
 }
 
-interface Props {
+interface Props extends PageProps {
     customers: {
         data: Customer[];
         links: any;
@@ -80,13 +80,18 @@ interface Props {
     branches: Branch[] | null;
 }
 
-export default function CustomerExperience({ customers, stats, filters, branches }: Props) {
+export default function CustomerExperience({ customers, stats, filters, branches, auth }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || 'all');
     const [customerType, setCustomerType] = useState(filters.customer_type || 'all');
     const [satisfactionRating, setSatisfactionRating] = useState(filters.satisfaction_rating || 'all');
     const [branchId, setBranchId] = useState<string>(filters.branch_id?.toString() || 'all');
     const [includeDeleted, setIncludeDeleted] = useState(filters.include_deleted || false);
+
+    const permissions = auth?.permissions ?? [];
+    const canCreate = permissions.includes('customer.create');
+    const canEdit = permissions.includes('customer.edit');
+    const canDelete = permissions.includes('customer.delete');
 
     const handleFilter = (e: FormEvent) => {
         e.preventDefault();
@@ -104,12 +109,20 @@ export default function CustomerExperience({ customers, stats, filters, branches
     };
 
     const handleDelete = (customer: Customer) => {
+        if (!canDelete) {
+            return;
+        }
+
         if (confirm(`Are you sure you want to delete customer ${customer.customer_id}?`)) {
             router.delete(`/sales/customer-experience/${customer.id}`);
         }
     };
 
     const handleRestore = (customer: Customer) => {
+        if (!canCreate) {
+            return;
+        }
+
         if (confirm(`Restore customer ${customer.customer_id}?`)) {
             router.post(`/sales/customer-experience/${customer.id}/restore`);
         }
@@ -228,12 +241,14 @@ export default function CustomerExperience({ customers, stats, filters, branches
                             Manage customer relationships and track satisfaction
                         </p>
                     </div>
-                    <Link href="/sales/customer-experience/create">
-                        <Button>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Customer
-                        </Button>
-                    </Link>
+                    {canCreate && (
+                        <Link href="/sales/customer-experience/create">
+                            <Button>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Customer
+                            </Button>
+                        </Link>
+                    )}
                 </div>
 
                 {/* Stats Cards */}
@@ -414,12 +429,14 @@ export default function CustomerExperience({ customers, stats, filters, branches
                                         ? 'Try adjusting your filters'
                                         : 'Get started by adding your first customer'}
                                 </p>
-                                <Link href="/sales/customer-experience/create">
-                                    <Button>
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Add Customer
-                                    </Button>
-                                </Link>
+                                {canCreate && (
+                                    <Link href="/sales/customer-experience/create">
+                                        <Button>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Add Customer
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
                         ) : (
                             <>
@@ -477,26 +494,31 @@ export default function CustomerExperience({ customers, stats, filters, branches
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end space-x-1">
                                                         {customer.deleted_at ? (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleRestore(customer)}
-                                                                title="Restore"
-                                                            >
-                                                                <CheckCircle className="h-4 w-4" />
-                                                            </Button>
+                                                            canCreate && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => handleRestore(customer)}
+                                                                    title="Restore"
+                                                                >
+                                                                    <CheckCircle className="h-4 w-4" />
+                                                                </Button>
+                                                            )
                                                         ) : (
                                                             <>
                                                                 <Link href={`/sales/customer-experience/${customer.id}`}>
                                                                     <Button variant="ghost" size="sm" title="View">
                                                                         <Eye className="h-4 w-4" />
                                                                     </Button>
-                                                                </Link>
+                                                            </Link>
+                                                            {canEdit && (
                                                                 <Link href={`/sales/customer-experience/${customer.id}/edit`}>
                                                                     <Button variant="ghost" size="sm" title="Edit">
                                                                         <Edit className="h-4 w-4" />
                                                                     </Button>
                                                                 </Link>
+                                                            )}
+                                                            {canDelete && (
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
@@ -505,8 +527,9 @@ export default function CustomerExperience({ customers, stats, filters, branches
                                                                 >
                                                                     <Trash2 className="h-4 w-4 text-red-600" />
                                                                 </Button>
-                                                            </>
-                                                        )}
+                                                            )}
+                                                        </>
+                                                    )}
                                                     </div>
                                                 </TableCell>
                                             </TableRow>

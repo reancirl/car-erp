@@ -6,8 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Car, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, MapPin, DollarSign, Calendar, User, Fuel, Gauge, Trash2, RotateCcw, ArrowRightLeft } from 'lucide-react';
-import { type BreadcrumbItem } from '@/types';
+import { Car, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, MapPin, User, Fuel, Trash2, RotateCcw, ArrowRightLeft } from 'lucide-react';
+import { type BreadcrumbItem, type PageProps } from '@/types';
 import { useState, FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -75,7 +75,7 @@ interface Stats {
     total_value: number;
 }
 
-interface Props {
+interface Props extends PageProps {
     records: {
         data: VehicleUnit[];
         links: any;
@@ -91,18 +91,6 @@ interface Props {
         include_deleted?: boolean;
     };
     branches: Branch[] | null;
-    auth?: {
-        user?: {
-            id: number;
-            name: string;
-            email: string;
-            branch_id: number;
-            roles: any[];
-            mfa_enabled: boolean;
-        };
-        permissions?: string[];
-        roles?: string[];
-    };
 }
 
 export default function VehicleInventory({ records, stats, filters, branches, auth }: Props) {
@@ -110,6 +98,13 @@ export default function VehicleInventory({ records, stats, filters, branches, au
     const [branchId, setBranchId] = useState<string>(filters?.branch_id?.toString() || 'all');
     const [status, setStatus] = useState(filters?.status || 'all');
     const [includeDeleted, setIncludeDeleted] = useState(filters?.include_deleted || false);
+
+    const permissions = auth?.permissions ?? [];
+    const roles = auth?.roles ?? [];
+    const canCreate = permissions.includes('inventory.create');
+    const canEdit = permissions.includes('inventory.edit');
+    const canDelete = permissions.includes('inventory.delete');
+    const canRestore = permissions.includes('inventory.create');
 
     const handleFilter = (e: FormEvent) => {
         e.preventDefault();
@@ -125,6 +120,10 @@ export default function VehicleInventory({ records, stats, filters, branches, au
     };
 
     const handleDelete = (id: number) => {
+        if (!canDelete) {
+            return;
+        }
+
         if (confirm('Are you sure you want to delete this vehicle unit?')) {
             router.delete(`/inventory/units/${id}`, {
                 preserveScroll: true,
@@ -133,6 +132,10 @@ export default function VehicleInventory({ records, stats, filters, branches, au
     };
 
     const handleRestore = (id: number) => {
+        if (!canRestore) {
+            return;
+        }
+
         if (confirm('Are you sure you want to restore this vehicle unit?')) {
             router.post(`/inventory/units/${id}/restore`, {}, {
                 preserveScroll: true,
@@ -147,7 +150,7 @@ export default function VehicleInventory({ records, stats, filters, branches, au
         }).format(amount);
     };
 
-    const isAdmin = auth?.roles?.includes('admin') || auth?.roles?.includes('auditor');
+    const isAdmin = roles.includes('admin') || roles.includes('auditor');
 
     const getStatusBadge = (status: string) => {
         const statusConfig = {
@@ -210,12 +213,14 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                             <Download className="h-4 w-4 mr-2" />
                             Export Report
                         </Button>
-                        <Link href="/inventory/vehicles/create">
-                            <Button size="sm">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Vehicle
-                            </Button>
-                        </Link>
+                        {canCreate && (
+                            <Link href="/inventory/vehicles/create">
+                                <Button size="sm">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Vehicle
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </div>
 
@@ -373,7 +378,19 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                 {!records?.data || records.data.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                                            No vehicle units found. Try adjusting your filters.
+                                            <div className="space-y-3">
+                                                <div>No vehicle units found. Try adjusting your filters.</div>
+                                                {canCreate && (
+                                                    <div>
+                                                        <Link href="/inventory/vehicles/create">
+                                                            <Button size="sm">
+                                                                <Plus className="h-4 w-4 mr-2" />
+                                                                Add Vehicle
+                                                            </Button>
+                                                        </Link>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -486,24 +503,24 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                             <Eye className="h-4 w-4" />
                                                         </Button>
                                                     </Link>
-                                                    {!unit.deleted_at && (
-                                                        <>
-                                                            <Link href={`/inventory/vehicles/${unit.id}/edit`}>
-                                                                <Button variant="ghost" size="sm" title="Edit">
-                                                                    <Edit className="h-4 w-4" />
-                                                                </Button>
-                                                            </Link>
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="sm" 
-                                                                onClick={() => handleDelete(unit.id)}
-                                                                title="Delete"
-                                                            >
-                                                                <Trash2 className="h-4 w-4 text-red-600" />
+                                                    {!unit.deleted_at && canEdit && (
+                                                        <Link href={`/inventory/vehicles/${unit.id}/edit`}>
+                                                            <Button variant="ghost" size="sm" title="Edit">
+                                                                <Edit className="h-4 w-4" />
                                                             </Button>
-                                                        </>
+                                                        </Link>
                                                     )}
-                                                    {unit.deleted_at && (
+                                                    {!unit.deleted_at && canDelete && (
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="sm" 
+                                                            onClick={() => handleDelete(unit.id)}
+                                                            title="Delete"
+                                                        >
+                                                            <Trash2 className="h-4 w-4 text-red-600" />
+                                                        </Button>
+                                                    )}
+                                                    {unit.deleted_at && canRestore && (
                                                         <Button 
                                                             variant="ghost" 
                                                             size="sm" 

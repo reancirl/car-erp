@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState, FormEvent } from 'react';
+import { buildBusinessHoursPayload, formatOperatingHoursInput, type BusinessHours } from '@/utils/business-hours';
 
 interface Branch {
     id: number;
@@ -34,7 +35,7 @@ interface Branch {
     phone?: string;
     email?: string;
     status: 'active' | 'inactive' | 'maintenance';
-    business_hours?: Record<string, { open: string; close: string }> | null;
+    business_hours?: BusinessHours;
     latitude?: number;
     longitude?: number;
     notes?: string;
@@ -63,7 +64,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function BranchEdit({ branch, regions }: BranchEditProps) {
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, put, processing, errors, transform } = useForm({
         name: branch.name,
         code: branch.code,
         address: branch.address,
@@ -77,11 +78,37 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
         latitude: branch.latitude?.toString() || '',
         longitude: branch.longitude?.toString() || '',
         notes: branch.notes || '',
-        business_hours: branch.business_hours || null,
+        business_hours: branch.business_hours ?? null,
     });
+
+    const [weekdayHours, setWeekdayHours] = useState(() => {
+        const formatted = formatOperatingHoursInput(branch.business_hours?.['monday'] ?? null);
+        return formatted === 'Closed' ? '' : formatted;
+    });
+    const [saturdayHours, setSaturdayHours] = useState(() => {
+        const formatted = formatOperatingHoursInput(branch.business_hours?.['saturday'] ?? null);
+        return formatted === 'Closed' ? '' : formatted;
+    });
+    const [sundayHours, setSundayHours] = useState(() =>
+        formatOperatingHoursInput(branch.business_hours?.['sunday'] ?? null)
+    );
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
+
+        const businessHours = buildBusinessHoursPayload({
+            weekdays: weekdayHours,
+            saturday: saturdayHours,
+            sunday: sundayHours,
+        });
+
+        setData('business_hours', businessHours);
+
+        transform((formData) => ({
+            ...formData,
+            business_hours: businessHours,
+        }));
+
         put(`/admin/branch-management/${branch.id}`, {
             preserveScroll: true,
             onError: (errors) => {
@@ -452,21 +479,27 @@ export default function BranchEdit({ branch, regions }: BranchEditProps) {
                                     <Label htmlFor="weekday_hours">Weekdays</Label>
                                     <Input 
                                         id="weekday_hours" 
-                                        defaultValue={branch.business_hours?.monday ? `${branch.business_hours.monday.open} - ${branch.business_hours.monday.close}` : ''}
+                                        placeholder="8:00 AM - 6:00 PM"
+                                        value={weekdayHours}
+                                        onChange={(e) => setWeekdayHours(e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="saturday_hours">Saturday</Label>
                                     <Input 
                                         id="saturday_hours" 
-                                        defaultValue={branch.business_hours?.saturday ? `${branch.business_hours.saturday.open} - ${branch.business_hours.saturday.close}` : ''}
+                                        placeholder="8:00 AM - 5:00 PM"
+                                        value={saturdayHours}
+                                        onChange={(e) => setSaturdayHours(e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="sunday_hours">Sunday</Label>
                                     <Input 
                                         id="sunday_hours" 
-                                        defaultValue={branch.business_hours?.sunday?.open ? `${branch.business_hours.sunday.open} - ${branch.business_hours.sunday.close}` : 'Closed'}
+                                        placeholder="Closed"
+                                        value={sundayHours}
+                                        onChange={(e) => setSundayHours(e.target.value)}
                                     />
                                 </div>
                             </CardContent>

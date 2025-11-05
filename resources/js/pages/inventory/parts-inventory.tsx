@@ -9,11 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Package, Search, Plus, Eye, Edit, Trash2, RotateCcw, AlertTriangle, CheckCircle, XCircle, TrendingDown, DollarSign, Scan } from 'lucide-react';
-import { type BreadcrumbItem, type PartInventory, type Branch, type PaginatedResponse } from '@/types';
+import { Package, Search, Plus, Eye, Edit, Trash2, RotateCcw, AlertTriangle, CheckCircle, XCircle, TrendingDown, Scan } from 'lucide-react';
+import { type BreadcrumbItem, type PartInventory, type Branch, type PaginatedResponse, type PageProps } from '@/types';
 import { PART_CATEGORIES } from '@/constants/parts';
 
-interface Props {
+interface Props extends PageProps {
     parts: PaginatedResponse<PartInventory>;
     stats: {
         total_parts: number;
@@ -39,9 +39,15 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Parts Inventory', href: '/inventory/parts-inventory' },
 ];
 
-export default function PartsInventory({ parts, stats, filters, branches }: Props) {
+export default function PartsInventory({ parts, stats, filters, branches, auth }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [deleteId, setDeleteId] = useState<number | null>(null);
+
+    const permissions = auth?.permissions ?? [];
+    const canCreate = permissions.includes('inventory.create');
+    const canEdit = permissions.includes('inventory.edit');
+    const canDelete = permissions.includes('inventory.delete');
+    const canRestore = permissions.includes('inventory.create');
 
     const handleSearch = (value: string) => {
         setSearch(value);
@@ -63,12 +69,21 @@ export default function PartsInventory({ parts, stats, filters, branches }: Prop
     };
 
     const handleDelete = (id: number) => {
+        if (!canDelete) {
+            setDeleteId(null);
+            return;
+        }
+
         router.delete(route('parts-inventory.destroy', id), {
             onSuccess: () => setDeleteId(null),
         });
     };
 
     const handleRestore = (id: number) => {
+        if (!canRestore) {
+            return;
+        }
+
         router.post(route('parts-inventory.restore', id));
     };
 
@@ -177,12 +192,14 @@ export default function PartsInventory({ parts, stats, filters, branches }: Prop
                                 Scanner
                             </Button>
                         </a>
-                        <Link href={route('parts-inventory.create')}>
-                            <Button>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Part
-                            </Button>
-                        </Link>
+                        {canCreate && (
+                            <Link href={route('parts-inventory.create')}>
+                                <Button>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Part
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </div>
 
@@ -329,12 +346,14 @@ export default function PartsInventory({ parts, stats, filters, branches }: Prop
                                 <p className="text-muted-foreground mb-4">
                                     Get started by adding your first part to inventory.
                                 </p>
-                                <Link href={route('parts-inventory.create')}>
-                                    <Button>
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Add Part
-                                    </Button>
-                                </Link>
+                                {canCreate && (
+                                    <Link href={route('parts-inventory.create')}>
+                                        <Button>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Add Part
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
                         ) : (
                             <>
@@ -405,14 +424,16 @@ export default function PartsInventory({ parts, stats, filters, branches }: Prop
                                                 <TableCell>
                                                     <div className="flex space-x-1">
                                                         {part.deleted_at ? (
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="sm" 
-                                                                onClick={() => handleRestore(part.id)}
-                                                                title="Restore"
-                                                            >
-                                                                <RotateCcw className="h-4 w-4" />
-                                                            </Button>
+                                                            canRestore ? (
+                                                                <Button 
+                                                                    variant="ghost" 
+                                                                    size="sm" 
+                                                                    onClick={() => handleRestore(part.id)}
+                                                                    title="Restore"
+                                                                >
+                                                                    <RotateCcw className="h-4 w-4" />
+                                                                </Button>
+                                                            ) : null
                                                         ) : (
                                                             <>
                                                                 <Link href={route('parts-inventory.show', part.id)}>
@@ -420,19 +441,23 @@ export default function PartsInventory({ parts, stats, filters, branches }: Prop
                                                                         <Eye className="h-4 w-4" />
                                                                     </Button>
                                                                 </Link>
-                                                                <Link href={route('parts-inventory.edit', part.id)}>
-                                                                    <Button variant="ghost" size="sm" title="Edit">
-                                                                        <Edit className="h-4 w-4" />
+                                                                {canEdit && (
+                                                                    <Link href={route('parts-inventory.edit', part.id)}>
+                                                                        <Button variant="ghost" size="sm" title="Edit">
+                                                                            <Edit className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </Link>
+                                                                )}
+                                                                {canDelete && (
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="sm" 
+                                                                        onClick={() => setDeleteId(part.id)}
+                                                                        title="Delete"
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
                                                                     </Button>
-                                                                </Link>
-                                                                <Button 
-                                                                    variant="ghost" 
-                                                                    size="sm" 
-                                                                    onClick={() => setDeleteId(part.id)}
-                                                                    title="Delete"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
+                                                                )}
                                                             </>
                                                         )}
                                                     </div>
@@ -468,7 +493,7 @@ export default function PartsInventory({ parts, stats, filters, branches }: Prop
                 </Card>
 
                 {/* Delete Confirmation Dialog */}
-                {deleteId && (
+                {deleteId && canDelete && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                         <Card className="w-full max-w-md">
                             <CardHeader>
@@ -482,7 +507,7 @@ export default function PartsInventory({ parts, stats, filters, branches }: Prop
                                     <Button variant="outline" onClick={() => setDeleteId(null)}>
                                         Cancel
                                     </Button>
-                                    <Button variant="destructive" onClick={() => handleDelete(deleteId)}>
+                                    <Button variant="destructive" onClick={() => handleDelete(deleteId)} disabled={!canDelete}>
                                         Delete
                                     </Button>
                                 </div>
