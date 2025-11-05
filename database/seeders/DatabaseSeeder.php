@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
 
         // Ensure there is a default admin user we can reference in seed data
         $admin = User::firstOrCreate(
-            ['email' => 'admin@mikaroerp.com'],
+            ['email' => User::SUPER_ADMIN_EMAIL],
             [
                 'name' => 'Admin User',
                 'password' => Hash::make('mikaroerp2^2!5'),

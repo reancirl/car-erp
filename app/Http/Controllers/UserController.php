@@ -22,6 +22,7 @@ class UserController extends Controller
     public function index(): Response
     {
         $users = User::query()
+            ->excludeSuperAdmin()
             ->with(['branch', 'roles'])
             ->when(request('include_deleted'), function ($query) {
                 $query->withTrashed();

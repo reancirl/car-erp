@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -14,6 +15,11 @@ class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles, SoftDeletes;
+
+    /**
+     * Email address for the system super admin account.
+     */
+    public const SUPER_ADMIN_EMAIL = 'admin@mikaroerp.com';
 
     /**
      * The attributes that are mass assignable.
@@ -56,5 +62,21 @@ class User extends Authenticatable
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Limit results to users that should remain visible in management views.
+     */
+    public function scopeExcludeSuperAdmin(Builder $query): Builder
+    {
+        return $query->where('email', '!=', self::SUPER_ADMIN_EMAIL);
+    }
+
+    /**
+     * Determine if the user record represents the system super admin.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->email === self::SUPER_ADMIN_EMAIL;
     }
 }
