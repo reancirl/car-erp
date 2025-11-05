@@ -136,6 +136,8 @@ class UserController extends Controller
      */
     public function show(User $user): Response
     {
+        abort_if($user->isSuperAdmin(), 404);
+
         $user->load(['branch', 'roles', 'permissions']);
 
         return Inertia::render('admin/user-view', [
@@ -148,6 +150,8 @@ class UserController extends Controller
      */
     public function edit(User $user): Response
     {
+        abort_if($user->isSuperAdmin(), 404);
+
         $user->load(['branch', 'roles']);
 
         $branches = Branch::where('status', 'active')
@@ -168,6 +172,11 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): RedirectResponse
     {
+        if ($user->isSuperAdmin()) {
+            return redirect()->route('admin.user-management.index')
+                ->with('error', 'The system super admin cannot be modified from this screen.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|min:3|max:255',
             'email' => ['required', 'email:rfc,dns', 'max:255', Rule::unique('users')->ignore($user->id)],
@@ -249,6 +258,11 @@ class UserController extends Controller
      */
     public function destroy(User $user): RedirectResponse
     {
+        if ($user->isSuperAdmin()) {
+            return redirect()->route('admin.user-management.index')
+                ->with('error', 'The system super admin cannot be deleted.');
+        }
+
         try {
             $userName = $user->name;
             $userEmail = $user->email;
@@ -283,6 +297,11 @@ class UserController extends Controller
     {
         try {
             $user = User::withTrashed()->findOrFail($id);
+
+            if ($user->isSuperAdmin()) {
+                return redirect()->route('admin.user-management.index')
+                    ->with('error', 'The system super admin cannot be restored from this screen.');
+            }
             
             // Check if already active
             if (!$user->trashed()) {
