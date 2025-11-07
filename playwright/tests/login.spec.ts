@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 import { loginAsPlaywrightUser } from '../utils/auth';
 
 const loginEmail = process.env.PLAYWRIGHT_LOGIN_EMAIL ?? 'playwright.login.tester@car-erp.test';
-const loginPassword = process.env.PLAYWRIGHT_LOGIN_PASSWORD ?? 'password';
 
 test.describe('Authentication / Login', () => {
     test('allows a user with valid credentials to reach the dashboard', async ({ page }) => {

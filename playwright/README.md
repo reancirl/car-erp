@@ -22,6 +22,7 @@ npm run test:e2e
 - `playwright/tests/user-management.spec.ts` – Covers creating, editing, filtering, and soft deleting users within the administration console.
 - `playwright/tests/lead-management.spec.ts` – Covers the sales lead lifecycle (create, update, filter combinations, and soft delete) with score/source/status filters.
 - `playwright/tests/pipeline.spec.ts` – Exercises the pipeline auto-logging board including manual entry, edits, filter toggles, automation trigger, and deletion.
+- `playwright/tests/customer-experience.spec.ts` – Validates the customer-experience CRM (create, view, edit, filter across facets, delete, restore, and action buttons).
 - `playwright/AUTOMATION_PLAYBOOK.md` – Patterns and checklist for extending the suite to additional modules.
 
 The global setup will:

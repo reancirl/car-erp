@@ -132,7 +132,8 @@ class Customer extends Model
     private static function generateCustomerId(): string
     {
         $year = date('Y');
-        $lastCustomer = self::whereYear('created_at', $year)
+        $lastCustomer = self::withTrashed()
+            ->whereYear('created_at', $year)
             ->orderBy('id', 'desc')
             ->first();
 
