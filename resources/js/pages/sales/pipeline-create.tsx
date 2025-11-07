@@ -521,7 +521,11 @@ export default function PipelineCreate({ branches, salesReps, leads, vehicleMode
                             <CardDescription>Additional information about this opportunity</CardDescription>
                         </CardHeader>
                         <CardContent>
+                            <Label htmlFor="notes" className="sr-only">
+                                Notes
+                            </Label>
                             <Textarea
+                                id="notes"
                                 value={data.notes}
                                 onChange={(e) => setData('notes', e.target.value)}
                                 placeholder="Enter any additional notes..."

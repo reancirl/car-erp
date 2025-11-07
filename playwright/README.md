@@ -19,6 +19,9 @@ npm run test:e2e
 ## Available scenarios
 - `playwright/tests/login.spec.ts` – Validates the primary login happy path and a failure case.
 - `playwright/tests/branch-management.spec.ts` – Covers creating, updating, and soft deleting branch records from the admin console.
+- `playwright/tests/user-management.spec.ts` – Covers creating, editing, filtering, and soft deleting users within the administration console.
+- `playwright/tests/lead-management.spec.ts` – Covers the sales lead lifecycle (create, update, filter combinations, and soft delete) with score/source/status filters.
+- `playwright/tests/pipeline.spec.ts` – Exercises the pipeline auto-logging board including manual entry, edits, filter toggles, automation trigger, and deletion.
 - `playwright/AUTOMATION_PLAYBOOK.md` – Patterns and checklist for extending the suite to additional modules.
 
 The global setup will:

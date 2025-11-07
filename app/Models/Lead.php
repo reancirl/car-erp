@@ -110,7 +110,8 @@ class Lead extends Model
     private static function generateLeadId(): string
     {
         $year = date('Y');
-        $lastLead = self::whereYear('created_at', $year)
+        $lastLead = self::withTrashed()
+            ->whereYear('created_at', $year)
             ->orderBy('id', 'desc')
             ->first();
 
