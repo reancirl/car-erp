@@ -45,12 +45,14 @@ test.describe('Administration / User Management', () => {
         await expect(page).toHaveURL(/\/admin\/user-management(\?.*)?$/);
 
         const searchInput = page.getByPlaceholder('Search by name or email...');
-        const applyFiltersButton = page.getByRole('button', { name: 'Apply' });
+        const applyFilters = async () => {
+            await searchInput.press('Enter');
+        };
         const branchFilter = page.locator('[data-slot="select-trigger"]').first();
         const roleFilter = page.locator('[data-slot="select-trigger"]').nth(1);
 
         await searchInput.fill(initialEmail);
-        await searchInput.press('Enter');
+        await applyFilters();
 
         const createdRow = rowForEmail(initialEmail);
         await expect(createdRow).toHaveCount(1);
@@ -77,7 +79,7 @@ test.describe('Administration / User Management', () => {
         await expect(page).toHaveURL(/\/admin\/user-management(\?.*)?$/);
 
         await searchInput.fill(updatedEmail);
-        await searchInput.press('Enter');
+        await applyFilters();
 
         const updatedRow = rowForEmail(updatedEmail);
         await expect(updatedRow).toHaveCount(1);
@@ -87,36 +89,36 @@ test.describe('Administration / User Management', () => {
 
         await branchFilter.click();
         await page.getByRole('option', { name: updatedBranchFilterOption, exact: true }).click();
-        await applyFiltersButton.click();
+        await applyFilters();
         await expect(rowForEmail(updatedEmail)).toHaveCount(1);
 
         await branchFilter.click();
         await page.getByRole('option', { name: initialBranchFilterOption, exact: true }).click();
-        await applyFiltersButton.click();
+        await applyFilters();
         await expect(rowForEmail(updatedEmail)).toHaveCount(0);
 
         await branchFilter.click();
         await page.getByRole('option', { name: 'All Branches', exact: true }).click();
-        await applyFiltersButton.click();
+        await applyFilters();
         await expect(rowForEmail(updatedEmail)).toHaveCount(1);
 
         await roleFilter.click();
         await page.getByRole('option', { name: updatedRoleOption, exact: true }).click();
-        await applyFiltersButton.click();
+        await applyFilters();
         await expect(rowForEmail(updatedEmail)).toHaveCount(1);
 
         await roleFilter.click();
         await page.getByRole('option', { name: alternateRoleOption, exact: true }).click();
-        await applyFiltersButton.click();
+        await applyFilters();
         await expect(rowForEmail(updatedEmail)).toHaveCount(0);
 
         await roleFilter.click();
         await page.getByRole('option', { name: 'All Roles', exact: true }).click();
-        await applyFiltersButton.click();
+        await applyFilters();
         await expect(rowForEmail(updatedEmail)).toHaveCount(1);
 
         await searchInput.fill(updatedEmail);
-        await searchInput.press('Enter');
+        await applyFilters();
 
         const rowForDeletion = rowForEmail(updatedEmail);
         await expect(rowForDeletion).toHaveCount(1);
@@ -127,7 +129,7 @@ test.describe('Administration / User Management', () => {
         await expect(page.getByRole('alert').first()).toContainText('User deleted successfully');
 
         await searchInput.fill(updatedEmail);
-        await searchInput.press('Enter');
+        await applyFilters();
         await expect(rowForEmail(updatedEmail)).toHaveCount(0);
     });
 });

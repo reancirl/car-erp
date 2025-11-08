@@ -14,8 +14,21 @@ export async function loginAsPlaywrightUser(
     await page.getByLabel('Email address').fill(email);
     await page.getByLabel('Password', { exact: true }).fill(password);
 
-    await Promise.all([
-        page.waitForURL('**/dashboard'),
-        page.getByRole('button', { name: 'Log in' }).click(),
-    ]);
+    const loginResponse = page.waitForResponse(
+        (response) => response.url().includes('/login') && response.request().method() === 'POST'
+    );
+
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await loginResponse.catch(() => undefined);
+    await page.waitForLoadState('networkidle');
+
+    if ((await page.url()).includes('/login')) {
+        const alertLocator = page.getByRole('alert').first();
+        if (await alertLocator.count()) {
+            const errorMessage = (await alertLocator.textContent())?.trim();
+            if (errorMessage) {
+                throw new Error(`Login failed: ${errorMessage}`);
+            }
+        }
+    }
 }

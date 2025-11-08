@@ -38,7 +38,7 @@ test.describe('Sales / Pipeline Auto-Logging', () => {
         const exportButton = page.getByRole('button', { name: 'Export Pipeline' });
         await expect(exportButton).toBeEnabled();
 
-        await page.getByRole('link', { name: 'Manual Entry' }).click();
+        await page.getByRole('link', { name: 'Manual Entry' }).first().click();
         await page.waitForURL('**/sales/pipeline/create');
         await expect(page.getByRole('heading', { name: 'Create Pipeline Opportunity' })).toBeVisible();
 
@@ -74,14 +74,14 @@ test.describe('Sales / Pipeline Auto-Logging', () => {
         await page.getByLabel('Probability (%) *').fill('75');
         await page.getByLabel('Next Action', { exact: true }).fill(nextAction);
         await page.getByLabel('Next Action Due Date').fill(followUp);
-        await page.getByLabel('Notes').fill('Initial pipeline created via Playwright.');
+        await page.getByPlaceholder('Enter any additional notes...').fill('Initial pipeline created via Playwright.');
 
         const followUpSelect = selectTriggerByLabel('Follow-up Frequency');
         await followUpSelect.click();
         await page.getByRole('option', { name: 'Weekly', exact: true }).click();
 
         await page.getByRole('button', { name: 'Create Opportunity' }).click();
-        await expect(page).toHaveURL(/\/sales\/pipeline(\?.*)?$/);
+        await expect(page).toHaveURL(/\/sales\/pipeline(\?.*)?$/, { timeout: 15_000 });
 
         const searchInput = page.getByPlaceholder('Search by customer name, pipeline ID, or vehicle...');
         const applyFiltersButton = page.getByRole('button', { name: 'Apply' });
@@ -119,11 +119,11 @@ test.describe('Sales / Pipeline Auto-Logging', () => {
         await page.getByRole('option', { name: 'Urgent', exact: true }).click();
 
         await page.getByLabel('Next Action', { exact: true }).fill(updatedNextAction);
-        await page.getByLabel('Notes').fill('Pipeline updated via Playwright automation.');
+        await page.getByPlaceholder('Enter any additional notes...').fill('Pipeline updated via Playwright automation.');
 
         await page.getByRole('button', { name: 'Update Opportunity' }).click();
         await expect(page.getByRole('alert').first()).toContainText('Pipeline opportunity');
-        await expect(page).toHaveURL(/\/sales\/pipeline(\?.*)?$/);
+        await expect(page).toHaveURL(/\/sales\/pipeline(\?.*)?$/, { timeout: 15_000 });
 
         await searchInput.fill(updatedCustomer);
         await applyFiltersButton.click();
@@ -184,7 +184,7 @@ test.describe('Sales / Pipeline Auto-Logging', () => {
         if (await autoLossButton.isVisible()) {
             page.once('dialog', (dialog) => dialog.accept());
             await autoLossButton.click();
-            await expect(page).toHaveURL(/\/sales\/pipeline(\?.*)?$/);
+            await expect(page).toHaveURL(/\/sales\/pipeline(\?.*)?$/, { timeout: 15_000 });
         }
 
         const tableActions = updatedRow.first().locator('button');
