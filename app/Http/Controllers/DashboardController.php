@@ -32,10 +32,18 @@ class DashboardController extends Controller
 
         // Get filter parameters
         $dateRange = $request->input('date_range', '30_days'); // today, 7_days, 30_days, 90_days, year, custom
-        $branchId = $request->input('branch_id', null);
+        $branchIdInput = $request->input('branch_id', null);
         $startDate = $request->input('start_date', null);
         $endDate = $request->input('end_date', null);
         $useTestData = filter_var($request->input('use_test_data', false), FILTER_VALIDATE_BOOLEAN);
+
+        $viewerBranch = $user?->branch()->select('id', 'name', 'code')->first();
+        $isHeadquarters = ! $viewerBranch || strcasecmp($viewerBranch->code ?? '', 'HQ') === 0;
+
+        $branchId = is_numeric($branchIdInput) ? (int) $branchIdInput : null;
+        if (! $isHeadquarters && $viewerBranch) {
+            $branchId = $viewerBranch->id;
+        }
 
         // Calculate date ranges
         [$currentStart, $currentEnd, $previousStart, $previousEnd] = $this->calculateDateRanges(
@@ -71,11 +79,17 @@ class DashboardController extends Controller
                 'current_end' => $currentEnd->toDateString(),
                 'use_test_data' => $useTestData,
             ],
-            'branches' => Branch::select('id', 'name')->where('status', 'active')->get(),
+            'branches' => Branch::select('id', 'name', 'code')->where('status', 'active')->get(),
             'kpis' => $kpis,
             'charts' => $charts,
             'alerts' => $alerts,
             'recentActivities' => $recentActivities,
+            'viewer' => [
+                'branch_id' => $viewerBranch->id ?? null,
+                'branch_name' => $viewerBranch->name ?? null,
+                'branch_code' => $viewerBranch->code ?? null,
+                'is_headquarters' => $isHeadquarters,
+            ],
         ]);
     }
 

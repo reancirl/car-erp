@@ -15,11 +15,12 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CalendarIcon, Filter, RefreshCw, TestTube } from 'lucide-react';
 import { router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface Branch {
     id: number;
     name: string;
+    code?: string | null;
 }
 
 interface DashboardFiltersProps {
@@ -33,11 +34,23 @@ interface DashboardFiltersProps {
         use_test_data: boolean;
     };
     branches: Branch[];
+    canSelectBranch?: boolean;
+    lockedBranchId?: number | null;
+    lockedBranchName?: string | null;
 }
 
-export function DashboardFilters({ filters, branches }: DashboardFiltersProps) {
+export function DashboardFilters({
+    filters,
+    branches,
+    canSelectBranch = true,
+    lockedBranchId = null,
+    lockedBranchName,
+}: DashboardFiltersProps) {
+    const lockedBranchValue = lockedBranchId !== null ? lockedBranchId.toString() : 'all';
     const [dateRange, setDateRange] = useState(filters.date_range);
-    const [branchId, setBranchId] = useState<string>(filters.branch_id?.toString() || 'all');
+    const [branchId, setBranchId] = useState<string>(
+        canSelectBranch ? filters.branch_id?.toString() || 'all' : lockedBranchValue
+    );
     const [startDate, setStartDate] = useState<Date | undefined>(
         filters.start_date ? new Date(filters.start_date) : undefined
     );
@@ -46,12 +59,23 @@ export function DashboardFilters({ filters, branches }: DashboardFiltersProps) {
     );
     const [useTestData, setUseTestData] = useState(filters.use_test_data || false);
 
+    useEffect(() => {
+        setBranchId(canSelectBranch ? filters.branch_id?.toString() || 'all' : lockedBranchValue);
+    }, [filters.branch_id, canSelectBranch, lockedBranchValue]);
+
+    const resolveBranchValue = () => (canSelectBranch ? branchId : lockedBranchValue);
+    const resolveBranchParam = () => {
+        const value = resolveBranchValue();
+        return value === 'all' ? null : Number(value);
+    };
+
     const handleApplyFilters = () => {
+        const branchValue = resolveBranchParam();
         router.get(
             '/dashboard',
             {
                 date_range: dateRange,
-                branch_id: branchId === 'all' ? null : branchId,
+                branch_id: branchValue,
                 start_date: dateRange === 'custom' && startDate ? format(startDate, 'yyyy-MM-dd') : null,
                 end_date: dateRange === 'custom' && endDate ? format(endDate, 'yyyy-MM-dd') : null,
                 use_test_data: useTestData,
@@ -65,21 +89,27 @@ export function DashboardFilters({ filters, branches }: DashboardFiltersProps) {
 
     const handleReset = () => {
         setDateRange('30_days');
-        setBranchId('all');
+        setBranchId(canSelectBranch ? 'all' : lockedBranchValue);
         setStartDate(undefined);
         setEndDate(undefined);
         setUseTestData(false);
 
-        router.get('/dashboard', {}, { preserveState: false });
+        const branchValue = canSelectBranch ? null : resolveBranchParam();
+        router.get(
+            '/dashboard',
+            branchValue !== null ? { branch_id: branchValue } : {},
+            { preserveState: false }
+        );
     };
 
     const handleTestDataToggle = (checked: boolean) => {
         setUseTestData(checked);
+        const branchValue = resolveBranchParam();
         router.get(
             '/dashboard',
             {
                 date_range: dateRange,
-                branch_id: branchId === 'all' ? null : branchId,
+                branch_id: branchValue,
                 start_date: dateRange === 'custom' && startDate ? format(startDate, 'yyyy-MM-dd') : null,
                 end_date: dateRange === 'custom' && endDate ? format(endDate, 'yyyy-MM-dd') : null,
                 use_test_data: checked,
@@ -178,24 +208,38 @@ export function DashboardFilters({ filters, branches }: DashboardFiltersProps) {
                     )}
 
                     {/* Branch Selector */}
-                    <div className="flex-1 min-w-[200px]">
-                        <Label htmlFor="branch" className="text-sm font-medium">
-                            Branch
-                        </Label>
-                        <Select value={branchId} onValueChange={setBranchId}>
-                            <SelectTrigger id="branch" className="bg-white">
-                                <SelectValue placeholder="All Branches" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Branches</SelectItem>
-                                {branches.map((branch) => (
-                                    <SelectItem key={branch.id} value={branch.id.toString()}>
-                                        {branch.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    {canSelectBranch ? (
+                        <div className="flex-1 min-w-[200px]">
+                            <Label htmlFor="branch" className="text-sm font-medium">
+                                Branch
+                            </Label>
+                            <Select value={branchId} onValueChange={setBranchId}>
+                                <SelectTrigger id="branch" className="bg-white">
+                                    <SelectValue placeholder="All Branches" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Branches</SelectItem>
+                                    {branches.map((branch) => (
+                                        <SelectItem key={branch.id} value={branch.id.toString()}>
+                                            {branch.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    ) : (
+                        <div className="flex-1 min-w-[200px]">
+                            <Label className="text-sm font-medium">Branch</Label>
+                            <div className="mt-2 rounded-lg border bg-muted/40 px-3 py-2">
+                                <p className="text-sm font-semibold">
+                                    {lockedBranchName ?? 'Assigned Branch'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Access limited to your branch.
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Test Data Toggle */}
                     <div className="flex items-center gap-3 min-w-[180px] px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg">
