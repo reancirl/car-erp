@@ -23,6 +23,8 @@ class ComplianceReminderController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
+        $branchFilter = $request->branch_id;
+        $shouldFilterByBranch = $user->hasRole(['admin', 'auditor']) && $branchFilter && $branchFilter !== 'all';
 
         $query = ComplianceReminder::with([
                 'branch:id,name,code',
@@ -32,8 +34,8 @@ class ComplianceReminderController extends Controller
                 'escalateToUser:id,name',
             ])
             ->when($request->boolean('include_deleted'), fn($q) => $q->withTrashed())
-            ->when($request->branch_id && $user->hasRole(['admin', 'auditor']), function ($q) use ($request) {
-                return $q->withoutBranchScope()->where('branch_id', (int) $request->branch_id);
+            ->when($shouldFilterByBranch, function ($q) use ($branchFilter) {
+                return $q->withoutBranchScope()->where('branch_id', (int) $branchFilter);
             })
             ->when($request->search, function ($q, $search) {
                 $q->where(function ($inner) use ($search) {
@@ -55,8 +57,8 @@ class ComplianceReminderController extends Controller
 
         $baseStatsQuery = ComplianceReminder::query()
             ->when($request->boolean('include_deleted'), fn($q) => $q->withTrashed())
-            ->when($request->branch_id && $user->hasRole(['admin', 'auditor']), function ($q) use ($request) {
-                return $q->withoutBranchScope()->where('branch_id', (int) $request->branch_id);
+            ->when($shouldFilterByBranch, function ($q) use ($branchFilter) {
+                return $q->withoutBranchScope()->where('branch_id', (int) $branchFilter);
             });
 
         $now = now();
@@ -85,6 +87,7 @@ class ComplianceReminderController extends Controller
             'remind_to',
             'include_deleted',
         ]);
+        $filters['include_deleted'] = $request->boolean('include_deleted');
 
         return Inertia::render('compliance/reminders', [
             'reminders' => $reminders,
