@@ -44,7 +44,7 @@ trait BranchScoped
                 
                 // Admin and auditor roles can see all branches
                 if (!$user->hasRole(['admin', 'auditor'])) {
-                    $builder->where('branch_id', $user->branch_id);
+                    $builder->where($builder->qualifyColumn('branch_id'), $user->branch_id);
                 }
             }
         });
@@ -55,7 +55,7 @@ trait BranchScoped
      */
     public function scopeForBranch(Builder $query, int $branchId): Builder
     {
-        return $query->where('branch_id', $branchId);
+        return $query->where($query->qualifyColumn('branch_id'), $branchId);
     }
 
     /**
@@ -63,7 +63,7 @@ trait BranchScoped
      */
     public function scopeForBranches(Builder $query, array $branchIds): Builder
     {
-        return $query->whereIn('branch_id', $branchIds);
+        return $query->whereIn($query->qualifyColumn('branch_id'), $branchIds);
     }
 
     /**
