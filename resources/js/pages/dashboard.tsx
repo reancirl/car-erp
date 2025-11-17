@@ -195,6 +195,8 @@ type DashboardRole =
     | 'auditor'
     | 'default';
 
+type CurrencyFormatter = (value?: number | null) => string;
+
 const ROLE_PRIORITY: DashboardRole[] = [
     'admin',
     'sales_manager',
@@ -241,7 +243,7 @@ interface RoleViewProps {
     alerts: Alert[];
     recentActivities: Activity[];
     branches: Branch[];
-    formatCurrency: (value: number) => string;
+    formatCurrency: CurrencyFormatter;
     renderChangeIndicator: (change: number) => JSX.Element;
     checklistBindings: ChecklistPanelBindings;
 }
@@ -434,14 +436,16 @@ export default function Dashboard({
         }
     };
 
-    const formatCurrency = (value: number) => {
-        if (value >= 1_000_000) {
-            return `₱${(value / 1_000_000).toFixed(1)}M`;
+    const formatCurrency = (value?: number | null) => {
+        const amount = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+
+        if (amount >= 1_000_000) {
+            return `₱${(amount / 1_000_000).toFixed(1)}M`;
         }
-        if (value >= 1_000) {
-            return `₱${(value / 1_000).toFixed(0)}K`;
+        if (amount >= 1_000) {
+            return `₱${(amount / 1_000).toFixed(0)}K`;
         }
-        return `₱${value.toFixed(0)}`;
+        return `₱${amount.toFixed(0)}`;
     };
 
     const renderChangeIndicator = (change: number) => {
@@ -751,7 +755,7 @@ function GeneralDashboard(props: RoleViewProps) {
 
 interface KPIGridProps {
     kpis: KPIs;
-    formatCurrency: (value: number) => string;
+    formatCurrency: CurrencyFormatter;
     renderChangeIndicator: (change: number) => JSX.Element;
 }
 
@@ -808,7 +812,7 @@ function PrimaryKpiGrid({ kpis, formatCurrency, renderChangeIndicator }: KPIGrid
 
 interface SecondaryKpiGridProps {
     kpis: KPIs;
-    formatCurrency: (value: number) => string;
+    formatCurrency: CurrencyFormatter;
 }
 
 function SecondaryKpiGrid({ kpis, formatCurrency }: SecondaryKpiGridProps) {
@@ -831,7 +835,7 @@ function SecondaryKpiGrid({ kpis, formatCurrency }: SecondaryKpiGridProps) {
                     <Package className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{kpis.inventory.total_parts.toLocaleString()}</div>
+                    <div className="text-2xl font-bold">{Number(kpis.inventory.total_parts ?? 0).toLocaleString()}</div>
                     <p className="text-xs text-muted-foreground">parts in stock</p>
                     <div className="mt-2 text-xs text-red-500 font-medium">{kpis.inventory.low_stock_parts} low stock alerts</div>
                 </CardContent>
@@ -870,7 +874,7 @@ interface AdminExecutiveInsightsProps {
     branches: Branch[];
     kpis: KPIs;
     alerts: Alert[];
-    formatCurrency: (value: number) => string;
+    formatCurrency: CurrencyFormatter;
 }
 
 function AdminExecutiveInsights({ branches, kpis, alerts, formatCurrency }: AdminExecutiveInsightsProps) {
@@ -894,7 +898,7 @@ function AdminExecutiveInsights({ branches, kpis, alerts, formatCurrency }: Admi
                     <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{kpis.customers.total.toLocaleString()}</div>
+                    <div className="text-2xl font-bold">{Number(kpis.customers.total ?? 0).toLocaleString()}</div>
                     <p className="text-xs text-muted-foreground">total customers across branches</p>
                 </CardContent>
             </Card>
@@ -1084,7 +1088,7 @@ function ServiceKpiGrid({ kpis, formatCurrency, renderChangeIndicator }: Service
 
 interface PartsKpiGridProps {
     kpis: KPIs;
-    formatCurrency: (value: number) => string;
+    formatCurrency: CurrencyFormatter;
     compact?: boolean;
 }
 
@@ -1099,7 +1103,7 @@ function PartsKpiGrid({ kpis, formatCurrency, compact }: PartsKpiGridProps) {
                     <Package className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{kpis.inventory.total_parts.toLocaleString()}</div>
+                    <div className="text-2xl font-bold">{Number(kpis.inventory.total_parts ?? 0).toLocaleString()}</div>
                     <p className="text-xs text-muted-foreground">worth {formatCurrency(kpis.inventory.parts_value)}</p>
                 </CardContent>
             </Card>
@@ -1198,7 +1202,7 @@ function AuditorInsightsGrid({ kpis, alerts }: AuditorInsightsGridProps) {
 
 interface SalesPipelineCardProps {
     charts: ChartData;
-    formatCurrency: (value: number) => string;
+    formatCurrency: CurrencyFormatter;
     CTAHref?: string;
     compact?: boolean;
 }
@@ -1247,7 +1251,7 @@ function SalesPipelineCard({ charts, formatCurrency, CTAHref, compact }: SalesPi
 
 interface KeyMetricsCardProps {
     kpis: KPIs;
-    formatCurrency: (value: number) => string;
+    formatCurrency: CurrencyFormatter;
     highlight?: 'sales' | 'operations';
 }
 
@@ -1305,7 +1309,7 @@ function KeyMetricsCard({ kpis, formatCurrency, highlight }: KeyMetricsCardProps
 
 interface TopSalesRepsCardProps {
     charts: ChartData;
-    formatCurrency: (value: number) => string;
+    formatCurrency: CurrencyFormatter;
 }
 
 function TopSalesRepsCard({ charts, formatCurrency }: TopSalesRepsCardProps) {
@@ -1409,7 +1413,7 @@ function OperationsSnapshotCard({ kpis }: OperationsSnapshotCardProps) {
                         <div className="text-sm text-muted-foreground">Warranty Approvals</div>
                         <div className="text-2xl font-bold">{kpis.warranty.approved_claims}</div>
                     </div>
-                    <Badge variant="outline">₱{kpis.warranty.total_claims_amount.toLocaleString()}</Badge>
+                    <Badge variant="outline">₱{Number(kpis.warranty.total_claims_amount ?? 0).toLocaleString()}</Badge>
                 </div>
                 <div>
                     <div className="text-sm text-muted-foreground">Compliance completion</div>
@@ -1422,7 +1426,7 @@ function OperationsSnapshotCard({ kpis }: OperationsSnapshotCardProps) {
 
 interface InventoryHealthCardProps {
     kpis: KPIs;
-    formatCurrency: (value: number) => string;
+    formatCurrency: CurrencyFormatter;
     detailed?: boolean;
 }
 
@@ -1464,7 +1468,7 @@ function InventoryHealthCard({ kpis, formatCurrency, detailed }: InventoryHealth
 
 interface TechnicianWorkloadCardProps {
     kpis: KPIs;
-    formatCurrency: (value: number) => string;
+    formatCurrency: CurrencyFormatter;
 }
 
 function TechnicianWorkloadCard({ kpis, formatCurrency }: TechnicianWorkloadCardProps) {
@@ -1484,7 +1488,7 @@ function TechnicianWorkloadCard({ kpis, formatCurrency }: TechnicianWorkloadCard
                 </div>
                 <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Parts available</span>
-                    <span className="text-2xl font-bold">{kpis.inventory.total_parts.toLocaleString()}</span>
+                    <span className="text-2xl font-bold">{Number(kpis.inventory.total_parts ?? 0).toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Warranty jobs</span>
