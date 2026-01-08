@@ -34,7 +34,7 @@ class VehicleUnitController extends Controller
     {
         $user = $request->user();
 
-        $query = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel'])
+        $query = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel', 'owner'])
             ->when($request->include_deleted, function ($q) {
                 $q->withTrashed();
             })
@@ -70,12 +70,20 @@ class VehicleUnitController extends Controller
 
         // Get branches for admin/auditor filter
         $branches = $user->hasRole(['admin', 'auditor']) ? Branch::orderBy('name')->get() : null;
+        $customers = \App\Models\Customer::orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name', 'company_name', 'customer_type', 'email'])
+            ->map(fn($c) => [
+                'id' => $c->id,
+                'name' => $c->display_name,
+                'email' => $c->email,
+            ]);
 
         return Inertia::render('inventory/vehicles', [
             'records' => $units,
             'stats' => $stats,
             'filters' => $request->only(['search', 'branch_id', 'status', 'vin', 'stock_number', 'include_deleted']),
             'branches' => $branches,
+            'customers' => $customers,
         ]);
     }
 
@@ -98,10 +106,19 @@ class VehicleUnitController extends Controller
             ->orderBy('model', 'asc')
             ->get(['id', 'make', 'model', 'year', 'body_type', 'transmission', 'fuel_type']);
 
+        $customers = \App\Models\Customer::orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name', 'company_name', 'customer_type', 'email'])
+            ->map(fn($c) => [
+                'id' => $c->id,
+                'name' => $c->display_name,
+                'email' => $c->email,
+            ]);
+
         return Inertia::render('inventory/vehicle-create', [
             'branches' => $branches,
             'salesReps' => $salesReps,
             'vehicleModels' => $vehicleModels,
+            'customers' => $customers,
         ]);
     }
 
@@ -112,7 +129,7 @@ class VehicleUnitController extends Controller
     {
         $user = $request->user();
 
-        $unit = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel'])->findOrFail($id);
+        $unit = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel', 'owner'])->findOrFail($id);
 
         // Verify user has access to this unit's branch
         if (!$user->hasRole(['admin', 'auditor']) && $unit->branch_id !== $user->branch_id) {
@@ -131,11 +148,20 @@ class VehicleUnitController extends Controller
             ->orderBy('model', 'asc')
             ->get(['id', 'make', 'model', 'year', 'body_type', 'transmission', 'fuel_type']);
 
+        $customers = \App\Models\Customer::orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name', 'company_name', 'customer_type', 'email'])
+            ->map(fn($c) => [
+                'id' => $c->id,
+                'name' => $c->display_name,
+                'email' => $c->email,
+            ]);
+
         return Inertia::render('inventory/vehicle-edit', [
             'unit' => $unit,
             'branches' => $branches,
             'salesReps' => $salesReps,
             'vehicleModels' => $vehicleModels,
+            'customers' => $customers,
         ]);
     }
 
@@ -146,7 +172,7 @@ class VehicleUnitController extends Controller
     {
         $user = $request->user();
 
-        $query = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel'])
+        $query = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel', 'owner'])
             ->when($request->include_deleted, function ($q) {
                 $q->withTrashed();
             })
@@ -245,7 +271,7 @@ class VehicleUnitController extends Controller
         if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
             return response()->json([
                 'message' => 'Vehicle unit created successfully.',
-                'data' => $unit->load(['branch', 'vehicleModel']),
+                'data' => $unit->load(['branch', 'vehicleModel', 'owner']),
             ], 201);
         }
 
@@ -259,7 +285,7 @@ class VehicleUnitController extends Controller
      */
     public function showPage(Request $request, $id): Response
     {
-        $unit = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel'])
+        $unit = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel', 'owner'])
             ->findOrFail($id);
 
         // Verify user has access to this unit's branch
@@ -306,7 +332,7 @@ class VehicleUnitController extends Controller
         }
 
         return response()->json([
-            'data' => $unit->load(['branch', 'vehicleModel', 'movements.fromBranch', 'movements.toBranch', 'movements.user']),
+            'data' => $unit->load(['branch', 'vehicleModel', 'owner', 'movements.fromBranch', 'movements.toBranch', 'movements.user']),
         ]);
     }
 
@@ -386,10 +412,15 @@ class VehicleUnitController extends Controller
                 ->with('error', 'Unauthorized to delete this vehicle unit.');
         }
 
-        // Prevent deletion of sold units
+        // Prevent deletion of sold or locked units
         if ($unit->status === 'sold') {
             return redirect()->back()
                 ->with('error', 'Cannot delete a sold vehicle unit. Please dispose instead.');
+        }
+
+        if ($unit->is_locked) {
+            return redirect()->back()
+                ->with('error', 'This vehicle is locked. Unlock before deleting.');
         }
 
         $unit->delete();
@@ -445,6 +476,12 @@ class VehicleUnitController extends Controller
      */
     public function transfer(TransferVehicleRequest $request, VehicleUnit $unit): JsonResponse
     {
+        if ($unit->is_locked) {
+            return response()->json([
+                'message' => 'Vehicle is locked and cannot be transferred.',
+            ], 422);
+        }
+
         try {
             $movement = $this->movementService->transfer(
                 $unit,
@@ -482,6 +519,12 @@ class VehicleUnitController extends Controller
             ], 403);
         }
 
+        if ($unit->is_locked && $request->status !== $unit->status) {
+            return response()->json([
+                'message' => 'Vehicle is locked. Unlock before changing status.',
+            ], 422);
+        }
+
         $oldStatus = $unit->status;
         $unit->update([
             'status' => $request->status,
@@ -505,7 +548,7 @@ class VehicleUnitController extends Controller
 
         return response()->json([
             'message' => 'Vehicle unit status updated successfully.',
-            'data' => $unit->fresh(['branch', 'vehicleModel']),
+            'data' => $unit->fresh(['branch', 'vehicleModel', 'owner']),
         ]);
     }
 

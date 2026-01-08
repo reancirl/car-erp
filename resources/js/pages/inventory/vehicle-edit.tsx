@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Car, Save, X, Upload, Plus, Minus, AlertCircle, CheckCircle, Camera, FileText, DollarSign, MapPin, Calendar, Fuel, Gauge, Palette, Settings, History, Eye, Download } from 'lucide-react';
+import { Car, Save, X, Upload, Plus, Minus, AlertCircle, CheckCircle, Camera, FileText, DollarSign, MapPin, Calendar, Fuel, Gauge, Palette, Settings, History, Eye, Download, Lock } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 
@@ -54,8 +54,12 @@ interface VehicleUnit {
     odometer: number;
     purchase_price: number;
     sale_price?: number;
+    msrp_price?: number | null;
     currency: string;
     status: string;
+    sub_status?: string | null;
+    location: string;
+    is_locked?: boolean;
     acquisition_date?: string;
     notes?: string;
     images?: string[];
@@ -67,6 +71,23 @@ interface VehicleUnit {
         }>;
         [key: string]: any;
     };
+    conduction_no?: string | null;
+    drive_motor_no?: string | null;
+    plate_no?: string | null;
+    color_code?: string | null;
+    battery_capacity?: number | null;
+    battery_range_km?: number | null;
+    lto_transaction_no?: string | null;
+    cr_no?: string | null;
+    or_cr_release_date?: string | null;
+    emission_reference?: string | null;
+    variant?: string | null;
+    variant_spec?: string | null;
+    owner?: {
+        id: number;
+        name: string;
+        email: string;
+    } | null;
 }
 
 interface Props {
@@ -74,6 +95,7 @@ interface Props {
     branches: Branch[];
     salesReps: User[];
     vehicleModels: VehicleModel[];
+    customers: { id: number; name: string; email: string }[];
     auth: {
         user: {
             branch_id?: number;
@@ -101,7 +123,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, auth }: Props) {
+export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, customers, auth }: Props) {
     const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
     const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
     const [isDraggingDoc, setIsDraggingDoc] = useState(false);
@@ -112,16 +134,33 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
         vehicle_model_id: unit.vehicle_model_id?.toString() || '',
         branch_id: unit.branch_id?.toString() || '',
         assigned_user_id: unit.assigned_user_id?.toString() || '',
+        owner_id: unit.owner?.id?.toString() || '',
         vin: unit.vin || '',
         stock_number: unit.stock_number || '',
+        conduction_no: unit.conduction_no || '',
+        drive_motor_no: unit.drive_motor_no || '',
+        plate_no: unit.plate_no || '',
+        variant: unit.variant || '',
+        variant_spec: unit.variant_spec || '',
         color_exterior: unit.color_exterior || '',
         color_interior: unit.color_interior || '',
+        color_code: unit.color_code || '',
         odometer: unit.odometer?.toString() || '',
         purchase_price: unit.purchase_price?.toString() || '',
         sale_price: unit.sale_price?.toString() || '',
+        msrp_price: unit.msrp_price?.toString() || '',
         currency: unit.currency || 'PHP',
         status: unit.status || 'in_stock',
+        location: unit.location || 'branch',
+        sub_status: unit.sub_status || '',
+        is_locked: unit.is_locked ?? false,
         acquisition_date: unit.acquisition_date || '',
+        lto_transaction_no: unit.lto_transaction_no || '',
+        cr_no: unit.cr_no || '',
+        or_cr_release_date: unit.or_cr_release_date || '',
+        emission_reference: unit.emission_reference || '',
+        battery_capacity: unit.battery_capacity?.toString() || '',
+        battery_range_km: unit.battery_range_km?.toString() || '',
         notes: unit.notes || '',
         photos: [] as File[],
         documents: [] as File[],
@@ -379,6 +418,128 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                                         Select from pre-configured WULING models. <Link href="/inventory/models" className="text-blue-600 hover:underline">Manage models</Link>
                                     </p>
                                 </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="variant">Variant</Label>
+                                        <Input 
+                                            id="variant" 
+                                            value={data.variant}
+                                            onChange={(e) => setData('variant', e.target.value)}
+                                            placeholder="e.g., Premium, Luxury"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="variant_spec">Variant Spec</Label>
+                                        <Input 
+                                            id="variant_spec" 
+                                            value={data.variant_spec}
+                                            onChange={(e) => setData('variant_spec', e.target.value)}
+                                            placeholder="Spec notes (AWD, Tech Pack, etc.)"
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Ownership & Registration */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <FileText className="h-5 w-5" />
+                                    <span>Ownership & Registration</span>
+                                </CardTitle>
+                                <CardDescription>Update conduction, plate, and owner details</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="conduction_no">Conduction No.</Label>
+                                        <Input 
+                                            id="conduction_no" 
+                                            value={data.conduction_no}
+                                            onChange={(e) => setData('conduction_no', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="drive_motor_no">Drive Motor No.</Label>
+                                        <Input 
+                                            id="drive_motor_no" 
+                                            value={data.drive_motor_no}
+                                            onChange={(e) => setData('drive_motor_no', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="plate_no">Plate No.</Label>
+                                        <Input 
+                                            id="plate_no" 
+                                            value={data.plate_no}
+                                            onChange={(e) => setData('plate_no', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="owner_id">Owner</Label>
+                                        <Select 
+                                            value={data.owner_id || 'unassigned'} 
+                                            onValueChange={(value) => setData('owner_id', value === 'unassigned' ? '' : value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select owner" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="unassigned">Unassigned</SelectItem>
+                                                {customers?.map((customer) => (
+                                                    <SelectItem key={customer.id} value={customer.id.toString()}>
+                                                        {customer.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="lto_transaction_no">LTO Transaction No.</Label>
+                                        <Input 
+                                            id="lto_transaction_no" 
+                                            value={data.lto_transaction_no}
+                                            onChange={(e) => setData('lto_transaction_no', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="cr_no">CR No.</Label>
+                                        <Input 
+                                            id="cr_no" 
+                                            value={data.cr_no}
+                                            onChange={(e) => setData('cr_no', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="or_cr_release_date">OR/CR Release Date</Label>
+                                        <Input 
+                                            id="or_cr_release_date" 
+                                            type="date"
+                                            value={data.or_cr_release_date}
+                                            onChange={(e) => setData('or_cr_release_date', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="emission_reference">Emission / Inspection Ref</Label>
+                                    <Input 
+                                        id="emission_reference" 
+                                        value={data.emission_reference}
+                                        onChange={(e) => setData('emission_reference', e.target.value)}
+                                        placeholder="Reference number"
+                                    />
+                                </div>
                             </CardContent>
                         </Card>
 
@@ -416,12 +577,53 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                                     </div>
                                 </div>
 
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="interior_color">Interior Color</Label>
+                                        <Input 
+                                            id="color_interior" 
+                                            value={data.color_interior}
+                                            onChange={(e) => setData('color_interior', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="color_code">Color Code</Label>
+                                        <Input 
+                                            id="color_code" 
+                                            value={data.color_code}
+                                            onChange={(e) => setData('color_code', e.target.value)}
+                                            placeholder="e.g., WA8555"
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* EV & Range */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Battery & Range</CardTitle>
+                                <CardDescription>Capture EV-specific details</CardDescription>
+                            </CardHeader>
+                            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="interior_color">Interior Color</Label>
+                                    <Label htmlFor="battery_capacity">Battery Capacity (kWh)</Label>
                                     <Input 
-                                        id="color_interior" 
-                                        value={data.color_interior}
-                                        onChange={(e) => setData('color_interior', e.target.value)}
+                                        id="battery_capacity" 
+                                        type="number"
+                                        value={data.battery_capacity}
+                                        onChange={(e) => setData('battery_capacity', e.target.value)}
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="battery_range_km">Range (km)</Label>
+                                    <Input 
+                                        id="battery_range_km" 
+                                        type="number"
+                                        value={data.battery_range_km}
+                                        onChange={(e) => setData('battery_range_km', e.target.value)}
+                                        placeholder="0"
                                     />
                                 </div>
                             </CardContent>
@@ -712,6 +914,18 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                                 </div>
 
                                 <div className="space-y-2">
+                                    <Label htmlFor="msrp_price">MSRP (₱)</Label>
+                                    <Input 
+                                        id="msrp_price" 
+                                        type="number"
+                                        value={data.msrp_price}
+                                        onChange={(e) => setData('msrp_price', e.target.value)}
+                                        placeholder="0.00"
+                                    />
+                                    <p className="text-xs text-muted-foreground">Suggested retail price</p>
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label htmlFor="sale_price">Sale Price (₱)</Label>
                                     <Input 
                                         id="sale_price" 
@@ -802,10 +1016,49 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                                 </div>
 
                                 <div className="space-y-2">
+                                    <Label htmlFor="location">Location</Label>
+                                    <Select 
+                                        value={data.location} 
+                                        onValueChange={(value) => setData('location', value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="branch">Branch</SelectItem>
+                                            <SelectItem value="warehouse">Warehouse</SelectItem>
+                                            <SelectItem value="gbf">GBF</SelectItem>
+                                            <SelectItem value="sold">Sold</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="sub_status">Sub-status</Label>
+                                    <Select 
+                                        value={data.sub_status || 'none'} 
+                                        onValueChange={(value) => setData('sub_status', value === 'none' ? '' : value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select sub-status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">None</SelectItem>
+                                            <SelectItem value="reserved_with_dp">Reserved – with DP</SelectItem>
+                                            <SelectItem value="reserved_no_dp">Reserved – no DP</SelectItem>
+                                            <SelectItem value="for_lto">For LTO</SelectItem>
+                                            <SelectItem value="for_release">For Release</SelectItem>
+                                            <SelectItem value="for_body_repair">For Body Repair</SelectItem>
+                                            <SelectItem value="inspection">For Inspection</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label htmlFor="assigned_user_id">Assigned Sales Rep</Label>
                                     <Select 
-                                        value={data.assigned_user_id} 
-                                        onValueChange={(value) => setData('assigned_user_id', value)}
+                                        value={data.assigned_user_id || 'unassigned'} 
+                                        onValueChange={(value) => setData('assigned_user_id', value === 'unassigned' ? '' : value)}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select sales rep" />
@@ -831,6 +1084,21 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                                         type="date"
                                         value={data.acquisition_date}
                                         onChange={(e) => setData('acquisition_date', e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between rounded-lg border p-3">
+                                    <div>
+                                        <Label className="flex items-center space-x-2">
+                                            <Lock className="h-4 w-4" />
+                                            <span>Lock Unit</span>
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground">Prevents status changes while reserved/paid</p>
+                                    </div>
+                                    <Switch 
+                                        id="is_locked" 
+                                        checked={!!data.is_locked}
+                                        onCheckedChange={(checked) => setData('is_locked', checked)}
                                     />
                                 </div>
                             </CardContent>

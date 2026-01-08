@@ -38,14 +38,53 @@ interface Customer {
     postal_code: string | null;
     country: string;
     customer_type: string;
+    customer_segment?: string;
     company_name: string | null;
     tax_id: string | null;
+    government_id_type?: string | null;
+    government_id_number?: string | null;
+    authorized_signatory?: string | null;
+    authorized_position?: string | null;
     status: string;
     satisfaction_rating: string | null;
     total_purchases: number;
     total_spent: number;
     loyalty_points: number;
     customer_lifetime_value: number;
+    lead_source?: string | null;
+    interest_notes?: string | null;
+    preferred_vehicle_model?: {
+        id: number;
+        make: string;
+        model: string;
+        year: number;
+    } | null;
+    reservation_amount?: number | null;
+    reservation_date?: string | null;
+    reservation_status?: string | null;
+    reservation_reference?: string | null;
+    reservation_unit?: {
+        id: number;
+        stock_number: string;
+        vin: string;
+        vehicle_model?: {
+            id: number;
+            make: string;
+            model: string;
+            year: number;
+        } | null;
+    } | null;
+    owned_vehicles?: Array<{
+        id: number;
+        stock_number: string;
+        vin: string;
+        vehicle_model?: {
+            id: number;
+            make: string;
+            model: string;
+            year: number;
+        } | null;
+    }>;
     email_notifications: boolean;
     sms_notifications: boolean;
     marketing_consent: boolean;
@@ -262,6 +301,25 @@ export default function CustomerExperienceView({ customer, surveys, can, flash }
                     </div>
                 </div>
 
+                {/* Key Tags */}
+                <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary">{customer.customer_type === 'corporate' ? 'Corporate' : 'Individual'}</Badge>
+                    {customer.customer_segment && (
+                        <Badge variant="outline" className="capitalize">{customer.customer_segment.replace('_', ' ')}</Badge>
+                    )}
+                    {customer.lead_source && (
+                        <Badge variant="outline" className="capitalize">Lead: {customer.lead_source.replace('_', ' ')}</Badge>
+                    )}
+                    {customer.reservation_status && (
+                        <Badge className="capitalize">
+                            Reservation: {customer.reservation_status.replace('_', ' ')}
+                        </Badge>
+                    )}
+                    {customer.reservation_reference && (
+                        <Badge variant="outline">Ref: {customer.reservation_reference}</Badge>
+                    )}
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-6">
@@ -317,6 +375,53 @@ export default function CustomerExperienceView({ customer, surveys, can, flash }
                                         <p className="font-medium capitalize">{customer.gender.replace(/_/g, ' ')}</p>
                                     </div>
                                 )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Owned Vehicles */}
+                        {customer.owned_vehicles && customer.owned_vehicles.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Owned Vehicles</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2">
+                                    {customer.owned_vehicles.map((unit) => (
+                                        <div key={unit.id} className="flex items-center justify-between">
+                                            <div>
+                                                <p className="font-medium">{unit.stock_number}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {unit.vehicle_model
+                                                        ? `${unit.vehicle_model.year} ${unit.vehicle_model.make} ${unit.vehicle_model.model}`
+                                                        : unit.vin}
+                                                </p>
+                                            </div>
+                                            <Link href={`/inventory/vehicles/${unit.id}`} className="text-blue-600 text-sm hover:underline flex items-center">
+                                                View <ArrowLeft className="h-3 w-3 rotate-180 ml-1" />
+                                            </Link>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Interest */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Interest</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Preferred Model</p>
+                                    <p className="font-medium">
+                                        {customer.preferred_vehicle_model
+                                            ? `${customer.preferred_vehicle_model.year} ${customer.preferred_vehicle_model.make} ${customer.preferred_vehicle_model.model}`
+                                            : '—'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Interest Notes</p>
+                                    <p className="text-sm">{customer.interest_notes || '—'}</p>
+                                </div>
                             </CardContent>
                         </Card>
 
@@ -480,6 +585,85 @@ export default function CustomerExperienceView({ customer, surveys, can, flash }
                                         })}
                                     </p>
                                 </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Lead & Reservation */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Lead & Reservation</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Lead Source</p>
+                                    <p className="font-medium capitalize">{customer.lead_source ? customer.lead_source.replace('_', ' ') : '—'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Customer Type</p>
+                                    <p className="font-medium capitalize">{customer.customer_segment ? customer.customer_segment.replace('_', ' ') : '—'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Reservation Status</p>
+                                    <p className="font-medium capitalize">{customer.reservation_status ? customer.reservation_status.replace('_', ' ') : '—'}</p>
+                                    {customer.reservation_amount !== null && (
+                                        <p className="text-sm text-muted-foreground">
+                                            ₱{(customer.reservation_amount ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                        </p>
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Reservation Date</p>
+                                    <p className="font-medium">{customer.reservation_date ? new Date(customer.reservation_date).toLocaleDateString() : '—'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Reservation Reference</p>
+                                    <p className="font-medium">{customer.reservation_reference || '—'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Linked Unit</p>
+                                    {customer.reservation_unit ? (
+                                        <Link href={`/inventory/vehicles/${customer.reservation_unit.id}`} className="text-blue-600 hover:underline">
+                                            {customer.reservation_unit.stock_number} — {customer.reservation_unit.vehicle_model
+                                                ? `${customer.reservation_unit.vehicle_model.year} ${customer.reservation_unit.vehicle_model.make} ${customer.reservation_unit.vehicle_model.model}`
+                                                : customer.reservation_unit.vin}
+                                        </Link>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">—</p>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Identification */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Identification</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">TIN</p>
+                                    <p className="font-medium">{customer.tax_id || '—'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Gov ID Type</p>
+                                    <p className="font-medium">{customer.government_id_type || '—'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Gov ID Number</p>
+                                    <p className="font-medium">{customer.government_id_number || '—'}</p>
+                                </div>
+                                {customer.customer_type === 'corporate' && (
+                                    <>
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Authorized Signatory</p>
+                                            <p className="font-medium">{customer.authorized_signatory || '—'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Position</p>
+                                            <p className="font-medium">{customer.authorized_position || '—'}</p>
+                                        </div>
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
 

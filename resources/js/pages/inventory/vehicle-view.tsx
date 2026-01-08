@@ -17,8 +17,14 @@ interface VehicleUnit {
     vin: string;
     stock_number: string;
     status: string;
+    sub_status?: string | null;
+    location: string;
+    is_locked?: boolean;
+    variant?: string | null;
+    variant_spec?: string | null;
     purchase_price: number;
     sale_price: number | null;
+    msrp_price: number | null;
     currency: string;
     acquisition_date: string | null;
     sold_date: string | null;
@@ -27,6 +33,16 @@ interface VehicleUnit {
     odometer: number | null;
     notes: string | null;
     images: string[] | null;
+    conduction_no?: string | null;
+    drive_motor_no?: string | null;
+    plate_no?: string | null;
+    color_code?: string | null;
+    lto_transaction_no?: string | null;
+    cr_no?: string | null;
+    or_cr_release_date?: string | null;
+    emission_reference?: string | null;
+    battery_capacity?: number | null;
+    battery_range_km?: number | null;
     specs: {
         features?: string[];
         documents?: Array<{
@@ -46,6 +62,7 @@ interface VehicleUnit {
         body_type: string | null;
         transmission: string | null;
         fuel_type: string | null;
+        variant?: string | null;
     } | null;
     branch: {
         id: number;
@@ -55,6 +72,13 @@ interface VehicleUnit {
     assigned_user: {
         id: number;
         name: string;
+        email: string;
+    } | null;
+    owner?: {
+        id: number;
+        name?: string;
+        full_name?: string;
+        display_name?: string;
         email: string;
     } | null;
 }
@@ -157,6 +181,30 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
         return <Badge variant="outline" className={colors[priority as keyof typeof colors]}>{priority.toUpperCase()}</Badge>;
     };
 
+    const getLocationBadge = (location: string) => {
+        const labels: Record<string, { label: string; className: string }> = {
+            warehouse: { label: 'Warehouse', className: 'bg-slate-100 text-slate-800' },
+            gbf: { label: 'GBF', className: 'bg-cyan-100 text-cyan-800' },
+            branch: { label: 'Branch', className: 'bg-emerald-100 text-emerald-800' },
+            sold: { label: 'Sold', className: 'bg-blue-100 text-blue-800' },
+        };
+        const entry = labels[location] ?? labels.branch;
+        return <Badge className={entry.className}>{entry.label}</Badge>;
+    };
+
+    const getSubStatusLabel = (subStatus?: string | null) => {
+        if (!subStatus) return null;
+        const labels: Record<string, string> = {
+            reserved_with_dp: 'Reserved – with DP',
+            reserved_no_dp: 'Reserved – no DP',
+            for_lto: 'For LTO',
+            for_release: 'For Release',
+            for_body_repair: 'For Body Repair',
+            inspection: 'For Inspection',
+        };
+        return labels[subStatus] ?? subStatus;
+    };
+
     const calculateMargin = () => {
         if (!vehicle.sale_price) return 0;
         return vehicle.sale_price - vehicle.purchase_price;
@@ -199,7 +247,11 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                                     </Badge>
                                 )}
                             </div>
-                            <p className="text-muted-foreground">{vehicleDisplay.trim || 'Standard'} • {vehicleDisplay.body_type} • Stock: {vehicle.stock_number}</p>
+                            <p className="text-muted-foreground">
+                                {vehicleDisplay.trim || 'Standard'} • {vehicleDisplay.body_type} • Stock: {vehicle.stock_number}
+                                {vehicle.variant && ` • Variant: ${vehicle.variant}`}
+                                {vehicle.variant_spec && ` • Spec: ${vehicle.variant_spec}`}
+                            </p>
                         </div>
                     </div>
                     <div className="flex space-x-2">
@@ -217,9 +269,15 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                     <Card>
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between">
-                                <div>
+                                <div className="space-y-1">
                                     <div className="text-sm font-medium text-muted-foreground">Status</div>
-                                    <div className="mt-1">{getStatusBadge(vehicle.status)}</div>
+                                    <div className="flex items-center gap-2">
+                                        {getStatusBadge(vehicle.status)}
+                                        {vehicle.is_locked && <Badge variant="outline" className="border-amber-500 text-amber-700">Locked</Badge>}
+                                    </div>
+                                    {getSubStatusLabel(vehicle.sub_status) && (
+                                        <div className="text-xs text-muted-foreground">{getSubStatusLabel(vehicle.sub_status)}</div>
+                                    )}
                                 </div>
                                 <CheckCircle className="h-8 w-8 text-green-500" />
                             </div>
@@ -282,10 +340,28 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                                                     <span>VIN:</span>
                                                     <span className="font-mono text-sm">{vehicle.vin}</span>
                                                 </div>
+                                                {vehicle.conduction_no && (
+                                                    <div className="flex justify-between">
+                                                        <span>Conduction No:</span>
+                                                        <span className="font-mono text-sm">{vehicle.conduction_no}</span>
+                                                    </div>
+                                                )}
+                                                {vehicle.drive_motor_no && (
+                                                    <div className="flex justify-between">
+                                                        <span>Drive Motor No:</span>
+                                                        <span className="font-mono text-sm">{vehicle.drive_motor_no}</span>
+                                                    </div>
+                                                )}
                                                 <div className="flex justify-between">
                                                     <span>Stock Number:</span>
                                                     <span>{vehicle.stock_number}</span>
                                                 </div>
+                                                {vehicle.plate_no && (
+                                                    <div className="flex justify-between">
+                                                        <span>Plate No:</span>
+                                                        <span>{vehicle.plate_no}</span>
+                                                    </div>
+                                                )}
                                                 <div className="flex justify-between">
                                                     <span>Year:</span>
                                                     <span>{vehicleDisplay.year}</span>
@@ -344,10 +420,28 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                                                         <span>{vehicle.color_exterior}</span>
                                                     </div>
                                                 )}
+                                                {vehicle.color_code && (
+                                                    <div className="flex justify-between">
+                                                        <span>Color Code:</span>
+                                                        <span>{vehicle.color_code}</span>
+                                                    </div>
+                                                )}
                                                 {vehicle.color_interior && (
                                                     <div className="flex justify-between">
                                                         <span>Interior:</span>
                                                         <span>{vehicle.color_interior}</span>
+                                                    </div>
+                                                )}
+                                                {vehicle.battery_capacity && (
+                                                    <div className="flex justify-between">
+                                                        <span>Battery Capacity:</span>
+                                                        <span>{vehicle.battery_capacity} kWh</span>
+                                                    </div>
+                                                )}
+                                                {vehicle.battery_range_km && (
+                                                    <div className="flex justify-between">
+                                                        <span>Range:</span>
+                                                        <span>{vehicle.battery_range_km} km</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -431,6 +525,12 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                                         <span className="text-sm text-muted-foreground">Purchase Price:</span>
                                         <span className="font-medium">{formatCurrency(vehicle.purchase_price, vehicle.currency)}</span>
                                     </div>
+                                    {vehicle.msrp_price && (
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-muted-foreground">MSRP:</span>
+                                            <span className="font-medium">{formatCurrency(vehicle.msrp_price, vehicle.currency)}</span>
+                                        </div>
+                                    )}
                                     {vehicle.sale_price && (
                                         <>
                                             <Separator />
@@ -467,6 +567,16 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                                         <span className="text-sm text-muted-foreground">Branch:</span>
                                         <Badge variant="outline">{vehicle.branch.name}</Badge>
                                     </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-sm text-muted-foreground">Location:</span>
+                                        {getLocationBadge(vehicle.location)}
+                                    </div>
+                                    {vehicle.owner && (
+                                        <div className="flex justify-between">
+                                            <span className="text-sm text-muted-foreground">Owner:</span>
+                                            <span className="font-medium">{vehicle.owner.full_name || vehicle.owner.display_name || vehicle.owner.name}</span>
+                                        </div>
+                                    )}
                                     {vehicle.assigned_user && (
                                         <div className="flex justify-between">
                                             <span className="text-sm text-muted-foreground">Assigned To:</span>
@@ -522,6 +632,39 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                                         </Badge>
                                     </div>
                                 </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Registration & Compliance */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <FileText className="h-5 w-5" />
+                                    <span>Registration & Compliance</span>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3 text-sm">
+                                {vehicle.lto_transaction_no && (
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">LTO Txn / CR No:</span>
+                                        <span className="font-medium">{vehicle.lto_transaction_no}{vehicle.cr_no ? ` / ${vehicle.cr_no}` : ''}</span>
+                                    </div>
+                                )}
+                                {vehicle.or_cr_release_date && (
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">OR/CR Release:</span>
+                                        <span className="font-medium">{new Date(vehicle.or_cr_release_date).toLocaleDateString()}</span>
+                                    </div>
+                                )}
+                                {vehicle.emission_reference && (
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Emission/Inspection Ref:</span>
+                                        <span className="font-medium">{vehicle.emission_reference}</span>
+                                    </div>
+                                )}
+                                {!(vehicle.lto_transaction_no || vehicle.emission_reference || vehicle.or_cr_release_date) && (
+                                    <p className="text-muted-foreground">No registration details yet.</p>
+                                )}
                             </CardContent>
                         </Card>
 

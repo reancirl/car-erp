@@ -10,6 +10,14 @@ class Customer extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * Append computed name fields for API/Inertia responses.
+     */
+    protected $appends = [
+        'full_name',
+        'display_name',
+    ];
+
     // 1. Fillable fields
     protected $fillable = [
         'customer_id',
@@ -27,8 +35,13 @@ class Customer extends Model
         'postal_code',
         'country',
         'customer_type',
+        'customer_segment',
         'company_name',
         'tax_id',
+        'government_id_type',
+        'government_id_number',
+        'authorized_signatory',
+        'authorized_position',
         'status',
         'loyalty_points',
         'customer_lifetime_value',
@@ -42,10 +55,18 @@ class Customer extends Model
         'marketing_consent',
         'assigned_to',
         'notes',
+        'interest_notes',
         'tags',
         'preferences',
         'referred_by',
         'referral_source',
+        'lead_source',
+        'preferred_vehicle_model_id',
+        'reservation_amount',
+        'reservation_date',
+        'reservation_status',
+        'reservation_reference',
+        'reservation_unit_id',
     ];
 
     // 2. Casts for type safety
@@ -62,6 +83,8 @@ class Customer extends Model
         'email_notifications' => 'boolean',
         'sms_notifications' => 'boolean',
         'marketing_consent' => 'boolean',
+        'reservation_amount' => 'decimal:2',
+        'reservation_date' => 'date',
     ];
 
     // 3. Relationships
@@ -88,6 +111,21 @@ class Customer extends Model
     public function surveys()
     {
         return $this->hasMany(CustomerSurvey::class);
+    }
+
+    public function reservationUnit()
+    {
+        return $this->belongsTo(VehicleUnit::class, 'reservation_unit_id');
+    }
+
+    public function preferredVehicleModel()
+    {
+        return $this->belongsTo(VehicleModel::class, 'preferred_vehicle_model_id');
+    }
+
+    public function ownedVehicles()
+    {
+        return $this->hasMany(VehicleUnit::class, 'owner_id');
     }
 
     // 4. Query Scopes for branch filtering

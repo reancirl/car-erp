@@ -6,6 +6,8 @@ use App\Models\Customer;
 use App\Models\CustomerSurvey;
 use App\Models\Branch;
 use App\Models\User;
+use App\Models\VehicleModel;
+use App\Models\VehicleUnit;
 use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Traits\LogsActivity;
@@ -26,7 +28,7 @@ class CustomerController extends Controller
         $user = $request->user();
 
         // Base query with branch filtering
-        $query = Customer::with(['branch', 'assignedUser'])
+        $query = Customer::with(['branch', 'assignedUser', 'reservationUnit', 'preferredVehicleModel'])
             ->when($request->include_deleted, function ($q) {
                 $q->withTrashed();
             })
@@ -96,10 +98,18 @@ class CustomerController extends Controller
             ->orderBy('first_name')
             ->get();
 
+        $vehicleModels = VehicleModel::orderBy('year', 'desc')->orderBy('model')->get(['id', 'make', 'model', 'year']);
+        $vehicleUnits = VehicleUnit::with('vehicleModel')
+            ->when(!$user->hasRole('admin'), fn($q) => $q->where('branch_id', $user->branch_id))
+            ->orderBy('stock_number')
+            ->get(['id', 'stock_number', 'vin', 'vehicle_model_id']);
+
         return Inertia::render('sales/customer-experience-create', [
             'branches' => $user->hasRole('admin') ? Branch::where('status', 'active')->get() : null,
             'managers' => $managers,
             'existingCustomers' => $existingCustomers,
+            'vehicleModels' => $vehicleModels,
+            'vehicleUnits' => $vehicleUnits,
         ]);
     }
 
@@ -142,7 +152,7 @@ class CustomerController extends Controller
             abort(403, 'You can only view customers from your branch.');
         }
 
-        $customer->load(['branch', 'assignedUser', 'referredByCustomer', 'referrals', 'surveys']);
+        $customer->load(['branch', 'assignedUser', 'referredByCustomer', 'referrals', 'surveys', 'reservationUnit.vehicleModel', 'preferredVehicleModel', 'ownedVehicles.vehicleModel']);
 
         return Inertia::render('sales/customer-experience-view', [
             'customer' => $customer,
@@ -165,7 +175,7 @@ class CustomerController extends Controller
             abort(403, 'You can only edit customers from your branch.');
         }
 
-        $customer->load(['branch', 'assignedUser']);
+        $customer->load(['branch', 'assignedUser', 'reservationUnit', 'preferredVehicleModel']);
 
         $user = $request->user();
 
@@ -188,10 +198,18 @@ class CustomerController extends Controller
             ->orderBy('first_name')
             ->get();
 
+        $vehicleModels = VehicleModel::orderBy('year', 'desc')->orderBy('model')->get(['id', 'make', 'model', 'year']);
+        $vehicleUnits = VehicleUnit::with('vehicleModel')
+            ->when(!$user->hasRole('admin'), fn($q) => $q->where('branch_id', $user->branch_id))
+            ->orderBy('stock_number')
+            ->get(['id', 'stock_number', 'vin', 'vehicle_model_id']);
+
         return Inertia::render('sales/customer-experience-edit', [
             'customer' => $customer,
             'managers' => $managers,
             'existingCustomers' => $existingCustomers,
+            'vehicleModels' => $vehicleModels,
+            'vehicleUnits' => $vehicleUnits,
         ]);
     }
 

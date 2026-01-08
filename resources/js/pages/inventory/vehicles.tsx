@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Car, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, MapPin, User, Fuel, Trash2, RotateCcw, ArrowRightLeft } from 'lucide-react';
+import { Car, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, MapPin, User, Fuel, Trash2, RotateCcw, ArrowRightLeft, Lock } from 'lucide-react';
 import { type BreadcrumbItem, type PageProps } from '@/types';
 import { useState, FormEvent } from 'react';
 
@@ -29,8 +29,16 @@ interface VehicleUnit {
     vin: string;
     stock_number: string;
     status: string;
+    sub_status?: string | null;
+    location: string;
+    is_locked?: boolean;
+    conduction_no?: string | null;
+    drive_motor_no?: string | null;
+    plate_no?: string | null;
+    color_code?: string | null;
     purchase_price: number;
     sale_price: number | null;
+    msrp_price: number | null;
     currency: string;
     acquisition_date: string | null;
     sold_date: string | null;
@@ -48,6 +56,7 @@ interface VehicleUnit {
         body_type: string | null;
         transmission: string | null;
         fuel_type: string | null;
+        variant?: string | null;
     } | null;
     branch: {
         id: number;
@@ -59,6 +68,15 @@ interface VehicleUnit {
         name: string;
         email: string;
     } | null;
+    owner?: {
+        id: number;
+        name?: string;
+        full_name?: string;
+        display_name?: string;
+        email: string;
+    } | null;
+    lto_transaction_no?: string | null;
+    cr_no?: string | null;
 }
 
 interface Branch {
@@ -91,6 +109,7 @@ interface Props extends PageProps {
         include_deleted?: boolean;
     };
     branches: Branch[] | null;
+    customers?: any;
 }
 
 export default function VehicleInventory({ records, stats, filters, branches, auth }: Props) {
@@ -190,6 +209,30 @@ export default function VehicleInventory({ records, stats, filters, branches, au
             high: 'bg-red-100 text-red-800',
         };
         return <Badge variant="outline" className={colors[priority as keyof typeof colors]}>{priority.toUpperCase()}</Badge>;
+    };
+
+    const getLocationBadge = (location: string) => {
+        const labels: Record<string, { label: string; color: string }> = {
+            warehouse: { label: 'Warehouse', color: 'bg-slate-100 text-slate-800' },
+            gbf: { label: 'GBF', color: 'bg-cyan-100 text-cyan-800' },
+            branch: { label: 'Branch', color: 'bg-emerald-100 text-emerald-800' },
+            sold: { label: 'Sold', color: 'bg-blue-100 text-blue-800' },
+        };
+        const entry = labels[location] ?? labels.branch;
+        return <Badge className={entry.color}>{entry.label}</Badge>;
+    };
+
+    const getSubStatusLabel = (subStatus?: string | null) => {
+        if (!subStatus) return null;
+        const labels: Record<string, string> = {
+            reserved_with_dp: 'Reserved – with DP',
+            reserved_no_dp: 'Reserved – no DP',
+            for_lto: 'For LTO',
+            for_release: 'For Release',
+            for_body_repair: 'For Body Repair',
+            inspection: 'For Inspection',
+        };
+        return labels[subStatus] ?? subStatus;
     };
 
     // Use real stats from API
@@ -403,17 +446,23 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                             <TableCell className="font-medium">
                                                 <div>
                                                     <Badge variant="outline" className="mb-1">{unit.stock_number}</Badge>
-                                                    <div className="font-medium">
-                                                        {unit.vehicle_model
-                                                            ? `${unit.vehicle_model.year} ${unit.vehicle_model.make} ${unit.vehicle_model.model}`
-                                                            : unit.stock_number}
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground font-mono">{unit.vin}</div>
+                                                <div className="font-medium">
+                                                    {unit.vehicle_model
+                                                        ? `${unit.vehicle_model.year} ${unit.vehicle_model.make} ${unit.vehicle_model.model}`
+                                                        : unit.stock_number}
                                                 </div>
-                                            </TableCell>
-                                            {/* Specifications */}
-                                            <TableCell>
-                                                <div className="space-y-1">
+                                                <div className="text-xs text-muted-foreground font-mono">VIN: {unit.vin}</div>
+                                                {unit.conduction_no && (
+                                                    <div className="text-xs text-muted-foreground font-mono">Conduction: {unit.conduction_no}</div>
+                                                )}
+                                                {unit.plate_no && (
+                                                    <div className="text-xs text-muted-foreground font-mono">Plate: {unit.plate_no}</div>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        {/* Specifications */}
+                                        <TableCell>
+                                            <div className="space-y-1">
                                                     <div className="text-sm">
                                                         {unit.vehicle_model?.body_type || '—'}
                                                     </div>
@@ -428,6 +477,9 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                     )}
                                                     {unit.color_exterior && (
                                                         <div className="text-sm text-muted-foreground">{unit.color_exterior}</div>
+                                                    )}
+                                                    {unit.color_code && (
+                                                        <div className="text-xs text-muted-foreground">Color code: {unit.color_code}</div>
                                                     )}
                                                 </div>
                                             </TableCell>
@@ -447,6 +499,11 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                             </div>
                                                         </>
                                                     )}
+                                                    {unit.msrp_price && (
+                                                        <div className="text-xs text-muted-foreground">
+                                                            MSRP: {formatCurrency(unit.msrp_price, unit.currency)}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                             {/* Location */}
@@ -456,6 +513,9 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                     <span className="text-sm">{unit.branch.name}</span>
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">{unit.branch.code}</div>
+                                                <div className="mt-1">
+                                                    {getLocationBadge(unit.location)}
+                                                </div>
                                             </TableCell>
                                             {/* Sales Info */}
                                             <TableCell>
@@ -478,6 +538,11 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                             Sold: {new Date(unit.sold_date).toLocaleDateString()}
                                                         </div>
                                                     )}
+                                                    {unit.owner && (
+                                                        <div className="text-xs text-muted-foreground mt-1">
+                                                            Owner: {unit.owner.full_name || unit.owner.display_name || unit.owner.name}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                             {/* Days in Inventory */}
@@ -494,7 +559,17 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                 </div>
                                             </TableCell>
                                             {/* Status */}
-                                            <TableCell>{getStatusBadge(unit.status)}</TableCell>
+                                            <TableCell>
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-1">
+                                                        {getStatusBadge(unit.status)}
+                                                        {unit.is_locked && <Lock className="h-3 w-3 text-amber-600" />}
+                                                    </div>
+                                                    {getSubStatusLabel(unit.sub_status) && (
+                                                        <div className="text-xs text-muted-foreground">{getSubStatusLabel(unit.sub_status)}</div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
                                             {/* Actions */}
                                             <TableCell>
                                                 <div className="flex space-x-1">

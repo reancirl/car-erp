@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Car, Save, X, Upload, Plus, Minus, AlertCircle, CheckCircle, Camera, FileText, DollarSign, MapPin, Calendar, Fuel, Gauge, Palette, Settings } from 'lucide-react';
+import { Car, Save, X, Upload, Plus, Minus, AlertCircle, CheckCircle, Camera, FileText, DollarSign, MapPin, Calendar, Fuel, Gauge, Palette, Settings, Lock } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 
@@ -55,10 +55,17 @@ interface VehicleModel {
     fuel_type: string;
 }
 
+interface Customer {
+    id: number;
+    name: string;
+    email: string;
+}
+
 interface Props {
     branches: Branch[];
     salesReps: User[];
     vehicleModels: VehicleModel[];
+    customers?: Customer[];
     auth: {
         user: {
             branch_id?: number;
@@ -67,7 +74,7 @@ interface Props {
     };
 }
 
-export default function VehicleCreate({ branches, salesReps, vehicleModels, auth }: Props) {
+export default function VehicleCreate({ branches, salesReps, vehicleModels, customers = [], auth }: Props) {
     const [features, setFeatures] = useState<Feature[]>([{ title: '', value: '' }]);
     const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
     const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
@@ -77,18 +84,35 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
 
     const { data, setData, post, processing, errors } = useForm({
         vehicle_model_id: '',
+        variant: '',
+        variant_spec: '',
         branch_id: auth?.user?.branch_id || '',
         assigned_user_id: '',
+        owner_id: '',
         vin: '',
         stock_number: '',
+        conduction_no: '',
+        drive_motor_no: '',
+        plate_no: '',
         color_exterior: '',
         color_interior: '',
+        color_code: '',
         odometer: '',
         purchase_price: '',
         sale_price: '',
+        msrp_price: '',
         currency: 'PHP',
         status: 'in_stock',
+        location: 'branch',
+        sub_status: '',
+        is_locked: false,
         acquisition_date: '',
+        lto_transaction_no: '',
+        cr_no: '',
+        or_cr_release_date: '',
+        emission_reference: '',
+        battery_capacity: '',
+        battery_range_km: '',
         notes: '',
         photos: [] as File[],
         documents: [] as File[],
@@ -357,6 +381,163 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
                                     </p>
                                     {errors.vehicle_model_id && <p className="text-sm text-red-600">{errors.vehicle_model_id}</p>}
                                 </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="variant">Variant</Label>
+                                        <Input 
+                                            id="variant" 
+                                            placeholder="e.g., Premium, Luxury"
+                                            value={data.variant}
+                                            onChange={(e) => setData('variant', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="variant_spec">Variant Spec</Label>
+                                        <Input 
+                                            id="variant_spec" 
+                                            placeholder="Spec notes (AWD, Tech Pack, etc.)"
+                                            value={data.variant_spec}
+                                            onChange={(e) => setData('variant_spec', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Ownership & Registration */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <FileText className="h-5 w-5" />
+                                    <span>Ownership & Registration</span>
+                                </CardTitle>
+                                <CardDescription>Conduction, plate, and registration details</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="conduction_no">Conduction No.</Label>
+                                        <Input 
+                                            id="conduction_no" 
+                                            placeholder="Conduction number"
+                                            value={data.conduction_no}
+                                            onChange={(e) => setData('conduction_no', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="drive_motor_no">Drive Motor No.</Label>
+                                        <Input 
+                                            id="drive_motor_no" 
+                                            placeholder="Drive motor number"
+                                            value={data.drive_motor_no}
+                                            onChange={(e) => setData('drive_motor_no', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="plate_no">Plate No.</Label>
+                                        <Input 
+                                            id="plate_no" 
+                                            placeholder="e.g., ABC 1234"
+                                            value={data.plate_no}
+                                            onChange={(e) => setData('plate_no', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="owner_id">Owner</Label>
+                                        <Select 
+                                            value={data.owner_id || 'unassigned'} 
+                                            onValueChange={(value) => setData('owner_id', value === 'unassigned' ? '' : value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select owner" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="unassigned">Unassigned</SelectItem>
+                                                {customers?.map((customer) => (
+                                                    <SelectItem key={customer.id} value={customer.id.toString()}>
+                                                        {customer.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="lto_transaction_no">LTO Transaction No.</Label>
+                                        <Input 
+                                            id="lto_transaction_no" 
+                                            placeholder="LTO reference"
+                                            value={data.lto_transaction_no}
+                                            onChange={(e) => setData('lto_transaction_no', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="cr_no">CR No.</Label>
+                                        <Input 
+                                            id="cr_no" 
+                                            placeholder="Certificate of Registration"
+                                            value={data.cr_no}
+                                            onChange={(e) => setData('cr_no', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="or_cr_release_date">OR/CR Release Date</Label>
+                                        <Input 
+                                            id="or_cr_release_date" 
+                                            type="date"
+                                            value={data.or_cr_release_date}
+                                            onChange={(e) => setData('or_cr_release_date', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="emission_reference">Emission / Inspection Ref</Label>
+                                    <Input 
+                                        id="emission_reference" 
+                                        placeholder="Reference number"
+                                        value={data.emission_reference}
+                                        onChange={(e) => setData('emission_reference', e.target.value)}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* EV & Range */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Battery & Range</CardTitle>
+                                <CardDescription>Capture EV-specific details</CardDescription>
+                            </CardHeader>
+                            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="battery_capacity">Battery Capacity (kWh)</Label>
+                                    <Input 
+                                        id="battery_capacity" 
+                                        type="number"
+                                        placeholder="0.00"
+                                        value={data.battery_capacity}
+                                        onChange={(e) => setData('battery_capacity', e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="battery_range_km">Range (km)</Label>
+                                    <Input 
+                                        id="battery_range_km" 
+                                        type="number"
+                                        placeholder="0"
+                                        value={data.battery_range_km}
+                                        onChange={(e) => setData('battery_range_km', e.target.value)}
+                                    />
+                                </div>
                             </CardContent>
                         </Card>
 
@@ -397,14 +578,25 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="color_interior">Interior Color</Label>
-                                    <Input 
-                                        id="color_interior" 
-                                        placeholder="e.g., Black Cloth, Beige Leather"
-                                        value={data.color_interior}
-                                        onChange={(e) => setData('color_interior', e.target.value)}
-                                    />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="color_interior">Interior Color</Label>
+                                        <Input 
+                                            id="color_interior" 
+                                            placeholder="e.g., Black Cloth, Beige Leather"
+                                            value={data.color_interior}
+                                            onChange={(e) => setData('color_interior', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="color_code">Color Code</Label>
+                                        <Input 
+                                            id="color_code" 
+                                            placeholder="e.g., WA8555"
+                                            value={data.color_code}
+                                            onChange={(e) => setData('color_code', e.target.value)}
+                                        />
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -647,6 +839,19 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
                                 </div>
 
                                 <div className="space-y-2">
+                                    <Label htmlFor="msrp_price">MSRP (₱)</Label>
+                                    <Input 
+                                        id="msrp_price" 
+                                        type="number" 
+                                        placeholder="1,250,000"
+                                        value={data.msrp_price}
+                                        onChange={(e) => setData('msrp_price', e.target.value)}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Suggested retail price</p>
+                                    {errors.msrp_price && <p className="text-sm text-red-600">{errors.msrp_price}</p>}
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label htmlFor="sale_price">Selling Price (₱)</Label>
                                     <Input 
                                         id="sale_price" 
@@ -738,10 +943,49 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
                                 </div>
 
                                 <div className="space-y-2">
+                                    <Label htmlFor="location">Location</Label>
+                                    <Select 
+                                        value={data.location} 
+                                        onValueChange={(value) => setData('location', value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select location" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="branch">Branch</SelectItem>
+                                            <SelectItem value="warehouse">Warehouse</SelectItem>
+                                            <SelectItem value="gbf">GBF</SelectItem>
+                                            <SelectItem value="sold">Sold</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="sub_status">Sub-status</Label>
+                                    <Select 
+                                        value={data.sub_status || 'none'} 
+                                        onValueChange={(value) => setData('sub_status', value === 'none' ? '' : value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select sub-status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">None</SelectItem>
+                                            <SelectItem value="reserved_with_dp">Reserved – with DP</SelectItem>
+                                            <SelectItem value="reserved_no_dp">Reserved – no DP</SelectItem>
+                                            <SelectItem value="for_lto">For LTO</SelectItem>
+                                            <SelectItem value="for_release">For Release</SelectItem>
+                                            <SelectItem value="for_body_repair">For Body Repair</SelectItem>
+                                            <SelectItem value="inspection">For Inspection</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label htmlFor="assigned_user_id">Assigned Sales Rep</Label>
                                     <Select 
-                                        value={data.assigned_user_id} 
-                                        onValueChange={(value) => setData('assigned_user_id', value)}
+                                        value={data.assigned_user_id || 'unassigned'} 
+                                        onValueChange={(value) => setData('assigned_user_id', value === 'unassigned' ? '' : value)}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select sales rep" />
@@ -767,6 +1011,21 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, auth
                                         type="date"
                                         value={data.acquisition_date}
                                         onChange={(e) => setData('acquisition_date', e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between rounded-lg border p-3">
+                                    <div>
+                                        <Label className="flex items-center space-x-2">
+                                            <Lock className="h-4 w-4" />
+                                            <span>Lock Unit</span>
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground">Prevents status changes while reserved/paid</p>
+                                    </div>
+                                    <Switch 
+                                        id="is_locked" 
+                                        checked={data.is_locked}
+                                        onCheckedChange={(checked) => setData('is_locked', checked)}
                                     />
                                 </div>
                             </CardContent>

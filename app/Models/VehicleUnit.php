@@ -20,13 +20,23 @@ class VehicleUnit extends Model
      */
     protected $fillable = [
         'vehicle_model_id',
+        'variant',
+        'variant_spec',
         'branch_id',
         'assigned_user_id',
+        'owner_id',
         'vin',
         'stock_number',
+        'conduction_no',
+        'drive_motor_no',
+        'plate_no',
         'status',
+        'location',
+        'sub_status',
+        'is_locked',
         'purchase_price',
         'sale_price',
+        'msrp_price',
         'currency',
         'acquisition_date',
         'sold_date',
@@ -35,7 +45,14 @@ class VehicleUnit extends Model
         'images',
         'color_exterior',
         'color_interior',
+        'color_code',
         'odometer',
+        'battery_capacity',
+        'battery_range_km',
+        'lto_transaction_no',
+        'cr_no',
+        'or_cr_release_date',
+        'emission_reference',
     ];
 
     /**
@@ -46,12 +63,17 @@ class VehicleUnit extends Model
     protected $casts = [
         'purchase_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
+        'msrp_price' => 'decimal:2',
         'acquisition_date' => 'date',
         'sold_date' => 'date',
+        'or_cr_release_date' => 'date',
         'specs' => 'array',
         'features' => 'array',
         'images' => 'array',
         'odometer' => 'integer',
+        'battery_capacity' => 'decimal:2',
+        'battery_range_km' => 'integer',
+        'is_locked' => 'boolean',
     ];
 
     /**
@@ -68,6 +90,14 @@ class VehicleUnit extends Model
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    /**
+     * Get the owner/customer for this unit (once sold).
+     */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'owner_id');
     }
 
     /**

@@ -47,6 +47,20 @@ interface ExistingCustomer {
     email: string;
 }
 
+interface VehicleModel {
+    id: number;
+    make: string;
+    model: string;
+    year: number;
+}
+
+interface VehicleUnit {
+    id: number;
+    stock_number: string;
+    vin: string;
+    vehicle_model?: VehicleModel | null;
+}
+
 interface Role {
     id: number;
     name: string;
@@ -57,6 +71,8 @@ interface Props {
     branches: Branch[] | null;
     managers: Manager[];
     existingCustomers: ExistingCustomer[];
+    vehicleModels: VehicleModel[];
+    vehicleUnits: VehicleUnit[];
     auth: {
         user: {
             roles?: Role[];
@@ -66,7 +82,15 @@ interface Props {
     errors: Record<string, string>;
 }
 
-export default function CustomerExperienceCreate({ branches, managers, existingCustomers, auth, errors }: Props) {
+export default function CustomerExperienceCreate({
+    branches,
+    managers,
+    existingCustomers,
+    vehicleModels = [],
+    vehicleUnits = [],
+    auth,
+    errors,
+}: Props) {
     const isAdmin = auth.user.roles?.some(role => role.name === 'admin');
     
     const { data, setData, post, processing } = useForm({
@@ -84,17 +108,30 @@ export default function CustomerExperienceCreate({ branches, managers, existingC
         postal_code: '',
         country: 'Philippines',
         customer_type: 'individual',
+        customer_segment: 'retail',
         company_name: '',
         tax_id: '',
+        government_id_type: '',
+        government_id_number: '',
+        authorized_signatory: '',
+        authorized_position: '',
         status: 'active',
         email_notifications: true as boolean,
         sms_notifications: true as boolean,
         marketing_consent: false as boolean,
         assigned_to: 'unassigned',
         notes: '',
+        interest_notes: '',
         tags: [] as string[],
         referred_by: 'none',
         referral_source: '',
+        lead_source: '',
+        preferred_vehicle_model_id: '',
+        reservation_amount: '',
+        reservation_date: '',
+        reservation_status: '',
+        reservation_reference: '',
+        reservation_unit_id: '',
     });
 
     const availableTags = [
@@ -446,10 +483,226 @@ export default function CustomerExperienceCreate({ branches, managers, existingC
                                             />
                                             {errors.tax_id && <p className="text-sm text-red-600">{errors.tax_id}</p>}
                                         </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="authorized_signatory">Authorized Signatory</Label>
+                                                <Input
+                                                    id="authorized_signatory"
+                                                    value={data.authorized_signatory}
+                                                    onChange={(e) => setData('authorized_signatory', e.target.value)}
+                                                    className={errors.authorized_signatory ? 'border-red-500' : ''}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="authorized_position">Position</Label>
+                                                <Input
+                                                    id="authorized_position"
+                                                    value={data.authorized_position}
+                                                    onChange={(e) => setData('authorized_position', e.target.value)}
+                                                    className={errors.authorized_position ? 'border-red-500' : ''}
+                                                />
+                                            </div>
+                                        </div>
                                     </>
                                 )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="government_id_type">Government ID Type</Label>
+                    <Input
+                        id="government_id_type"
+                        value={data.government_id_type}
+                        onChange={(e) => setData('government_id_type', e.target.value)}
+                        placeholder="e.g., Driver's License, Passport"
+                        className={errors.government_id_type ? 'border-red-500' : ''}
+                    />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="government_id_number">ID Number</Label>
+                                        <Input
+                                            id="government_id_number"
+                                            value={data.government_id_number}
+                                            onChange={(e) => setData('government_id_number', e.target.value)}
+                                            className={errors.government_id_number ? 'border-red-500' : ''}
+                                        />
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
+
+                        {/* Lead & Interest */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Lead & Interest</CardTitle>
+                                <CardDescription>Capture source, segment, and model interest</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="customer_segment">Customer Type</Label>
+                                        <Select value={data.customer_segment} onValueChange={(value) => setData('customer_segment', value)}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="retail">Retail</SelectItem>
+                                                <SelectItem value="fleet">Fleet</SelectItem>
+                                                <SelectItem value="puv_operator">PUV Operator</SelectItem>
+                                                <SelectItem value="ap_dealer">AP Dealer</SelectItem>
+                                                <SelectItem value="sub_dealer">Sub-dealer</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="lead_source">Lead Source</Label>
+                                        <Select
+                                            value={data.lead_source || 'not_set'}
+                                            onValueChange={(value) => setData('lead_source', value === 'not_set' ? '' : value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select source" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="not_set">Not set</SelectItem>
+                                                <SelectItem value="walk_in">Walk-in</SelectItem>
+                                                <SelectItem value="facebook">Facebook</SelectItem>
+                                                <SelectItem value="ap">AP</SelectItem>
+                                                <SelectItem value="referral">Referral</SelectItem>
+                                                <SelectItem value="event">Event</SelectItem>
+                                                <SelectItem value="other">Other</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="preferred_vehicle_model_id">Wuling Model</Label>
+                                        <Select
+                                            value={data.preferred_vehicle_model_id || 'not_set'}
+                                            onValueChange={(value) => setData('preferred_vehicle_model_id', value === 'not_set' ? '' : value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select model" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="not_set">Not set</SelectItem>
+                                                {vehicleModels.map((model) => (
+                                                    <SelectItem key={model.id} value={model.id.toString()}>
+                                                        {model.year} {model.make} {model.model}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="referral_source">Referral Source</Label>
+                                        <Input
+                                            id="referral_source"
+                                            value={data.referral_source}
+                                            onChange={(e) => setData('referral_source', e.target.value)}
+                                            className={errors.referral_source ? 'border-red-500' : ''}
+                                            placeholder="Referral details"
+                                        />
+                                        {errors.referral_source && <p className="text-sm text-red-600">{errors.referral_source}</p>}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="interest_notes">Interest Notes</Label>
+                                    <Textarea
+                                        id="interest_notes"
+                                        value={data.interest_notes}
+                                        onChange={(e) => setData('interest_notes', e.target.value)}
+                                        rows={3}
+                                        placeholder="e.g., PUV class 1 fleet, family car, EV first-timer"
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Reservation */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Reservation</CardTitle>
+                                <CardDescription>Track reservation details and linked unit</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="reservation_amount">Reservation Amount</Label>
+                                        <Input
+                                            id="reservation_amount"
+                                            type="number"
+                                            value={data.reservation_amount}
+                                            onChange={(e) => setData('reservation_amount', e.target.value)}
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="reservation_date">Reservation Date</Label>
+                                        <Input
+                                            id="reservation_date"
+                                            type="date"
+                                            value={data.reservation_date}
+                                            onChange={(e) => setData('reservation_date', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="reservation_status">Reservation Status</Label>
+                                        <Select
+                                            value={data.reservation_status || 'not_set'}
+                                            onValueChange={(value) => setData('reservation_status', value === 'not_set' ? '' : value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="not_set">Not set</SelectItem>
+                                                <SelectItem value="pending">Pending</SelectItem>
+                                                <SelectItem value="confirmed">Confirmed</SelectItem>
+                                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                                                <SelectItem value="converted">Converted to Sale</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="reservation_reference">Reservation Reference</Label>
+                                        <Input
+                                            id="reservation_reference"
+                                            value={data.reservation_reference}
+                                            onChange={(e) => setData('reservation_reference', e.target.value)}
+                                            placeholder="Reference number"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="reservation_unit_id">Linked Unit (Inventory)</Label>
+                                    <Select
+                                        value={data.reservation_unit_id || 'not_set'}
+                                        onValueChange={(value) => setData('reservation_unit_id', value === 'not_set' ? '' : value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select unit" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="not_set">Not set</SelectItem>
+                                            {vehicleUnits.map((unit) => (
+                                                <SelectItem key={unit.id} value={unit.id.toString()}>
+                                                    {unit.stock_number} — {unit.vehicle_model ? `${unit.vehicle_model.year} ${unit.vehicle_model.make} ${unit.vehicle_model.model}` : unit.vin}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </CardContent>
+                        </Card>
+
 
                         {/* Additional Notes */}
                         <Card>
@@ -612,18 +865,6 @@ export default function CustomerExperienceCreate({ branches, managers, existingC
                                         </SelectContent>
                                     </Select>
                                     {errors.referred_by && <p className="text-sm text-red-600">{errors.referred_by}</p>}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="referral_source">Referral Source</Label>
-                                    <Input
-                                        id="referral_source"
-                                        value={data.referral_source}
-                                        onChange={(e) => setData('referral_source', e.target.value)}
-                                        className={errors.referral_source ? 'border-red-500' : ''}
-                                        placeholder="How did they find us?"
-                                    />
-                                    {errors.referral_source && <p className="text-sm text-red-600">{errors.referral_source}</p>}
                                 </div>
                             </CardContent>
                         </Card>

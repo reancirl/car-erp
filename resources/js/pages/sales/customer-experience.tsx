@@ -29,9 +29,15 @@ interface Customer {
     email: string;
     phone: string;
     customer_type: string;
+    customer_segment?: string;
     company_name: string | null;
     status: string;
     satisfaction_rating: string | null;
+    lead_source?: string | null;
+    reservation_status?: string | null;
+    reservation_amount?: number | null;
+    reservation_date?: string | null;
+    reservation_reference?: string | null;
     total_purchases: number;
     total_spent: number;
     loyalty_points: number;
@@ -448,6 +454,8 @@ export default function CustomerExperience({ customers, stats, filters, branches
                                             <TableHead>Type</TableHead>
                                             <TableHead>Contact</TableHead>
                                             <TableHead>Status</TableHead>
+                                            <TableHead>Lead Source</TableHead>
+                                            <TableHead>Reservation</TableHead>
                                             <TableHead>Satisfaction</TableHead>
                                             <TableHead>Purchases</TableHead>
                                             <TableHead>Total Spent</TableHead>
@@ -484,7 +492,33 @@ export default function CustomerExperience({ customers, stats, filters, branches
                                                         </div>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>{getStatusBadge(customer.status)}</TableCell>
+                                                <TableCell>
+                                                    <div className="space-y-1">
+                                                        {getStatusBadge(customer.status)}
+                                                        {customer.customer_segment && (
+                                                            <div className="text-xs text-muted-foreground capitalize">
+                                                                {customer.customer_segment.replace('_', ' ')}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="capitalize text-sm text-muted-foreground">
+                                                    {customer.lead_source ? customer.lead_source.replace('_', ' ') : '—'}
+                                                </TableCell>
+                                                <TableCell className="text-sm">
+                                                    {customer.reservation_status ? (
+                                                        <div className="space-y-1">
+                                                            <Badge variant="outline" className="capitalize">
+                                                                {customer.reservation_status.replace('_', ' ')}
+                                                            </Badge>
+                                                            {customer.reservation_amount !== null && (
+                                                                <div className="text-xs text-muted-foreground">
+                                                                    ₱{(customer.reservation_amount ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : '—'}
+                                                </TableCell>
                                                 <TableCell>{getSatisfactionBadge(customer.satisfaction_rating)}</TableCell>
                                                 <TableCell>{customer.total_purchases}</TableCell>
                                                 <TableCell>₱{customer.total_spent.toLocaleString()}</TableCell>

@@ -34,6 +34,13 @@ class UpdateVehicleUnitRequest extends FormRequest
                 'images' => json_decode($this->images, true) ?? [],
             ]);
         }
+
+        // Default location to branch if not provided
+        if (!$this->has('location')) {
+            $this->merge([
+                'location' => 'branch',
+            ]);
+        }
     }
 
     /**
@@ -47,11 +54,21 @@ class UpdateVehicleUnitRequest extends FormRequest
 
         return [
             'vehicle_model_id' => 'sometimes|required|exists:vehicle_models,id',
+            'owner_id' => 'nullable|exists:customers,id',
             'vin' => ['sometimes', 'required', 'string', 'max:17', Rule::unique('vehicle_units', 'vin')->ignore($unitId)],
             'stock_number' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('vehicle_units', 'stock_number')->ignore($unitId)],
+            'conduction_no' => 'nullable|string|max:255',
+            'drive_motor_no' => 'nullable|string|max:255',
+            'plate_no' => 'nullable|string|max:255',
+            'variant' => 'nullable|string|max:255',
+            'variant_spec' => 'nullable|string|max:255',
             'status' => ['sometimes', 'required', Rule::in(['in_stock', 'reserved', 'sold', 'in_transit', 'transferred', 'disposed'])],
+            'location' => ['required', Rule::in(['warehouse', 'gbf', 'branch', 'sold'])],
+            'sub_status' => ['nullable', Rule::in(['reserved_with_dp', 'reserved_no_dp', 'for_lto', 'for_release', 'for_body_repair', 'inspection'])],
+            'is_locked' => 'boolean',
             'purchase_price' => 'nullable|numeric|min:0',
             'sale_price' => 'nullable|numeric|min:0',
+            'msrp_price' => 'nullable|numeric|min:0',
             'currency' => 'nullable|string|size:3',
             'acquisition_date' => 'nullable|date|before_or_equal:today',
             'sold_date' => 'nullable|date|after_or_equal:acquisition_date',
@@ -63,7 +80,14 @@ class UpdateVehicleUnitRequest extends FormRequest
             'documents.*' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:10240',
             'color_exterior' => 'nullable|string|max:255',
             'color_interior' => 'nullable|string|max:255',
+            'color_code' => 'nullable|string|max:255',
             'odometer' => 'nullable|integer|min:0',
+            'battery_capacity' => 'nullable|numeric|min:0',
+            'battery_range_km' => 'nullable|integer|min:0',
+            'lto_transaction_no' => 'nullable|string|max:255',
+            'cr_no' => 'nullable|string|max:255',
+            'or_cr_release_date' => 'nullable|date',
+            'emission_reference' => 'nullable|string|max:255',
             'branch_id' => 'sometimes|required|exists:branches,id',
         ];
     }

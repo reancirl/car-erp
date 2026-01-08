@@ -39,6 +39,13 @@ class StoreCustomerRequest extends FormRequest
                 'referred_by' => null,
             ]);
         }
+
+        // Normalize assigned_to empty string to null
+        if ($this->assigned_to === '') {
+            $this->merge([
+                'assigned_to' => null,
+            ]);
+        }
     }
 
     /**
@@ -62,19 +69,32 @@ class StoreCustomerRequest extends FormRequest
             'postal_code' => ['nullable', 'string', 'regex:/^\d{4}$/'],
             'country' => 'nullable|string|max:255',
             'customer_type' => 'required|in:individual,corporate',
+            'customer_segment' => 'required|in:retail,fleet,puv_operator,ap_dealer,sub_dealer',
             'company_name' => 'nullable|required_if:customer_type,corporate|string|max:255',
             'tax_id' => 'nullable|string|max:50',
+            'government_id_type' => 'nullable|string|max:100',
+            'government_id_number' => 'nullable|string|max:100',
+            'authorized_signatory' => 'nullable|string|max:255',
+            'authorized_position' => 'nullable|string|max:255',
             'status' => 'required|in:active,inactive,vip,blacklisted',
             'email_notifications' => 'boolean',
             'sms_notifications' => 'boolean',
             'marketing_consent' => 'boolean',
             'assigned_to' => 'nullable|exists:users,id',
             'notes' => 'nullable|string|max:2000',
+            'interest_notes' => 'nullable|string|max:2000',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:100',
             'preferences' => 'nullable|array',
             'referred_by' => 'nullable|exists:customers,id',
             'referral_source' => 'nullable|string|max:255',
+            'lead_source' => 'nullable|in:walk_in,facebook,ap,referral,event,other',
+            'preferred_vehicle_model_id' => 'nullable|exists:vehicle_models,id',
+            'reservation_amount' => 'nullable|numeric|min:0',
+            'reservation_date' => 'nullable|date',
+            'reservation_status' => 'nullable|in:pending,confirmed,cancelled,converted',
+            'reservation_reference' => 'nullable|string|max:255',
+            'reservation_unit_id' => 'nullable|exists:vehicle_units,id',
         ];
 
         // Admin can choose branch, non-admin gets auto-filled
