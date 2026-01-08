@@ -129,7 +129,7 @@ class VehicleUnitController extends Controller
     {
         $user = $request->user();
 
-        $unit = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel', 'owner'])->findOrFail($id);
+        $unit = VehicleUnit::with(['branch', 'assignedUser', 'vehicleModel', 'owner', 'salesAgent', 'assignedDriver', 'releaseApprovalUser'])->findOrFail($id);
 
         // Verify user has access to this unit's branch
         if (!$user->hasRole(['admin', 'auditor']) && $unit->branch_id !== $user->branch_id) {

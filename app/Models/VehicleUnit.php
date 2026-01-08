@@ -53,6 +53,36 @@ class VehicleUnit extends Model
         'cr_no',
         'or_cr_release_date',
         'emission_reference',
+        'release_date',
+        'payment_method',
+        'proof_of_payment_refs',
+        'dealer',
+        'sales_agent_id',
+        'assigned_driver_id',
+        'gps_details',
+        'insurance_details',
+        'promo_freebies',
+        'srp_amount',
+        'discount_amount',
+        'net_selling_price',
+        'dp_amount',
+        'dp_date',
+        'balance_financed',
+        'financing_institution',
+        'financing_terms_months',
+        'financing_interest_rate',
+        'financing_monthly_amortization',
+        'chattel_mortgage_details',
+        'sales_invoice_no',
+        'dr_no',
+        'or_numbers',
+        'release_checklist_status',
+        'release_approval_user_id',
+        'freebies_list',
+        'freebies_total_cost',
+        'freebies_payer',
+        'warranty_start_date',
+        'warranty_end_date',
     ];
 
     /**
@@ -74,6 +104,26 @@ class VehicleUnit extends Model
         'battery_capacity' => 'decimal:2',
         'battery_range_km' => 'integer',
         'is_locked' => 'boolean',
+        'proof_of_payment_refs' => 'array',
+        'gps_details' => 'array',
+        'insurance_details' => 'array',
+        'promo_freebies' => 'array',
+        'srp_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'net_selling_price' => 'decimal:2',
+        'dp_amount' => 'decimal:2',
+        'dp_date' => 'date',
+        'balance_financed' => 'decimal:2',
+        'financing_terms_months' => 'integer',
+        'financing_interest_rate' => 'decimal:2',
+        'financing_monthly_amortization' => 'decimal:2',
+        'chattel_mortgage_details' => 'array',
+        'or_numbers' => 'array',
+        'release_checklist_status' => 'array',
+        'freebies_list' => 'array',
+        'freebies_total_cost' => 'decimal:2',
+        'warranty_start_date' => 'date',
+        'warranty_end_date' => 'date',
     ];
 
     /**
@@ -90,6 +140,21 @@ class VehicleUnit extends Model
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function salesAgent(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sales_agent_id');
+    }
+
+    public function assignedDriver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_driver_id');
+    }
+
+    public function releaseApprovalUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'release_approval_user_id');
     }
 
     /**

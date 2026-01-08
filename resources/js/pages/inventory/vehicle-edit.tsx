@@ -94,8 +94,8 @@ interface Props {
     unit: VehicleUnit;
     branches: Branch[];
     salesReps: User[];
+    customers?: { id: number; name: string; email: string }[];
     vehicleModels: VehicleModel[];
-    customers: { id: number; name: string; email: string }[];
     auth: {
         user: {
             branch_id?: number;
@@ -123,7 +123,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, customers, auth }: Props) {
+export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, customers = [], auth }: Props) {
     const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
     const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
     const [isDraggingDoc, setIsDraggingDoc] = useState(false);
@@ -165,6 +165,36 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
         photos: [] as File[],
         documents: [] as File[],
         _method: 'PUT' as const,
+        release_date: unit.release_date || '',
+        payment_method: unit.payment_method || '',
+        proof_of_payment_refs: (unit.proof_of_payment_refs as unknown as string) || '',
+        dealer: unit.dealer || '',
+        sales_agent_id: unit.sales_agent_id?.toString() || '',
+        assigned_driver_id: unit.assigned_driver_id?.toString() || '',
+        gps_details: (unit.gps_details as unknown as string) || '',
+        insurance_details: (unit.insurance_details as unknown as string) || '',
+        promo_freebies: (unit.promo_freebies as unknown as string) || '',
+        srp_amount: unit.srp_amount?.toString() || '',
+        discount_amount: unit.discount_amount?.toString() || '',
+        net_selling_price: unit.net_selling_price?.toString() || '',
+        dp_amount: unit.dp_amount?.toString() || '',
+        dp_date: unit.dp_date || '',
+        balance_financed: unit.balance_financed?.toString() || '',
+        financing_institution: unit.financing_institution || '',
+        financing_terms_months: unit.financing_terms_months?.toString() || '',
+        financing_interest_rate: unit.financing_interest_rate?.toString() || '',
+        financing_monthly_amortization: unit.financing_monthly_amortization?.toString() || '',
+        chattel_mortgage_details: (unit.chattel_mortgage_details as unknown as string) || '',
+        sales_invoice_no: unit.sales_invoice_no || '',
+        dr_no: unit.dr_no || '',
+        or_numbers: (unit.or_numbers as unknown as string) || '',
+        release_checklist_status: (unit.release_checklist_status as unknown as string) || '',
+        release_approval_user_id: unit.release_approval_user_id?.toString() || '',
+        freebies_list: (unit.freebies_list as unknown as string) || '',
+        freebies_total_cost: unit.freebies_total_cost?.toString() || '',
+        freebies_payer: unit.freebies_payer || '',
+        warranty_start_date: unit.warranty_start_date || '',
+        warranty_end_date: unit.warranty_end_date || '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -874,23 +904,393 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                                     )}
                                 </div>
 
-                                {(data.photos.length > 0 || data.documents.length > 0) && (
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                        <div className="flex items-start space-x-2">
-                                            <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
-                                            <p className="text-xs text-blue-700">
-                                                New files will be uploaded when you save the vehicle. Existing files will remain unchanged.
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                    {(data.photos.length > 0 || data.documents.length > 0) && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <div className="flex items-start space-x-2">
+                                <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
+                                <p className="text-xs text-blue-700">
+                                    New files will be uploaded when you save the vehicle. Existing files will remain unchanged.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
+            {/* Sale & Release */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                        <DollarSign className="h-5 w-5" />
+                        <span>Sale & Release</span>
+                    </CardTitle>
+                    <CardDescription>Sales/financing breakdown and release checklist</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="release_date">Release Date</Label>
+                            <Input
+                                id="release_date"
+                                type="date"
+                                value={data.release_date}
+                                onChange={(e) => setData('release_date', e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="payment_method">Payment Method</Label>
+                            <Select
+                                value={data.payment_method || 'not_set'}
+                                onValueChange={(value) => setData('payment_method', value === 'not_set' ? '' : value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select payment method" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="not_set">Not set</SelectItem>
+                                    <SelectItem value="cash">Cash</SelectItem>
+                                    <SelectItem value="bank_financing">Bank Financing</SelectItem>
+                                    <SelectItem value="in_house">In-house</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="dealer">Dealer</Label>
+                            <Input
+                                id="dealer"
+                                value={data.dealer}
+                                onChange={(e) => setData('dealer', e.target.value)}
+                                placeholder="Dealer name"
+                            />
+                        </div>
                     </div>
 
-                    {/* Sidebar */}
-                    <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="sales_agent_id">Sales Agent</Label>
+                            <Select
+                                value={data.sales_agent_id || 'unassigned'}
+                                onValueChange={(value) => setData('sales_agent_id', value === 'unassigned' ? '' : value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select sales agent" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                                    {salesReps?.map((user) => (
+                                        <SelectItem key={user.id} value={user.id.toString()}>
+                                            {user.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="assigned_driver_id">Assigned Driver</Label>
+                            <Select
+                                value={data.assigned_driver_id || 'unassigned'}
+                                onValueChange={(value) => setData('assigned_driver_id', value === 'unassigned' ? '' : value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select driver" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                                    {salesReps?.map((user) => (
+                                        <SelectItem key={user.id} value={user.id.toString()}>
+                                            {user.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="release_approval_user_id">Release Approved By</Label>
+                            <Select
+                                value={data.release_approval_user_id || 'unassigned'}
+                                onValueChange={(value) => setData('release_approval_user_id', value === 'unassigned' ? '' : value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select approver" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                                    {salesReps?.map((user) => (
+                                        <SelectItem key={user.id} value={user.id.toString()}>
+                                            {user.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="srp_amount">SRP</Label>
+                            <Input
+                                id="srp_amount"
+                                type="number"
+                                value={data.srp_amount}
+                                onChange={(e) => setData('srp_amount', e.target.value)}
+                                placeholder="0.00"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="discount_amount">Discount</Label>
+                            <Input
+                                id="discount_amount"
+                                type="number"
+                                value={data.discount_amount}
+                                onChange={(e) => setData('discount_amount', e.target.value)}
+                                placeholder="0.00"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="net_selling_price">Net Selling Price</Label>
+                            <Input
+                                id="net_selling_price"
+                                type="number"
+                                value={data.net_selling_price}
+                                onChange={(e) => setData('net_selling_price', e.target.value)}
+                                placeholder="0.00"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="dp_amount">DP Amount</Label>
+                            <Input
+                                id="dp_amount"
+                                type="number"
+                                value={data.dp_amount}
+                                onChange={(e) => setData('dp_amount', e.target.value)}
+                                placeholder="0.00"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="dp_date">DP Date</Label>
+                            <Input
+                                id="dp_date"
+                                type="date"
+                                value={data.dp_date}
+                                onChange={(e) => setData('dp_date', e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="balance_financed">Balance Financed</Label>
+                            <Input
+                                id="balance_financed"
+                                type="number"
+                                value={data.balance_financed}
+                                onChange={(e) => setData('balance_financed', e.target.value)}
+                                placeholder="0.00"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="financing_institution">Financing Institution</Label>
+                            <Input
+                                id="financing_institution"
+                                value={data.financing_institution}
+                                onChange={(e) => setData('financing_institution', e.target.value)}
+                                placeholder="Bank / Lender"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="financing_terms_months">Term (months)</Label>
+                            <Input
+                                id="financing_terms_months"
+                                type="number"
+                                value={data.financing_terms_months}
+                                onChange={(e) => setData('financing_terms_months', e.target.value)}
+                                placeholder="0"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="financing_interest_rate">Interest Rate (%)</Label>
+                            <Input
+                                id="financing_interest_rate"
+                                type="number"
+                                value={data.financing_interest_rate}
+                                onChange={(e) => setData('financing_interest_rate', e.target.value)}
+                                placeholder="0.00"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="financing_monthly_amortization">Monthly Amortization</Label>
+                            <Input
+                                id="financing_monthly_amortization"
+                                type="number"
+                                value={data.financing_monthly_amortization}
+                                onChange={(e) => setData('financing_monthly_amortization', e.target.value)}
+                                placeholder="0.00"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="chattel_mortgage_details">Chattel Mortgage Details</Label>
+                            <Textarea
+                                id="chattel_mortgage_details"
+                                value={data.chattel_mortgage_details}
+                                onChange={(e) => setData('chattel_mortgage_details', e.target.value)}
+                                rows={3}
+                                placeholder="Notes on chattel mortgage / in-house terms"
+                            />
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="sales_invoice_no">Sales Invoice No</Label>
+                            <Input
+                                id="sales_invoice_no"
+                                value={data.sales_invoice_no}
+                                onChange={(e) => setData('sales_invoice_no', e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="dr_no">DR No</Label>
+                            <Input
+                                id="dr_no"
+                                value={data.dr_no}
+                                onChange={(e) => setData('dr_no', e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="or_numbers">OR Numbers</Label>
+                            <Textarea
+                                id="or_numbers"
+                                value={data.or_numbers}
+                                onChange={(e) => setData('or_numbers', e.target.value)}
+                                rows={2}
+                                placeholder="Comma-separated OR numbers"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="proof_of_payment_refs">Proof of Payment (URLs/refs)</Label>
+                            <Textarea
+                                id="proof_of_payment_refs"
+                                value={data.proof_of_payment_refs}
+                                onChange={(e) => setData('proof_of_payment_refs', e.target.value)}
+                                rows={3}
+                                placeholder="Links or references to payment proofs"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="release_checklist_status">Release Checklist Status</Label>
+                            <Textarea
+                                id="release_checklist_status"
+                                value={data.release_checklist_status}
+                                onChange={(e) => setData('release_checklist_status', e.target.value)}
+                                rows={3}
+                                placeholder="PDI done, accessories installed, insurance active, OR/CR ready..."
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="gps_details">GPS Details</Label>
+                            <Textarea
+                                id="gps_details"
+                                value={data.gps_details}
+                                onChange={(e) => setData('gps_details', e.target.value)}
+                                rows={3}
+                                placeholder="GPS device info / serial / activation"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="insurance_details">Insurance Details</Label>
+                            <Textarea
+                                id="insurance_details"
+                                value={data.insurance_details}
+                                onChange={(e) => setData('insurance_details', e.target.value)}
+                                rows={3}
+                                placeholder="Policy number, provider, coverage"
+                            />
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="freebies_list">Promo / Freebies Given</Label>
+                            <Textarea
+                                id="freebies_list"
+                                value={data.freebies_list}
+                                onChange={(e) => setData('freebies_list', e.target.value)}
+                                rows={3}
+                                placeholder="Tint, matting, wall charger, insurance subsidy, chattel subsidy..."
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="freebies_total_cost">Freebies Cost</Label>
+                            <Input
+                                id="freebies_total_cost"
+                                type="number"
+                                value={data.freebies_total_cost}
+                                onChange={(e) => setData('freebies_total_cost', e.target.value)}
+                                placeholder="0.00"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="freebies_payer">Who Shoulders</Label>
+                            <Select
+                                value={data.freebies_payer || 'not_set'}
+                                onValueChange={(value) => setData('freebies_payer', value === 'not_set' ? '' : value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select payer" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="not_set">Not set</SelectItem>
+                                    <SelectItem value="hq">HQ</SelectItem>
+                                    <SelectItem value="cebu">Cebu</SelectItem>
+                                    <SelectItem value="other">Other dealer</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="warranty_start_date">Warranty Start</Label>
+                            <Input
+                                id="warranty_start_date"
+                                type="date"
+                                value={data.warranty_start_date}
+                                onChange={(e) => setData('warranty_start_date', e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="warranty_end_date">Warranty End</Label>
+                            <Input
+                                id="warranty_end_date"
+                                type="date"
+                                value={data.warranty_end_date}
+                                onChange={(e) => setData('warranty_end_date', e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
                         {/* Pricing Information */}
                         <Card>
                             <CardHeader>
