@@ -62,6 +62,20 @@ class StoreWorkOrderRequest extends FormRequest
             'updated_by' => auth()->id(),
         ]);
 
+        // Normalize nullable selects
+        if ($this->input('assigned_to') === 'unassigned') {
+            $this->merge(['assigned_to' => null]);
+        }
+        if (!$this->filled('service_type_id')) {
+            $this->merge(['service_type_id' => null]);
+        }
+
+        // Default job type
+        $this->merge([
+            'job_type' => $this->input('job_type', 'pms'),
+            'requested_at' => $this->input('requested_at') ?: now()->toDateString(),
+        ]);
+
         // Default fraud prevention flags
         $this->merge([
             'requires_photo_verification' => $this->input('requires_photo_verification', true),
@@ -135,9 +149,19 @@ class StoreWorkOrderRequest extends FormRequest
             'assigned_to' => 'nullable|exists:users,id',
             'assigned_technician_name' => 'nullable|string|max:255',
 
+            // Job details
+            'job_type' => 'required|in:pms,warranty,accident,customer_pay',
+            'requested_at' => 'nullable|date',
+            'actual_service_date' => 'nullable|date',
+            'service_details' => 'nullable|string|max:4000',
+            'recurring_issue_notes' => 'nullable|string|max:4000',
+
             // Estimates
             'estimated_hours' => 'nullable|numeric|min:0|max:999.99',
             'estimated_cost' => 'nullable|numeric|min:0|max:9999999.99',
+            'actual_hours' => 'nullable|numeric|min:0|max:999.99',
+            'actual_cost' => 'nullable|numeric|min:0|max:9999999.99',
+            'labor_cost' => 'nullable|numeric|min:0|max:9999999.99',
 
             // PMS Interval tracking
             'pms_interval_km' => 'required|integer|min:1000|max:50000', // e.g., 5000, 10000, etc.
@@ -150,6 +174,7 @@ class StoreWorkOrderRequest extends FormRequest
 
             // Metadata
             'is_warranty_claim' => 'nullable|boolean',
+            'warranty_charge_to' => 'nullable|in:none,wuling,supplier,other',
             'customer_concerns' => 'nullable|string|max:2000',
             'diagnostic_findings' => 'nullable|string|max:2000',
             'notes' => 'nullable|string|max:2000',
@@ -157,6 +182,14 @@ class StoreWorkOrderRequest extends FormRequest
             // Fraud prevention
             'requires_photo_verification' => 'nullable|boolean',
             'minimum_photos_required' => 'nullable|integer|min:1|max:10',
+
+            // Parts list
+            'parts' => 'nullable|array|max:50',
+            'parts.*.part_number' => 'nullable|string|max:100',
+            'parts.*.description' => 'nullable|string|max:255',
+            'parts.*.quantity' => 'nullable|numeric|min:0|max:999999.99',
+            'parts.*.unit_cost' => 'nullable|numeric|min:0|max:9999999.99',
+            'parts.*.unit_price' => 'nullable|numeric|min:0|max:9999999.99',
         ];
 
         // Conditional rules: Branch is required for admin/auditor users

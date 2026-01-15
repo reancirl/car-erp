@@ -10,6 +10,7 @@ use App\Models\ServiceType;
 use App\Models\User;
 use App\Models\VehicleUnit;
 use App\Models\WorkOrder;
+use App\Models\WorkOrderPart;
 use App\Models\WorkOrderPhoto;
 use App\Services\OdometerService;
 use App\Services\PhotoUploadService;
@@ -160,6 +161,8 @@ class WorkOrderController extends Controller
     public function store(StoreWorkOrderRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        $parts = $data['parts'] ?? [];
+        unset($data['parts']);
 
         $workOrder = WorkOrder::create($data);
 
@@ -190,6 +193,11 @@ class WorkOrderController extends Controller
             ]
         );
 
+        // Persist parts list
+        if (!empty($parts)) {
+            $this->syncParts($workOrder, $parts);
+        }
+
         return redirect()
             ->route('service.pms-work-orders.show', $workOrder)
             ->with('success', 'Work order created successfully!');
@@ -215,6 +223,7 @@ class WorkOrderController extends Controller
             'photos' => function ($query) {
                 $query->orderBy('created_at', 'desc');
             },
+            'parts',
             'odometerReadings' => function ($query) {
                 $query->orderBy('reading_date', 'desc')->limit(10);
             },
@@ -264,7 +273,7 @@ class WorkOrderController extends Controller
         }
 
         $user = $request->user();
-        $pms_work_order->load(['branch', 'serviceType', 'assignedTechnician', 'photos']);
+        $pms_work_order->load(['branch', 'serviceType', 'assignedTechnician', 'photos', 'parts']);
 
         return Inertia::render('service/pms-work-orders/edit', [
             'workOrder' => $pms_work_order,
@@ -285,6 +294,8 @@ class WorkOrderController extends Controller
     public function update(UpdateWorkOrderRequest $request, WorkOrder $pms_work_order): RedirectResponse
     {
         $data = $request->validated();
+        $parts = $data['parts'] ?? [];
+        unset($data['parts']);
 
         // Track changes for audit
         $changes = [];
@@ -300,6 +311,13 @@ class WorkOrderController extends Controller
         }
 
         $pms_work_order->update($data);
+
+        if (!empty($parts)) {
+            $this->syncParts($pms_work_order, $parts);
+        } elseif ($request->has('parts')) {
+            // If parts array is intentionally empty, clear existing
+            $pms_work_order->parts()->delete();
+        }
 
         // Check overdue status
         $pms_work_order->checkOverdueStatus();
@@ -500,6 +518,40 @@ class WorkOrderController extends Controller
 
         if ($user->hasRole('technician') && $workOrder->assigned_to !== $user->id) {
             abort(403, 'You can only access work orders assigned to you.');
+        }
+    }
+
+    /**
+     * Upsert parts for a work order.
+     */
+    private function syncParts(WorkOrder $workOrder, array $parts): void
+    {
+        $workOrder->parts()->delete();
+
+        $cleanParts = collect($parts)
+            ->filter(fn($part) => array_filter([
+                $part['part_number'] ?? null,
+                $part['description'] ?? null,
+                $part['quantity'] ?? null,
+                $part['unit_cost'] ?? null,
+                $part['unit_price'] ?? null,
+            ]))
+            ->map(function ($part) {
+                return [
+                    'part_number' => $part['part_number'] ?? null,
+                    'description' => $part['description'] ?? null,
+                    'quantity' => $part['quantity'] ?? 1,
+                    'unit_cost' => $part['unit_cost'] ?? null,
+                    'unit_price' => $part['unit_price'] ?? null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            })
+            ->values()
+            ->all();
+
+        if (!empty($cleanParts)) {
+            $workOrder->parts()->insert($cleanParts);
         }
     }
 }

@@ -36,10 +36,13 @@ class WorkOrder extends Model
         'actual_hours' => 'decimal:2',
         'estimated_cost' => 'decimal:2',
         'actual_cost' => 'decimal:2',
+        'labor_cost' => 'decimal:2',
         'completion_percentage' => 'integer',
         'is_warranty_claim' => 'boolean',
         'photos_uploaded' => 'boolean',
         'checklist_completed' => 'boolean',
+        'requested_at' => 'date',
+        'actual_service_date' => 'date',
         // PMS tracking
         'next_pms_due_date' => 'datetime',
         'is_overdue' => 'boolean',
@@ -151,6 +154,14 @@ class WorkOrder extends Model
     public function photos()
     {
         return $this->hasMany(WorkOrderPhoto::class);
+    }
+
+    /**
+     * Relationship: Parts replaced/used on this work order.
+     */
+    public function parts()
+    {
+        return $this->hasMany(WorkOrderPart::class);
     }
 
     /**

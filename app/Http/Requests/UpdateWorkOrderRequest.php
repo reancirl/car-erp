@@ -41,6 +41,13 @@ class UpdateWorkOrderRequest extends FormRequest
         // Auto-assign updated_by
         $this->merge(['updated_by' => auth()->id()]);
 
+        if ($this->input('assigned_to') === 'unassigned') {
+            $this->merge(['assigned_to' => null]);
+        }
+        if (!$this->filled('service_type_id')) {
+            $this->merge(['service_type_id' => null]);
+        }
+
         $isTechnician = auth()->user()?->hasRole('technician');
 
         if ($isTechnician) {
@@ -113,6 +120,7 @@ class UpdateWorkOrderRequest extends FormRequest
 
             // Service relationship
             'service_type_id' => 'nullable|exists:service_types,id',
+            'job_type' => 'required|in:pms,warranty,accident,customer_pay',
 
             // Identifiers
             'reference_number' => 'nullable|string|max:255',
@@ -137,6 +145,8 @@ class UpdateWorkOrderRequest extends FormRequest
             'priority' => 'required|in:low,normal,high,urgent',
             'scheduled_at' => 'nullable|date',
             'due_date' => 'nullable|date|after_or_equal:scheduled_at',
+            'requested_at' => 'nullable|date',
+            'actual_service_date' => 'nullable|date',
             'started_at' => 'nullable|date',
             'completed_at' => 'nullable|date',
 
@@ -149,6 +159,7 @@ class UpdateWorkOrderRequest extends FormRequest
             'actual_hours' => 'nullable|numeric|min:0|max:999.99',
             'estimated_cost' => 'nullable|numeric|min:0|max:9999999.99',
             'actual_cost' => 'nullable|numeric|min:0|max:9999999.99',
+            'labor_cost' => 'nullable|numeric|min:0|max:9999999.99',
             'completion_percentage' => 'nullable|integer|min:0|max:100',
 
             // PMS Interval tracking
@@ -162,14 +173,25 @@ class UpdateWorkOrderRequest extends FormRequest
 
             // Metadata
             'is_warranty_claim' => 'nullable|boolean',
+            'warranty_charge_to' => 'nullable|in:none,wuling,supplier,other',
             'customer_concerns' => 'nullable|string|max:2000',
             'diagnostic_findings' => 'nullable|string|max:2000',
+            'service_details' => 'nullable|string|max:4000',
+            'recurring_issue_notes' => 'nullable|string|max:4000',
             'notes' => 'nullable|string|max:2000',
 
             // Fraud prevention (only updatable by supervisors)
             'verification_status' => 'nullable|in:pending,verified,flagged,rejected',
             'odometer_verified' => 'nullable|boolean',
             'location_verified' => 'nullable|boolean',
+
+            // Parts
+            'parts' => 'nullable|array|max:50',
+            'parts.*.part_number' => 'nullable|string|max:100',
+            'parts.*.description' => 'nullable|string|max:255',
+            'parts.*.quantity' => 'nullable|numeric|min:0|max:999999.99',
+            'parts.*.unit_cost' => 'nullable|numeric|min:0|max:9999999.99',
+            'parts.*.unit_price' => 'nullable|numeric|min:0|max:9999999.99',
         ];
 
         // Validate mileage logic

@@ -23,13 +23,25 @@ interface ServiceType {
     category: string;
 }
 
+interface WorkOrderPart {
+    id?: number;
+    part_number: string | null;
+    description: string | null;
+    quantity: number | null;
+    unit_cost: number | null;
+    unit_price: number | null;
+}
+
 interface WorkOrder {
     id: number;
     work_order_number: string;
     branch_id: number;
     branch?: { name: string; code: string } | null;
     service_type_id: number | null;
+    job_type: string | null;
     reference_number: string | null;
+    requested_at: string | null;
+    actual_service_date: string | null;
     vehicle_plate_number: string | null;
     vehicle_vin: string;
     vehicle_make: string;
@@ -45,21 +57,30 @@ interface WorkOrder {
     priority: string;
     scheduled_at: string | null;
     due_date: string | null;
+    started_at: string | null;
+    completed_at: string | null;
     assigned_to: number | null;
     assigned_technician_name: string | null;
     estimated_hours: string | number | null;
+    actual_hours: string | number | null;
     estimated_cost: string | number | null;
+    actual_cost: string | number | null;
+    labor_cost: string | number | null;
     pms_interval_km: number | null;
     time_interval_months: number | null;
     service_location_lat: number | null;
     service_location_lng: number | null;
     service_location_address: string | null;
     is_warranty_claim: boolean;
+    warranty_charge_to: string | null;
     customer_concerns: string | null;
     diagnostic_findings: string | null;
+    service_details: string | null;
+    recurring_issue_notes: string | null;
     notes: string | null;
     requires_photo_verification: boolean;
     minimum_photos_required: number;
+    parts?: WorkOrderPart[];
 }
 
 interface Props {
@@ -89,7 +110,10 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
     const { data, setData, put, processing, errors, transform } = useForm({
         branch_id: workOrder.branch_id?.toString() || '',
         service_type_id: workOrder.service_type_id ? workOrder.service_type_id.toString() : '',
+        job_type: workOrder.job_type || 'pms',
         reference_number: workOrder.reference_number || '',
+        requested_at: formatDate(workOrder.requested_at),
+        actual_service_date: formatDate(workOrder.actual_service_date),
         vehicle_plate_number: workOrder.vehicle_plate_number || '',
         vehicle_vin: workOrder.vehicle_vin || '',
         vehicle_make: workOrder.vehicle_make || '',
@@ -105,22 +129,56 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
         priority: workOrder.priority || 'normal',
         scheduled_at: formatDateTimeLocal(workOrder.scheduled_at),
         due_date: formatDate(workOrder.due_date),
+        started_at: formatDateTimeLocal(workOrder.started_at),
+        completed_at: formatDateTimeLocal(workOrder.completed_at),
         assigned_to: workOrder.assigned_to ? workOrder.assigned_to.toString() : 'unassigned',
         assigned_technician_name: workOrder.assigned_technician_name || '',
         estimated_hours: workOrder.estimated_hours?.toString() || '',
+        actual_hours: workOrder.actual_hours?.toString() || '',
         estimated_cost: workOrder.estimated_cost?.toString() || '',
+        actual_cost: workOrder.actual_cost?.toString() || '',
+        labor_cost: workOrder.labor_cost?.toString() || '',
         pms_interval_km: workOrder.pms_interval_km?.toString() || '',
         time_interval_months: workOrder.time_interval_months?.toString() || '',
         service_location_lat: workOrder.service_location_lat?.toString() || '',
         service_location_lng: workOrder.service_location_lng?.toString() || '',
         service_location_address: workOrder.service_location_address || '',
         is_warranty_claim: workOrder.is_warranty_claim || false,
+        warranty_charge_to: workOrder.warranty_charge_to || 'none',
         customer_concerns: workOrder.customer_concerns || '',
         diagnostic_findings: workOrder.diagnostic_findings || '',
+        service_details: workOrder.service_details || '',
+        recurring_issue_notes: workOrder.recurring_issue_notes || '',
         notes: workOrder.notes || '',
         requires_photo_verification: workOrder.requires_photo_verification ?? true,
         minimum_photos_required: workOrder.minimum_photos_required?.toString() || '2',
+        parts: (workOrder.parts || []).map((part) => ({
+            part_number: part.part_number ?? '',
+            description: part.description ?? '',
+            quantity: part.quantity?.toString() ?? '',
+            unit_cost: part.unit_cost?.toString() ?? '',
+            unit_price: part.unit_price?.toString() ?? '',
+        })),
     });
+
+    const updatePart = (index: number, field: string, value: string) => {
+        const updated = [...(data.parts as any[] || [])];
+        updated[index] = { ...updated[index], [field]: value };
+        setData('parts', updated);
+    };
+
+    const addPartRow = () => {
+        setData('parts', [
+            ...(data.parts as any[] || []),
+            { part_number: '', description: '', quantity: '', unit_cost: '', unit_price: '' },
+        ]);
+    };
+
+    const removePartRow = (index: number) => {
+        const updated = [...(data.parts as any[] || [])];
+        updated.splice(index, 1);
+        setData('parts', updated.length ? updated : [{ part_number: '', description: '', quantity: '', unit_cost: '', unit_price: '' }]);
+    };
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
@@ -130,6 +188,10 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
             service_type_id: formData.service_type_id || null,
             scheduled_at: formData.scheduled_at || null,
             due_date: formData.due_date || null,
+            requested_at: formData.requested_at || null,
+            actual_service_date: formData.actual_service_date || null,
+            started_at: formData.started_at || null,
+            completed_at: formData.completed_at || null,
         }));
         put(route('service.pms-work-orders.update', workOrder.id));
     };
@@ -205,6 +267,21 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
                                     </Select>
                                 </div>
 
+                                <div className="space-y-2">
+                                    <Label htmlFor="job_type">Type</Label>
+                                    <Select value={data.job_type} onValueChange={(value) => setData('job_type', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="pms">PMS</SelectItem>
+                                            <SelectItem value="warranty">Warranty</SelectItem>
+                                            <SelectItem value="accident">Accident</SelectItem>
+                                            <SelectItem value="customer_pay">Customer-pay</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="reference_number">Reference Number</Label>
@@ -222,6 +299,27 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
                                             type="number"
                                             value={data.pms_interval_km}
                                             onChange={(e) => setData('pms_interval_km', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="requested_at">Date of Request</Label>
+                                        <Input
+                                            id="requested_at"
+                                            type="date"
+                                            value={data.requested_at || ''}
+                                            onChange={(e) => setData('requested_at', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="actual_service_date">Date of Actual PMS / Repair</Label>
+                                        <Input
+                                            id="actual_service_date"
+                                            type="date"
+                                            value={data.actual_service_date || ''}
+                                            onChange={(e) => setData('actual_service_date', e.target.value)}
                                         />
                                     </div>
                                 </div>
@@ -368,11 +466,12 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="assigned_technician_name">Technician Notes</Label>
+                                    <Label htmlFor="assigned_technician_name">Mechanic / Technician Name</Label>
                                     <Input
                                         id="assigned_technician_name"
                                         value={data.assigned_technician_name}
                                         onChange={(e) => setData('assigned_technician_name', e.target.value)}
+                                        placeholder="Name of mechanic attending"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -393,6 +492,26 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
                                         step="0.01"
                                         value={data.estimated_cost}
                                         onChange={(e) => setData('estimated_cost', e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="actual_hours">Actual Labor Hours</Label>
+                                    <Input
+                                        id="actual_hours"
+                                        type="number"
+                                        step="0.25"
+                                        value={data.actual_hours}
+                                        onChange={(e) => setData('actual_hours', e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="labor_cost">Labor Cost (PHP)</Label>
+                                    <Input
+                                        id="labor_cost"
+                                        type="number"
+                                        step="0.01"
+                                        value={data.labor_cost}
+                                        onChange={(e) => setData('labor_cost', e.target.value)}
                                     />
                                 </div>
                             </CardContent>
@@ -422,6 +541,24 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
                                     />
                                 </div>
                                 <div className="space-y-2">
+                                    <Label htmlFor="service_details">Details of PMS / Repair</Label>
+                                    <Textarea
+                                        id="service_details"
+                                        value={data.service_details}
+                                        onChange={(e) => setData('service_details', e.target.value)}
+                                        rows={4}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="recurring_issue_notes">Recurring Issue Notes</Label>
+                                    <Textarea
+                                        id="recurring_issue_notes"
+                                        value={data.recurring_issue_notes}
+                                        onChange={(e) => setData('recurring_issue_notes', e.target.value)}
+                                        rows={3}
+                                    />
+                                </div>
+                                <div className="space-y-2">
                                     <Label htmlFor="notes">Internal Notes</Label>
                                     <Textarea id="notes" value={data.notes} onChange={(e) => setData('notes', e.target.value)} rows={3} />
                                 </div>
@@ -442,6 +579,20 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
                                     <Label htmlFor="requires_photo_verification">Requires photo verification</Label>
                                 </div>
                                 <div className="space-y-2">
+                                    <Label htmlFor="warranty_charge_to">Charge To</Label>
+                                    <Select value={data.warranty_charge_to} onValueChange={(value) => setData('warranty_charge_to', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">None</SelectItem>
+                                            <SelectItem value="wuling">Wuling principal</SelectItem>
+                                            <SelectItem value="supplier">Supplier</SelectItem>
+                                            <SelectItem value="other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
                                     <Label htmlFor="minimum_photos_required">Minimum Photos Required</Label>
                                     <Select value={data.minimum_photos_required} onValueChange={(value) => setData('minimum_photos_required', value)}>
                                         <SelectTrigger>
@@ -456,6 +607,80 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
                                         </SelectContent>
                                     </Select>
                                 </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Parts & Materials</CardTitle>
+                                <CardDescription>Track replaced parts with quantities and pricing</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {(data.parts as any[] || []).map((part, index) => (
+                                    <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 items-end border rounded-md p-3">
+                                        <div className="md:col-span-2 space-y-1">
+                                            <Label className="text-xs">Part No.</Label>
+                                            <Input
+                                                value={part.part_number}
+                                                onChange={(e) => updatePart(index, 'part_number', e.target.value)}
+                                                placeholder="SKU / PN"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-4 space-y-1">
+                                            <Label className="text-xs">Description</Label>
+                                            <Input
+                                                value={part.description}
+                                                onChange={(e) => updatePart(index, 'description', e.target.value)}
+                                                placeholder="Part description"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 space-y-1">
+                                            <Label className="text-xs">Qty</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={part.quantity}
+                                                onChange={(e) => updatePart(index, 'quantity', e.target.value)}
+                                                placeholder="1"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 space-y-1">
+                                            <Label className="text-xs">Unit Cost</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={part.unit_cost}
+                                                onChange={(e) => updatePart(index, 'unit_cost', e.target.value)}
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 space-y-1">
+                                            <Label className="text-xs">Unit SRP</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={part.unit_price}
+                                                onChange={(e) => updatePart(index, 'unit_price', e.target.value)}
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-12 flex justify-end">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => removePartRow(index)}
+                                                className="text-destructive"
+                                            >
+                                                Remove
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <Button type="button" variant="outline" size="sm" onClick={addPartRow} className="w-full">
+                                    Add Part
+                                </Button>
                             </CardContent>
                         </Card>
                     </div>

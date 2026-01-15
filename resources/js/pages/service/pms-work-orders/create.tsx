@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Save, X, AlertCircle, Wrench, Car, User, Calendar, Camera, MapPin } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { FormEvent, useState } from 'react';
@@ -94,10 +95,13 @@ interface Props {
 export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians, vehicles, customers, auth }: Props) {
     const isAdmin = auth.user.roles?.some(role => role.name === 'admin' || role.name === 'auditor');
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, transform } = useForm({
         branch_id: !isAdmin && auth.user.branch_id ? auth.user.branch_id.toString() : '',
         service_type_id: '',
+        job_type: 'pms',
         reference_number: '',
+        requested_at: new Date().toISOString().slice(0, 10),
+        actual_service_date: '',
 
         // Vehicle Selection (NEW)
         vehicle_unit_id: '',
@@ -125,6 +129,8 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
         priority: 'normal',
         scheduled_at: '',
         due_date: '',
+        started_at: '',
+        completed_at: '',
 
         // Assignment
         assigned_to: 'unassigned',
@@ -133,6 +139,9 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
         // Estimates
         estimated_hours: '',
         estimated_cost: '',
+        actual_hours: '',
+        actual_cost: '',
+        labor_cost: '',
 
         // PMS Tracking (CHANGED TO INPUT)
         pms_interval_km: '',
@@ -145,20 +154,56 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
 
         // Metadata
         is_warranty_claim: false,
+        warranty_charge_to: 'none',
         customer_concerns: '',
         diagnostic_findings: '',
+        service_details: '',
+        recurring_issue_notes: '',
         notes: '',
 
         // Fraud Prevention
         requires_photo_verification: true,
         minimum_photos_required: '2',
+
+        // Parts list
+        parts: [
+            { part_number: '', description: '', quantity: '', unit_cost: '', unit_price: '' },
+        ],
     });
 
     const [odometerValidation, setOdometerValidation] = useState<any>(null);
     const [validatingOdometer, setValidatingOdometer] = useState(false);
 
+    const updatePart = (index: number, field: string, value: string) => {
+        const updated = [...(data.parts as any[])];
+        updated[index] = { ...updated[index], [field]: value };
+        setData('parts', updated);
+    };
+
+    const addPartRow = () => {
+        setData('parts', [
+            ...(data.parts as any[]),
+            { part_number: '', description: '', quantity: '', unit_cost: '', unit_price: '' },
+        ]);
+    };
+
+    const removePartRow = (index: number) => {
+        const updated = [...(data.parts as any[])];
+        updated.splice(index, 1);
+        setData('parts', updated.length ? updated : [{ part_number: '', description: '', quantity: '', unit_cost: '', unit_price: '' }]);
+    };
+
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
+        transform((formData) => ({
+            ...formData,
+            assigned_to: formData.assigned_to && formData.assigned_to !== 'unassigned' ? formData.assigned_to : null,
+            service_type_id: formData.service_type_id || null,
+            requested_at: formData.requested_at || null,
+            actual_service_date: formData.actual_service_date || null,
+            started_at: formData.started_at || null,
+            completed_at: formData.completed_at || null,
+        }));
         post('/service/pms-work-orders', {
             preserveScroll: true,
         });
@@ -499,6 +544,63 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
                                 </div>
 
                                 <div className="space-y-2">
+                                    <Label htmlFor="service_details">Details of PMS / Repair</Label>
+                                    <Textarea
+                                        id="service_details"
+                                        value={data.service_details}
+                                        onChange={(e) => setData('service_details', e.target.value)}
+                                        placeholder="Work performed, steps taken, findings..."
+                                        rows={4}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="diagnostic_findings">Diagnostic Findings</Label>
+                                    <Textarea
+                                        id="diagnostic_findings"
+                                        value={data.diagnostic_findings}
+                                        onChange={(e) => setData('diagnostic_findings', e.target.value)}
+                                        placeholder="Diagnosis results, fault codes, inspection notes"
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="recurring_issue_notes">Recurring Issue Notes</Label>
+                                    <Textarea
+                                        id="recurring_issue_notes"
+                                        value={data.recurring_issue_notes}
+                                        onChange={(e) => setData('recurring_issue_notes', e.target.value)}
+                                        placeholder="Battery health, charger issues, repeat concerns..."
+                                        rows={3}
+                                    />
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="is_warranty_claim"
+                                        checked={data.is_warranty_claim}
+                                        onCheckedChange={(checked) => setData('is_warranty_claim', Boolean(checked))}
+                                    />
+                                    <Label htmlFor="is_warranty_claim">Warranty claim</Label>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="warranty_charge_to">Charge To</Label>
+                                    <Select value={data.warranty_charge_to} onValueChange={(value) => setData('warranty_charge_to', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">None</SelectItem>
+                                            <SelectItem value="wuling">Wuling principal</SelectItem>
+                                            <SelectItem value="supplier">Supplier</SelectItem>
+                                            <SelectItem value="other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label htmlFor="notes">Internal Notes</Label>
                                     <Textarea
                                         id="notes"
@@ -508,6 +610,81 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
                                         rows={3}
                                     />
                                 </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Parts & Materials */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Parts & Materials</CardTitle>
+                                <CardDescription>Track replaced parts with quantities and pricing</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {(data.parts as any[]).map((part, index) => (
+                                    <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 items-end border rounded-md p-3">
+                                        <div className="md:col-span-2 space-y-1">
+                                            <Label className="text-xs">Part No.</Label>
+                                            <Input
+                                                value={part.part_number}
+                                                onChange={(e) => updatePart(index, 'part_number', e.target.value)}
+                                                placeholder="SKU / PN"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-4 space-y-1">
+                                            <Label className="text-xs">Description</Label>
+                                            <Input
+                                                value={part.description}
+                                                onChange={(e) => updatePart(index, 'description', e.target.value)}
+                                                placeholder="Part description"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 space-y-1">
+                                            <Label className="text-xs">Qty</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={part.quantity}
+                                                onChange={(e) => updatePart(index, 'quantity', e.target.value)}
+                                                placeholder="1"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 space-y-1">
+                                            <Label className="text-xs">Unit Cost</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={part.unit_cost}
+                                                onChange={(e) => updatePart(index, 'unit_cost', e.target.value)}
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 space-y-1">
+                                            <Label className="text-xs">Unit SRP</Label>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={part.unit_price}
+                                                onChange={(e) => updatePart(index, 'unit_price', e.target.value)}
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-12 flex justify-end">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => removePartRow(index)}
+                                                className="text-destructive"
+                                            >
+                                                Remove
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <Button type="button" variant="outline" size="sm" onClick={addPartRow} className="w-full">
+                                    Add Part
+                                </Button>
                             </CardContent>
                         </Card>
                     </div>
@@ -537,6 +714,21 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
                                 </div>
 
                                 <div className="space-y-2">
+                                    <Label htmlFor="job_type">Type</Label>
+                                    <Select value={data.job_type} onValueChange={(value) => setData('job_type', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="pms">PMS</SelectItem>
+                                            <SelectItem value="warranty">Warranty</SelectItem>
+                                            <SelectItem value="accident">Accident</SelectItem>
+                                            <SelectItem value="customer_pay">Customer-pay</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label htmlFor="reference_number">Reference Number</Label>
                                     <Input
                                         id="reference_number"
@@ -544,6 +736,27 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
                                         onChange={(e) => setData('reference_number', e.target.value)}
                                         placeholder="Optional external reference"
                                     />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="requested_at">Date of Request</Label>
+                                        <Input
+                                            id="requested_at"
+                                            type="date"
+                                            value={data.requested_at}
+                                            onChange={(e) => setData('requested_at', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="actual_service_date">Date of Actual PMS / Repair</Label>
+                                        <Input
+                                            id="actual_service_date"
+                                            type="date"
+                                            value={data.actual_service_date}
+                                            onChange={(e) => setData('actual_service_date', e.target.value)}
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="space-y-2">
@@ -652,6 +865,16 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
                                 </div>
 
                                 <div className="space-y-2">
+                                    <Label htmlFor="due_date">Due Date</Label>
+                                    <Input
+                                        id="due_date"
+                                        type="date"
+                                        value={data.due_date}
+                                        onChange={(e) => setData('due_date', e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label htmlFor="assigned_to">Assign to Technician</Label>
                                     <Select value={data.assigned_to} onValueChange={(value) => setData('assigned_to', value)}>
                                         <SelectTrigger>
@@ -666,6 +889,16 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="assigned_technician_name">Mechanic / Technician Name</Label>
+                                    <Input
+                                        id="assigned_technician_name"
+                                        value={data.assigned_technician_name}
+                                        onChange={(e) => setData('assigned_technician_name', e.target.value)}
+                                        placeholder="Name of mechanic attending"
+                                    />
                                 </div>
 
                                 <div className="space-y-2">
@@ -690,6 +923,31 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
                                         onChange={(e) => setData('estimated_cost', e.target.value)}
                                         placeholder="5000.00"
                                     />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="actual_hours">Actual Labor Hours</Label>
+                                        <Input
+                                            id="actual_hours"
+                                            type="number"
+                                            step="0.25"
+                                            value={data.actual_hours}
+                                            onChange={(e) => setData('actual_hours', e.target.value)}
+                                            placeholder="0.0"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="labor_cost">Labor Cost (PHP)</Label>
+                                        <Input
+                                            id="labor_cost"
+                                            type="number"
+                                            step="0.01"
+                                            value={data.labor_cost}
+                                            onChange={(e) => setData('labor_cost', e.target.value)}
+                                            placeholder="0.00"
+                                        />
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>

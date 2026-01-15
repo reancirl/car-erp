@@ -82,9 +82,21 @@ interface FraudAlert {
     detected_at: string;
 }
 
+interface WorkOrderPart {
+    id: number;
+    part_number: string | null;
+    description: string | null;
+    quantity: number | null;
+    unit_cost: number | null;
+    unit_price: number | null;
+}
+
 interface WorkOrder {
     id: number;
     work_order_number: string;
+    job_type: string;
+    requested_at: string | null;
+    actual_service_date: string | null;
     vehicle_vin: string;
     vehicle_plate_number: string | null;
     vehicle_make: string;
@@ -111,14 +123,23 @@ interface WorkOrder {
     odometer_verified: boolean;
     location_verified: boolean;
     scheduled_at: string | null;
+    actual_hours: number | null;
+    actual_cost: number | null;
+    labor_cost: number | null;
     completed_at: string | null;
+    assigned_technician_name: string | null;
     customer_concerns: string | null;
     diagnostic_findings: string | null;
+    service_details: string | null;
+    recurring_issue_notes: string | null;
     notes: string | null;
+    is_warranty_claim: boolean;
+    warranty_charge_to: string | null;
     created_at: string;
     branch: { name: string };
     service_type: { name: string; category: string } | null;
     assigned_technician: { name: string } | null;
+    parts: WorkOrderPart[];
     photos: WorkOrderPhoto[];
     odometer_readings: OdometerReading[];
 }
@@ -680,13 +701,25 @@ export default function PMSWorkOrderShow({ workOrder, photoStats, odometerHistor
                                                 <p className="mt-1 text-sm">{workOrder.diagnostic_findings}</p>
                                             </div>
                                         )}
+                                        {workOrder.service_details && (
+                                            <div>
+                                                <p className="text-sm font-medium text-muted-foreground">Details of PMS / Repair</p>
+                                                <p className="mt-1 text-sm whitespace-pre-line">{workOrder.service_details}</p>
+                                            </div>
+                                        )}
+                                        {workOrder.recurring_issue_notes && (
+                                            <div>
+                                                <p className="text-sm font-medium text-muted-foreground">Recurring Issue Notes</p>
+                                                <p className="mt-1 text-sm whitespace-pre-line">{workOrder.recurring_issue_notes}</p>
+                                            </div>
+                                        )}
                                         {workOrder.notes && (
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Internal Notes</p>
                                                 <p className="mt-1 text-sm">{workOrder.notes}</p>
                                             </div>
                                         )}
-                                        {!workOrder.customer_concerns && !workOrder.diagnostic_findings && !workOrder.notes && (
+                                        {!workOrder.customer_concerns && !workOrder.diagnostic_findings && !workOrder.notes && !workOrder.service_details && !workOrder.recurring_issue_notes && (
                                             <p className="text-sm text-muted-foreground">No notes have been recorded yet.</p>
                                         )}
                                     </div>
@@ -805,8 +838,71 @@ export default function PMSWorkOrderShow({ workOrder, photoStats, odometerHistor
                                         <p className="text-sm mt-1">{formatDate(workOrder.completed_at)}</p>
                                     </div>
                                 )}
+                                {workOrder.requested_at && (
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Date of Request</p>
+                                        <p className="text-sm mt-1">{formatDate(workOrder.requested_at)}</p>
+                                    </div>
+                                )}
+                                {workOrder.actual_service_date && (
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Date of Actual PMS / Repair</p>
+                                        <p className="text-sm mt-1">{formatDate(workOrder.actual_service_date)}</p>
+                                    </div>
+                                )}
+                                {workOrder.job_type && (
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm text-muted-foreground">Type</p>
+                                        <Badge variant="outline" className="uppercase">{workOrder.job_type.replace('_', ' ')}</Badge>
+                                    </div>
+                                )}
+                                {workOrder.assigned_technician_name && (
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Mechanic / Technician</p>
+                                        <p className="text-sm mt-1">{workOrder.assigned_technician_name}</p>
+                                    </div>
+                                )}
+                                {(workOrder.actual_hours || workOrder.labor_cost) && (
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Labor Hours</p>
+                                            <p className="text-sm font-medium">{workOrder.actual_hours ?? '--'}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm text-muted-foreground">Labor Cost</p>
+                                            <p className="text-sm font-medium">
+                                                {workOrder.labor_cost ? `₱${Number(workOrder.labor_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '--'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
+
+                        {workOrder.parts && workOrder.parts.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Parts & Materials</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {workOrder.parts.map((part) => (
+                                        <div key={part.id} className="p-3 border rounded-lg">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm font-medium">{part.description || 'Part'}</p>
+                                                    {part.part_number && <p className="text-xs text-muted-foreground">PN: {part.part_number}</p>}
+                                                </div>
+                                                <Badge variant="outline">Qty {part.quantity ?? 1}</Badge>
+                                            </div>
+                                            <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+                                                <span>Unit Cost: {part.unit_cost ? `₱${Number(part.unit_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '--'}</span>
+                                                <span>Unit SRP: {part.unit_price ? `₱${Number(part.unit_price).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '--'}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 </div>
 
