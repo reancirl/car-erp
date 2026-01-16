@@ -20,7 +20,7 @@ import {
     CheckCircle,
     Settings,
     FileText,
-    DollarSign
+    PhilippinePeso
 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
@@ -563,7 +563,7 @@ export default function WorkOrderCreate() {
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center space-x-2">
-                                        <DollarSign className="h-5 w-5" />
+                                        <PhilippinePeso className="h-5 w-5" />
                                         <span>Cost Estimate</span>
                                     </CardTitle>
                                 </CardHeader>

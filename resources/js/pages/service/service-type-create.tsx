@@ -14,7 +14,7 @@ import {
     Settings,
     Save,
     Clock,
-    DollarSign,
+    PhilippinePeso,
     Calendar,
     Gauge,
     AlertCircle,
@@ -396,7 +396,7 @@ export default function ServiceTypeCreate({ branches, commonServices, auth }: Pr
                                     <div className="space-y-2">
                                         <Label htmlFor="base_price">Base Price *</Label>
                                         <div className="relative">
-                                            <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                            <PhilippinePeso className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                             <Input
                                                 id="base_price"
                                                 type="number"
@@ -535,7 +535,7 @@ export default function ServiceTypeCreate({ branches, commonServices, auth }: Pr
                                     )}
                                     {data.base_price && (
                                         <div className="flex items-center space-x-2 text-sm">
-                                            <DollarSign className="h-4 w-4" />
+                                            <PhilippinePeso className="h-4 w-4" />
                                             <span>₱{Number(data.base_price).toLocaleString()}</span>
                                         </div>
                                     )}

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FileText, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, Camera, DollarSign, Trash2, RefreshCw } from 'lucide-react';
+import { FileText, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, Camera, Trash2, RefreshCw } from 'lucide-react';
 import { type BreadcrumbItem, type PageProps } from '@/types';
 import { useState } from 'react';
 import {

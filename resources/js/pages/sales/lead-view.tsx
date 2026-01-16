@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, Trash2, User, Mail, Phone, MapPin, Globe, Star, TrendingUp, DollarSign, Calendar, Clock, AlertTriangle, Users, Target } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, User, Mail, Phone, MapPin, Globe, Star, TrendingUp, PhilippinePeso, Calendar, Clock, AlertTriangle, Users, Target } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { formatPHP, formatPhoneNumberPH } from '@/utils/formatters';
 
@@ -311,7 +311,7 @@ export default function LeadView({ lead, can }: Props) {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-sm text-muted-foreground flex items-center">
-                                            <DollarSign className="h-3 w-3 mr-1" />
+                                            <PhilippinePeso className="h-3 w-3 mr-1" />
                                             Budget Range
                                         </p>
                                         <p className="font-medium">

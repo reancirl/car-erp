@@ -11,7 +11,7 @@ import {
     Edit,
     Trash2,
     Clock,
-    DollarSign,
+    PhilippinePeso,
     CheckCircle,
     AlertCircle,
     MapPin,
@@ -148,7 +148,7 @@ export default function CommonServiceView({ commonService, overview, can }: Prop
                                 </div>
                             </div>
                             <div className="flex items-center space-x-3">
-                                <DollarSign className="h-9 w-9 text-green-600" />
+                                <PhilippinePeso className="h-9 w-9 text-green-600" />
                                 <div>
                                     <p className="text-sm text-muted-foreground">Standard Price</p>
                                     <p className="text-xl font-semibold">
@@ -327,4 +327,3 @@ export default function CommonServiceView({ commonService, overview, can }: Prop
         </AppLayout>
     );
 }
-

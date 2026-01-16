@@ -19,7 +19,7 @@ import {
     Package,
     Wrench,
     Camera,
-    DollarSign,
+    PhilippinePeso,
 } from 'lucide-react';
 import { type BreadcrumbItem, type PageProps } from '@/types';
 import { useState } from 'react';
@@ -624,7 +624,7 @@ export default function WarrantyClaimView({ claim, can, auth }: Props) {
                         <Card>
                             <CardHeader>
                                 <CardTitle>
-                                    <DollarSign className="inline h-5 w-5 mr-2" />
+                                    <PhilippinePeso className="inline h-5 w-5 mr-2" />
                                     Claim Summary
                                 </CardTitle>
                             </CardHeader>

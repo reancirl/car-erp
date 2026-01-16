@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Car, Edit, ArrowLeft, Share2, Printer, Download, MapPin, Calendar, User, DollarSign, Fuel, Gauge, Palette, Settings, History, Camera, FileText, CheckCircle, Clock, AlertTriangle, Star, TestTube, Globe, Upload, Lock } from 'lucide-react';
+import { Car, Edit, ArrowLeft, Share2, Printer, Download, MapPin, Calendar, User, PhilippinePeso, Fuel, Gauge, Palette, Settings, History, Camera, FileText, CheckCircle, Clock, AlertTriangle, Star, TestTube, Globe, Upload, Lock } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 
@@ -308,7 +308,7 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                                     <div className="text-sm font-medium text-muted-foreground">Purchase Price</div>
                                     <div className="text-2xl font-bold">{formatCurrency(vehicle.purchase_price, vehicle.currency)}</div>
                                 </div>
-                                <DollarSign className="h-8 w-8 text-green-500" />
+                                <PhilippinePeso className="h-8 w-8 text-green-500" />
                             </div>
                         </CardContent>
                     </Card>
@@ -522,7 +522,7 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
-                                    <DollarSign className="h-5 w-5" />
+                                    <PhilippinePeso className="h-5 w-5" />
                                     <span>Pricing Details</span>
                                 </CardTitle>
                             </CardHeader>

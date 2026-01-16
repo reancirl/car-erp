@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Package, Save, X, AlertCircle, Info, DollarSign, MapPin, Truck } from 'lucide-react';
+import { Package, Save, X, AlertCircle, Info, PhilippinePeso, MapPin, Truck } from 'lucide-react';
 import { type BreadcrumbItem, type PartInventory } from '@/types';
 import { PART_CATEGORIES, PART_CONDITIONS, PART_STATUSES, type PartCategory, type PartCondition, type PartStatus } from '@/constants/parts';
 import { FormEvent } from 'react';
@@ -371,7 +371,7 @@ export default function PartsInventoryEdit({ part }: Props) {
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center">
-                                    <DollarSign className="h-5 w-5 mr-2" />
+                                    <PhilippinePeso className="h-5 w-5 mr-2" />
                                     Pricing
                                 </CardTitle>
                                 <CardDescription>Cost and selling prices</CardDescription>

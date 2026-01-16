@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, Search, Filter, Download, Plus, Eye, Edit, ArrowRight, CheckCircle, Clock, DollarSign, User, Calendar, FileText, Trash2, AlertTriangle, Play, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, Search, Filter, Download, Plus, Eye, Edit, ArrowRight, CheckCircle, Clock, PhilippinePeso, User, Calendar, FileText, Trash2, AlertTriangle, Play, ChevronDown, ChevronUp } from 'lucide-react';
 import { type BreadcrumbItem, type PageProps } from '@/types';
 import { useState, FormEvent } from 'react';
 
@@ -537,7 +537,7 @@ export default function Pipeline({ pipelines, stats, autoLoggingStats, filters, 
                                                     <div className="font-medium">{pipeline.vehicle_interest || 'Not specified'}</div>
                                                     {pipeline.quote_amount && pipeline.quote_amount > 0 && (
                                                         <div className="flex items-center space-x-1">
-                                                            <DollarSign className="h-3 w-3" />
+                                                            <PhilippinePeso className="h-3 w-3" />
                                                             <span className="text-sm font-medium">₱{pipeline.quote_amount.toLocaleString('en-PH')}</span>
                                                         </div>
                                                     )}

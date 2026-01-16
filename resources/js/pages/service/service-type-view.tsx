@@ -9,7 +9,7 @@ import {
     Settings,
     Edit,
     Clock,
-    DollarSign,
+    PhilippinePeso,
     Calendar,
     Gauge,
     CheckCircle,
@@ -276,7 +276,7 @@ export default function ServiceTypeView({ serviceType, performance, can }: Props
                                         <div>
                                             <p className="text-xs uppercase text-muted-foreground">Base Price</p>
                                             <div className="flex items-center space-x-2 mt-1">
-                                                <DollarSign className="h-4 w-4" />
+                                                <PhilippinePeso className="h-4 w-4" />
                                                 <p className="font-medium">
                                                     {serviceType.formatted_base_price ??
                                                         (Number(serviceType.base_price ?? 0) > 0
@@ -479,4 +479,3 @@ export default function ServiceTypeView({ serviceType, performance, can }: Props
         </AppLayout>
     );
 }
-

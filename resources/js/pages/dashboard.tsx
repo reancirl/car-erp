@@ -15,7 +15,7 @@ import {
     TrendingUp,
     AlertTriangle,
     Clock,
-    DollarSign,
+    PhilippinePeso,
     CheckCircle,
     XCircle,
     Activity,
@@ -891,7 +891,7 @@ function PrimaryKpiGrid({ kpis, formatCurrency, renderChangeIndicator }: KPIGrid
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Sales Revenue</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <PhilippinePeso className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{formatCurrency(kpis.sales.revenue.current)}</div>
@@ -1073,7 +1073,7 @@ function SalesLeadershipGrid({ kpis, formatCurrency, renderChangeIndicator }: Sa
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Sales Revenue</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <PhilippinePeso className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{formatCurrency(kpis.sales.revenue.current)}</div>
@@ -1152,7 +1152,7 @@ function SalesRepScorecard({ kpis, formatCurrency, renderChangeIndicator }: Sale
             <Card>
                 <CardHeader className="flex items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Avg Deal Value</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <PhilippinePeso className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{formatCurrency(kpis.sales.avg_deal_value.current)}</div>

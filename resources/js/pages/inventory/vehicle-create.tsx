@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Car, Save, X, Upload, Plus, Minus, AlertCircle, CheckCircle, Camera, FileText, DollarSign, MapPin, Calendar, Fuel, Gauge, Palette, Settings, Lock } from 'lucide-react';
+import { Car, Save, X, Upload, Plus, Minus, AlertCircle, CheckCircle, Camera, FileText, PhilippinePeso, MapPin, Calendar, Fuel, Gauge, Palette, Settings, Lock } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 
@@ -845,7 +845,7 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, cust
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center space-x-2">
-                            <DollarSign className="h-5 w-5" />
+                            <PhilippinePeso className="h-5 w-5" />
                             <span>Sale & Release</span>
                         </CardTitle>
                         <CardDescription>Sales/financing breakdown and release checklist</CardDescription>
@@ -1218,7 +1218,7 @@ export default function VehicleCreate({ branches, salesReps, vehicleModels, cust
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
-                                    <DollarSign className="h-5 w-5" />
+                                    <PhilippinePeso className="h-5 w-5" />
                                     <span>Pricing</span>
                                 </CardTitle>
                                 <CardDescription>Set vehicle pricing and costs</CardDescription>

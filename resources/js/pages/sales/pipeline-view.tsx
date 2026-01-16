@@ -12,7 +12,7 @@ import {
     Mail,
     Calendar,
     Clock,
-    DollarSign,
+    PhilippinePeso,
     Target,
     FileText,
     CheckCircle,
@@ -201,7 +201,7 @@ export default function PipelineView() {
             case 'CRM Auto-Scoring':
                 return <Target className="h-4 w-4 text-green-600" />;
             case 'Pricing Engine':
-                return <DollarSign className="h-4 w-4 text-yellow-600" />;
+                return <PhilippinePeso className="h-4 w-4 text-yellow-600" />;
             default:
                 return <Activity className="h-4 w-4 text-gray-600" />;
         }
@@ -505,7 +505,7 @@ export default function PipelineView() {
                                     Schedule Follow-up
                                 </Button>
                                 <Button variant="outline" size="sm" className="w-full justify-start">
-                                    <DollarSign className="h-4 w-4 mr-2" />
+                                    <PhilippinePeso className="h-4 w-4 mr-2" />
                                     Update Quote
                                 </Button>
                             </CardContent>

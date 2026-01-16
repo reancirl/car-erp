@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart3, Search, Filter, Download, TrendingUp, TrendingDown, Users, DollarSign, Clock, Target, Calendar, Award, AlertTriangle } from 'lucide-react';
+import { BarChart3, Search, Filter, Download, TrendingUp, TrendingDown, Users, PhilippinePeso, Clock, Target, Calendar, Award, AlertTriangle } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 interface KPI {
@@ -379,7 +379,7 @@ export default function PerformanceMetrics({ kpis, salesRepPerformance }: Perfor
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center space-x-1">
-                                                <DollarSign className="h-3 w-3" />
+                                                <PhilippinePeso className="h-3 w-3" />
                                                 <span className="text-sm font-medium">₱{rep.pipeline_value.toLocaleString('en-PH')}</span>
                                             </div>
                                         </TableCell>
@@ -412,7 +412,7 @@ export default function PerformanceMetrics({ kpis, salesRepPerformance }: Perfor
                             </div>
                             <div className="p-4 border rounded-lg">
                                 <div className="flex items-center space-x-2 mb-2">
-                                    <DollarSign className="h-5 w-5 text-green-600" />
+                                    <PhilippinePeso className="h-5 w-5 text-green-600" />
                                     <h4 className="font-medium">Sales System Events</h4>
                                 </div>
                                 <p className="text-sm text-muted-foreground mb-2">Quotes, reservations, sales completion</p>
