@@ -8,6 +8,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import {
+    Calendar as CalendarIcon,
     Wrench,
     Package,
     Users,
@@ -138,6 +139,16 @@ interface Activity {
     time: string;
 }
 
+interface CalendarEvent {
+    type: 'test_drive' | 'pms' | string;
+    title: string;
+    date: string;
+    time?: string | null;
+    status?: string | null;
+    branch?: { id: number; name: string; code?: string | null } | null;
+    meta?: Record<string, string | number | null>;
+}
+
 interface DashboardProps {
     assignedChecklists?: AssignedChecklist[];
     filters: {
@@ -155,6 +166,7 @@ interface DashboardProps {
     alerts: Alert[];
     recentActivities: Activity[];
     viewer?: ViewerContext | null;
+    calendarEvents?: CalendarEvent[];
 }
 
 interface AssignmentMeta {
@@ -166,6 +178,108 @@ interface ChecklistCompletionSummary {
     completed: number;
     total: number;
     percentage: number;
+}
+
+function BranchCalendarCard({ events }: { events: CalendarEvent[] }) {
+    const [showCalendar, setShowCalendar] = useState(false);
+
+    const groupedEvents = useMemo(() => {
+        if (!showCalendar) return [];
+        const sorted = [...events].filter((e) => e.date).sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : (a.time || '').localeCompare(b.time || '')));
+        const groups: Record<string, CalendarEvent[]> = {};
+        sorted.forEach((event) => {
+            const key = event.date;
+            if (!groups[key]) {
+                groups[key] = [];
+            }
+            groups[key].push(event);
+        });
+        return Object.entries(groups)
+            .map(([date, items]) => ({ date, items }))
+            .sort((a, b) => (a.date > b.date ? 1 : -1));
+    }, [events, showCalendar]);
+
+    const typeBadge = (type: string) => {
+        switch (type) {
+            case 'test_drive':
+                return (
+                    <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                        <Car className="h-3 w-3" /> Test Drive
+                    </Badge>
+                );
+            case 'pms':
+                return (
+                    <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                        <Wrench className="h-3 w-3" /> PMS
+                    </Badge>
+                );
+            default:
+                return <Badge variant="outline" className="text-xs capitalize">{type}</Badge>;
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader className="flex items-start justify-between gap-2">
+                <div>
+                    <CardTitle className="flex items-center gap-2">
+                        <CalendarIcon className="h-4 w-4" />
+                        Branch Calendar (Next 14 days)
+                    </CardTitle>
+                    <CardDescription>Test drives, PMS schedules, and branch events.</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setShowCalendar((prev) => !prev)}>
+                        {showCalendar ? 'Hide Preview' : 'Show Preview'}
+                    </Button>
+                    <Link href="/dashboard/calendar">
+                        <Button size="sm">Open Calendar</Button>
+                    </Link>
+                </div>
+            </CardHeader>
+            {showCalendar && (
+                <CardContent className="space-y-4">
+                    {groupedEvents.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No scheduled items in the next 14 days.</p>
+                    ) : (
+                        groupedEvents.map(({ date, items }) => (
+                            <div key={date} className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm font-semibold">
+                                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                                    {new Date(date).toLocaleDateString()}
+                                </div>
+                                <div className="space-y-2">
+                                    {items.map((event, idx) => (
+                                        <div key={`${event.type}-${idx}`} className="flex items-start justify-between rounded-md border p-3">
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-2">
+                                                    {typeBadge(event.type)}
+                                                    {event.branch?.code && (
+                                                        <Badge variant="outline" className="text-[11px]">
+                                                            {event.branch.code}
+                                                        </Badge>
+                                                    )}
+                                                    {event.status && (
+                                                        <Badge variant="outline" className="text-[11px] capitalize">
+                                                            {event.status.replace('_', ' ')}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <div className="font-medium">{event.title}</div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {event.time ? `${event.time}` : 'All day'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </CardContent>
+            )}
+        </Card>
+    );
 }
 
 type ChecklistToggleHandler = (checklist: AssignedChecklist, item: AssignedChecklistItem) => Promise<void> | void;
@@ -246,6 +360,7 @@ interface RoleViewProps {
     formatCurrency: CurrencyFormatter;
     renderChangeIndicator: (change: number) => JSX.Element;
     checklistBindings: ChecklistPanelBindings;
+    calendarEvents: CalendarEvent[];
 }
 
 export default function Dashboard({
@@ -257,6 +372,7 @@ export default function Dashboard({
     alerts,
     recentActivities,
     viewer,
+    calendarEvents = [],
 }: DashboardProps) {
     const page = usePage<InertiaPageProps>();
     const { auth, viewer: viewerFromPage } = page.props;
@@ -509,6 +625,7 @@ export default function Dashboard({
                     formatCurrency,
                     renderChangeIndicator,
                     checklistBindings,
+                    calendarEvents: calendarEvents ?? [],
                 })}
             </div>
         </AppLayout>
@@ -557,6 +674,7 @@ function renderDashboardByRole(props: RoleViewProps) {
 function AdminDashboard(props: RoleViewProps) {
     return (
         <div className="flex flex-col gap-6">
+            <BranchCalendarCard events={props.calendarEvents} />
             <PrimaryKpiGrid kpis={props.kpis} formatCurrency={props.formatCurrency} renderChangeIndicator={props.renderChangeIndicator} />
             <SecondaryKpiGrid kpis={props.kpis} formatCurrency={props.formatCurrency} />
             <AdminExecutiveInsights branches={props.branches} kpis={props.kpis} alerts={props.alerts} formatCurrency={props.formatCurrency} />
@@ -594,6 +712,7 @@ function AdminDashboard(props: RoleViewProps) {
 function SalesManagerDashboard(props: RoleViewProps) {
     return (
         <div className="flex flex-col gap-6">
+            <BranchCalendarCard events={props.calendarEvents} />
             <SalesLeadershipGrid kpis={props.kpis} formatCurrency={props.formatCurrency} renderChangeIndicator={props.renderChangeIndicator} />
             <div className="grid gap-6 lg:grid-cols-3">
                 <SalesPipelineCard charts={props.charts} formatCurrency={props.formatCurrency} CTAHref="/sales/pipeline" />
@@ -616,6 +735,7 @@ function SalesManagerDashboard(props: RoleViewProps) {
 function SalesRepDashboard(props: RoleViewProps) {
     return (
         <div className="flex flex-col gap-6">
+            <BranchCalendarCard events={props.calendarEvents} />
             <SalesRepScorecard kpis={props.kpis} formatCurrency={props.formatCurrency} renderChangeIndicator={props.renderChangeIndicator} />
             <div className="grid gap-6 lg:grid-cols-2">
                 <SalesActionCenter alerts={props.alerts} activities={props.recentActivities} />
@@ -633,6 +753,7 @@ function SalesRepDashboard(props: RoleViewProps) {
 function ServiceManagerDashboard(props: RoleViewProps) {
     return (
         <div className="flex flex-col gap-6">
+            <BranchCalendarCard events={props.calendarEvents} />
             <ServiceKpiGrid kpis={props.kpis} formatCurrency={props.formatCurrency} renderChangeIndicator={props.renderChangeIndicator} />
             <div className="grid gap-6 lg:grid-cols-3">
                 <OperationsSnapshotCard kpis={props.kpis} />
@@ -654,6 +775,7 @@ function ServiceManagerDashboard(props: RoleViewProps) {
 function TechnicianDashboard(props: RoleViewProps) {
     return (
         <div className="flex flex-col gap-6">
+            <BranchCalendarCard events={props.calendarEvents} />
             <TechnicianWorkloadCard kpis={props.kpis} formatCurrency={props.formatCurrency} />
             <div className="grid gap-6 lg:grid-cols-2">
                 <AssignedChecklistsPanel
@@ -671,6 +793,7 @@ function TechnicianDashboard(props: RoleViewProps) {
 function PartsHeadDashboard(props: RoleViewProps) {
     return (
         <div className="flex flex-col gap-6">
+            <BranchCalendarCard events={props.calendarEvents} />
             <PartsKpiGrid kpis={props.kpis} formatCurrency={props.formatCurrency} />
             <InventoryHealthCard kpis={props.kpis} formatCurrency={props.formatCurrency} detailed />
             <div className="grid gap-6 lg:grid-cols-2">
@@ -688,6 +811,7 @@ function PartsHeadDashboard(props: RoleViewProps) {
 function PartsClerkDashboard(props: RoleViewProps) {
     return (
         <div className="flex flex-col gap-6">
+            <BranchCalendarCard events={props.calendarEvents} />
             <PartsKpiGrid kpis={props.kpis} formatCurrency={props.formatCurrency} compact />
             <AssignedChecklistsPanel
                 {...props.checklistBindings}
@@ -702,6 +826,7 @@ function PartsClerkDashboard(props: RoleViewProps) {
 function AuditorDashboard(props: RoleViewProps) {
     return (
         <div className="flex flex-col gap-6">
+            <BranchCalendarCard events={props.calendarEvents} />
             <AuditorInsightsGrid kpis={props.kpis} alerts={props.alerts} />
             <div className="grid gap-6 md:grid-cols-2">
                 <AlertsPanel
@@ -723,6 +848,7 @@ function AuditorDashboard(props: RoleViewProps) {
 function GeneralDashboard(props: RoleViewProps) {
     return (
         <div className="flex flex-col gap-6">
+            <BranchCalendarCard events={props.calendarEvents} />
             <PrimaryKpiGrid kpis={props.kpis} formatCurrency={props.formatCurrency} renderChangeIndicator={props.renderChangeIndicator} />
             <SecondaryKpiGrid kpis={props.kpis} formatCurrency={props.formatCurrency} />
             <div className="grid gap-6 lg:grid-cols-2">

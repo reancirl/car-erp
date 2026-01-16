@@ -33,8 +33,15 @@ export default function ESignatureModal({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [hasSignature, setHasSignature] = useState(false);
+    const [uploadedSignature, setUploadedSignature] = useState<{ data: string; name: string } | null>(null);
     const [name, setName] = useState(customerName);
-    const [acknowledgment, setAcknowledgment] = useState('');
+    const acknowledgmentItems = [
+        'I have a valid driver’s license and am authorized to drive.',
+        'I agree to drive safely and follow traffic laws.',
+        'I accept responsibility for any damage during the test drive.',
+        'I agree to return the vehicle on time.',
+    ];
+    const [ackChecklist, setAckChecklist] = useState<boolean[]>(acknowledgmentItems.map(() => false));
     const [error, setError] = useState('');
 
     // Initialize canvas
@@ -64,9 +71,10 @@ export default function ESignatureModal({
     useEffect(() => {
         if (open) {
             setName(customerName);
-            setAcknowledgment('');
+            setAckChecklist(acknowledgmentItems.map(() => false));
             setError('');
             setHasSignature(false);
+            setUploadedSignature(null);
             clearSignature();
         }
     }, [open, customerName]);
@@ -120,6 +128,25 @@ export default function ESignatureModal({
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         setHasSignature(false);
+        setUploadedSignature(null);
+    };
+
+    const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            setError('Uploaded file must be an image.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const result = reader.result as string;
+            setUploadedSignature({ data: result, name: file.name });
+            setHasSignature(true);
+            setError('');
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSave = () => {
@@ -129,30 +156,37 @@ export default function ESignatureModal({
             return;
         }
 
-        if (!hasSignature) {
-            setError('Please provide your signature');
+        if (!hasSignature && !uploadedSignature) {
+            setError('Please provide your signature (draw or upload an image).');
             return;
         }
 
-        if (!acknowledgment.trim()) {
-            setError('Please acknowledge the terms and conditions');
+        if (!ackChecklist.every(Boolean)) {
+            setError('Please agree to all acknowledgments.');
             return;
         }
 
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        // Get signature as base64
-        const signatureData = canvas.toDataURL('image/png');
+        let signatureData = '';
+        if (uploadedSignature) {
+            signatureData = uploadedSignature.data;
+        } else {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            signatureData = canvas.toDataURL('image/png');
+        }
 
         // Get device info
         const deviceInfo = `${navigator.userAgent} - ${window.innerWidth}x${window.innerHeight}`;
+
+        const acknowledgment = acknowledgmentItems
+            .map((item, idx) => `${ackChecklist[idx] ? '[x]' : '[ ]'} ${item}`)
+            .join(' | ');
 
         // Create signature data object
         const data: SignatureData = {
             signature_data: signatureData,
             customer_name: name.trim(),
-            customer_acknowledgment: acknowledgment.trim(),
+            customer_acknowledgment: acknowledgment,
             device_info: deviceInfo,
             timestamp: new Date().toISOString(),
         };
@@ -228,38 +262,36 @@ export default function ESignatureModal({
                             />
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Sign above using your mouse, trackpad, or touch screen
+                            Sign above using your mouse, trackpad, or touch screen. Or upload a photo of the signed form below.
                         </p>
+                        <div className="space-y-2">
+                            <Label htmlFor="upload_signature">Upload signed photo (optional)</Label>
+                            <Input id="upload_signature" type="file" accept="image/*" onChange={handleUpload} />
+                            {uploadedSignature && (
+                                <p className="text-xs text-muted-foreground">Attached: {uploadedSignature.name}</p>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Terms & Conditions Acknowledgment */}
-                    <div className="space-y-2">
-                        <Label htmlFor="acknowledgment">Acknowledgment & Agreement *</Label>
-                        <Textarea
-                            id="acknowledgment"
-                            value={acknowledgment}
-                            onChange={(e) => setAcknowledgment(e.target.value)}
-                            placeholder="Type: I acknowledge that I have read and agree to the terms and conditions of this test drive"
-                            rows={3}
-                            required
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Please type your acknowledgment of the terms and conditions
-                        </p>
-                    </div>
-
-                    {/* Terms & Conditions */}
+                    {/* Terms & Conditions Checklist */}
                     <div className="bg-gray-50 p-4 rounded-lg border space-y-2">
-                        <h4 className="font-semibold text-sm">Test Drive Terms & Conditions</h4>
-                        <ul className="text-xs space-y-1 text-muted-foreground list-disc list-inside">
-                            <li>I have a valid driver's license and am authorized to drive</li>
-                            <li>I have valid insurance coverage</li>
-                            <li>I agree to drive safely and follow all traffic laws</li>
-                            <li>I am responsible for any damage to the vehicle during the test drive</li>
-                            <li>I understand that GPS tracking will be enabled during the test drive</li>
-                            <li>I agree to return the vehicle at the scheduled time</li>
-                            <li>I acknowledge that a deposit may be required</li>
-                        </ul>
+                        <h4 className="font-semibold text-sm">Acknowledgment & Agreement *</h4>
+                        <p className="text-xs text-muted-foreground">Confirm each item before saving.</p>
+                        <div className="space-y-2">
+                            {acknowledgmentItems.map((item, idx) => (
+                                <label key={idx} className="flex items-start space-x-2 text-sm">
+                                    <Checkbox
+                                        checked={ackChecklist[idx]}
+                                        onCheckedChange={(checked) => {
+                                            const next = [...ackChecklist];
+                                            next[idx] = !!checked;
+                                            setAckChecklist(next);
+                                        }}
+                                    />
+                                    <span className="leading-snug">{item}</span>
+                                </label>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Device & Timestamp Info */}

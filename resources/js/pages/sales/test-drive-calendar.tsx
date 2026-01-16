@@ -45,6 +45,11 @@ interface TestDrive {
         id: number;
         name: string;
     };
+    branch?: {
+        id: number;
+        name: string;
+        code: string;
+    };
 }
 
 interface Branch {
@@ -431,6 +436,16 @@ export default function TestDriveCalendar({ testDrives, currentDate, view = 'mon
                                                                 <div className="flex items-center space-x-2">
                                                                     <Car className="h-4 w-4" />
                                                                     <span>{td.vehicle_details}</span>
+                                                                </div>
+                                                                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                                                                    <Badge variant="outline" className="text-[11px]">
+                                                                        VIN: {td.vehicle_vin}
+                                                                    </Badge>
+                                                                    {td.branch?.code && (
+                                                                        <Badge variant="outline" className="text-[11px]">
+                                                                            {td.branch.code}
+                                                                        </Badge>
+                                                                    )}
                                                                 </div>
                                                                 {td.assigned_user && (
                                                                     <div className="flex items-center space-x-2 text-muted-foreground">

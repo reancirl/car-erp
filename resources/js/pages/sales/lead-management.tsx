@@ -81,9 +81,20 @@ interface Props extends PageProps {
     };
     branches: Branch[] | null;
     import_failed?: { row: any; error: string }[] | null;
+    upcomingFollowups: {
+        id: number;
+        lead_id: string;
+        name: string;
+        phone: string | null;
+        email: string | null;
+        status: string;
+        next_followup_at: string | null;
+        branch?: { id: number; name: string; code: string } | null;
+        assigned_user?: { id: number; name: string } | null;
+    }[];
 }
 
-export default function LeadManagement({ leads, stats, filters, branches, auth }: Props) {
+export default function LeadManagement({ leads, stats, filters, branches, auth, upcomingFollowups = [] }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || 'all');
     const [source, setSource] = useState(filters.source || 'all');
@@ -363,6 +374,42 @@ export default function LeadManagement({ leads, stats, filters, branches, auth }
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Upcoming Follow-ups */}
+                {canCreate && upcomingFollowups?.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Upcoming Follow-ups (Next 7 Days)</CardTitle>
+                            <CardDescription>Leads with scheduled next follow-up dates.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {upcomingFollowups.map((item) => (
+                                <div key={item.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 rounded-md border p-3">
+                                    <div>
+                                        <div className="font-semibold">{item.name}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {item.lead_id} • {item.branch?.name ?? 'Branch N/A'}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {item.phone || 'No phone'} {item.email ? ` • ${item.email}` : ''}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <Badge variant="outline" className="capitalize">
+                                            {item.status.replace('_', ' ')}
+                                        </Badge>
+                                        <div className="text-sm font-medium">
+                                            {item.next_followup_at ? new Date(item.next_followup_at).toLocaleString() : 'Not set'}
+                                        </div>
+                                        <Link href={`/sales/lead-management/${item.id}`} className="text-sm text-primary">
+                                            View
+                                        </Link>
+                                    </div>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Filters */}
                 <Card>

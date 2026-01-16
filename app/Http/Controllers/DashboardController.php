@@ -90,6 +90,7 @@ class DashboardController extends Controller
                 'branch_code' => $viewerBranch->code ?? null,
                 'is_headquarters' => $isHeadquarters,
             ],
+            'calendarEvents' => $this->getCalendarEvents($branchFilter),
         ]);
     }
 
@@ -139,6 +140,70 @@ class DashboardController extends Controller
         }
 
         return [$currentStart, $currentEnd, $previousStart, $previousEnd];
+    }
+
+    private function getCalendarEvents(array $branchFilter): array
+    {
+        $start = Carbon::now()->startOfDay();
+        $end = Carbon::now()->addDays(14)->endOfDay();
+
+        $testDriveEvents = TestDrive::with('branch')
+            ->whereIn('branch_id', $branchFilter)
+            ->whereBetween('scheduled_date', [$start->toDateString(), $end->toDateString()])
+            ->orderBy('scheduled_date')
+            ->orderBy('scheduled_time')
+            ->get()
+            ->map(function ($td) {
+                return [
+                    'type' => 'test_drive',
+                    'title' => "{$td->customer_name} – {$td->vehicle_details}",
+                    'date' => Carbon::parse($td->scheduled_date)->toDateString(),
+                    'time' => $td->scheduled_time,
+                    'status' => $td->status,
+                    'branch' => $td->branch?->only(['id', 'name', 'code']),
+                    'meta' => [
+                        'reservation_id' => $td->reservation_id,
+                        'vehicle_vin' => $td->vehicle_vin,
+                    ],
+                ];
+            });
+
+        $workOrderEvents = WorkOrder::with(['branch', 'serviceType', 'vehicleUnit'])
+            ->whereIn('branch_id', $branchFilter)
+            ->where(function ($q) use ($start, $end) {
+                $q->whereBetween('scheduled_at', [$start, $end])
+                    ->orWhere(function ($q) use ($start, $end) {
+                        $q->whereNull('scheduled_at')
+                            ->whereBetween('due_date', [$start->toDateString(), $end->toDateString()]);
+                    });
+            })
+            ->orderBy('scheduled_at')
+            ->orderBy('due_date')
+            ->get()
+            ->map(function ($wo) {
+                $date = $wo->scheduled_at ? $wo->scheduled_at->toDateString() : ($wo->due_date ? Carbon::parse($wo->due_date)->toDateString() : null);
+                $time = $wo->scheduled_at ? $wo->scheduled_at->format('H:i') : null;
+
+                return [
+                    'type' => 'pms',
+                    'title' => $wo->serviceType?->name ?? 'PMS Work Order',
+                    'date' => $date,
+                    'time' => $time,
+                    'status' => $wo->status,
+                    'branch' => $wo->branch?->only(['id', 'name', 'code']),
+                    'meta' => [
+                        'work_order_number' => $wo->work_order_number,
+                        'vehicle' => $wo->vehicleUnit?->stock_number ?? $wo->vehicle_plate_number,
+                    ],
+                ];
+            })
+            ->filter(fn($event) => $event['date'] !== null);
+
+        return $testDriveEvents
+            ->merge($workOrderEvents)
+            ->sortBy(fn($event) => $event['date'] . ' ' . ($event['time'] ?? ''))
+            ->values()
+            ->toArray();
     }
 
     private function getUserBranches($user): array

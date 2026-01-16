@@ -24,6 +24,8 @@ Route::prefix('survey')->name('survey.')->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::get('dashboard/calendar', \App\Http\Controllers\DashboardCalendarController::class)
+        ->name('dashboard.calendar');
     Route::post(
         'dashboard/checklist-assignments/{assignment}/items/{assignmentItem}/toggle',
         [ComplianceChecklistAssignmentController::class, 'toggleItem']

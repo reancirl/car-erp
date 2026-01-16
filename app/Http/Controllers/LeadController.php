@@ -68,11 +68,44 @@ class LeadController extends Controller
             'suspicious' => (clone $statsQuery)->where('fake_lead_score', '>', 70)->count(),
         ];
 
+        // Upcoming follow-ups (7 days window)
+        $upcomingFollowups = (clone $query)
+            ->whereNotIn('status', ['lost', 'unqualified'])
+            ->whereNotNull('next_followup_at')
+            ->whereBetween('next_followup_at', [now(), now()->addDays(7)])
+            ->orderBy('next_followup_at')
+            ->limit(10)
+            ->get([
+                'id',
+                'lead_id',
+                'name',
+                'phone',
+                'email',
+                'next_followup_at',
+                'status',
+                'branch_id',
+                'assigned_to',
+            ])
+            ->map(function ($lead) {
+                return [
+                    'id' => $lead->id,
+                    'lead_id' => $lead->lead_id,
+                    'name' => $lead->name,
+                    'phone' => $lead->phone,
+                    'email' => $lead->email,
+                    'next_followup_at' => optional($lead->next_followup_at)->toIso8601String(),
+                    'status' => $lead->status,
+                    'branch' => $lead->branch?->only(['id', 'name', 'code']),
+                    'assigned_user' => $lead->assignedUser?->only(['id', 'name']),
+                ];
+            });
+
         return Inertia::render('sales/lead-management', [
             'leads' => $leads,
             'stats' => $stats,
             'filters' => $request->only(['search', 'status', 'source', 'branch_id', 'lead_score', 'include_deleted']),
             'branches' => $user->hasRole('admin') ? Branch::where('status', 'active')->get() : null,
+            'upcomingFollowups' => $upcomingFollowups,
         ]);
     }
 

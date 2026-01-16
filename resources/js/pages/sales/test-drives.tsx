@@ -330,7 +330,9 @@ export default function TestDrives({ testDrives, stats, filters, branches, auth 
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.esignature_rate}%</div>
-                            <p className="text-xs text-muted-foreground">Digital signatures</p>
+                            <p className="text-xs text-muted-foreground">
+                                Signed digital waivers (count as confirmed reservations)
+                            </p>
                         </CardContent>
                     </Card>
                 </div>
