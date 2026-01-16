@@ -34,6 +34,7 @@ class VehicleUnit extends Model
         'location',
         'sub_status',
         'is_locked',
+        'allocation_status',
         'purchase_price',
         'sale_price',
         'msrp_price',
@@ -171,6 +172,14 @@ class VehicleUnit extends Model
     public function movements(): HasMany
     {
         return $this->hasMany(VehicleMovement::class)->orderBy('transfer_date', 'desc');
+    }
+
+    /**
+     * Reservations linked to this unit.
+     */
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(VehicleReservation::class);
     }
 
     /**

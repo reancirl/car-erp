@@ -254,6 +254,11 @@ Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->gr
     Route::delete('/warranty-claims/{warranty_claim}/photos/{photo}', [\App\Http\Controllers\WarrantyClaimController::class, 'deletePhoto'])
         ->name('warranty-claims.delete-photo')
         ->middleware('permission:warranty.edit');
+
+    // Aftersales Reports
+    Route::get('/aftersales-reports', [\App\Http\Controllers\AftersalesReportController::class, 'index'])
+        ->name('aftersales-reports')
+        ->middleware('permission:pms.view|reports.view|users.view');
 });
 
 // Sales & Customer Lifecycle Routes
@@ -262,6 +267,8 @@ Route::middleware(['auth', 'verified', 'permission:sales.view'])->prefix('sales'
     Route::get('/lead-management', [\App\Http\Controllers\LeadController::class, 'index'])->name('lead-management');
     Route::get('/lead-management/create', [\App\Http\Controllers\LeadController::class, 'create'])->name('lead-management.create')->middleware('permission:sales.create');
     Route::post('/lead-management', [\App\Http\Controllers\LeadController::class, 'store'])->name('lead-management.store')->middleware('permission:sales.create');
+    Route::get('/lead-management/import-template', [\App\Http\Controllers\LeadController::class, 'downloadTemplate'])->name('lead-management.import-template')->middleware('permission:sales.create');
+    Route::post('/lead-management/import', [\App\Http\Controllers\LeadController::class, 'import'])->name('lead-management.import')->middleware('permission:sales.create');
     Route::get('/lead-management/{lead}', [\App\Http\Controllers\LeadController::class, 'show'])->name('lead-management.show');
     Route::get('/lead-management/{lead}/edit', [\App\Http\Controllers\LeadController::class, 'edit'])->name('lead-management.edit')->middleware('permission:sales.edit');
     Route::put('/lead-management/{lead}', [\App\Http\Controllers\LeadController::class, 'update'])->name('lead-management.update')->middleware('permission:sales.edit');
@@ -292,6 +299,19 @@ Route::middleware(['auth', 'verified', 'permission:sales.view'])->prefix('sales'
     Route::post('/pipeline/{id}/restore', [\App\Http\Controllers\PipelineController::class, 'restore'])->name('pipeline.restore')->middleware('permission:sales.create');
     Route::get('/pipeline-export', [\App\Http\Controllers\PipelineController::class, 'export'])->name('pipeline.export')->middleware('permission:sales.view');
     Route::post('/pipeline-auto-loss-detection', [\App\Http\Controllers\PipelineController::class, 'runAutoLossDetection'])->name('pipeline.auto-loss-detection')->middleware('permission:sales.edit');
+
+    // Reservations Module
+    Route::get('/reservations', [\App\Http\Controllers\VehicleReservationController::class, 'index'])
+        ->name('reservations.index');
+    Route::get('/reservations/create', [\App\Http\Controllers\VehicleReservationController::class, 'create'])
+        ->name('reservations.create')
+        ->middleware('permission:sales.create');
+    Route::post('/reservations', [\App\Http\Controllers\VehicleReservationController::class, 'store'])
+        ->name('reservations.store')
+        ->middleware('permission:sales.create');
+    Route::patch('/reservations/{reservation}', [\App\Http\Controllers\VehicleReservationController::class, 'update'])
+        ->name('reservations.update')
+        ->middleware('permission:sales.edit');
     
     Route::get('/performance-metrics', [\App\Http\Controllers\PerformanceMetricsController::class, 'index'])->name('performance-metrics')->middleware('permission:reports.view');
 });

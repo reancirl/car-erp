@@ -32,6 +32,7 @@ interface VehicleUnit {
     sub_status?: string | null;
     location: string;
     is_locked?: boolean;
+    allocation_status?: string | null;
     conduction_no?: string | null;
     drive_motor_no?: string | null;
     plate_no?: string | null;
@@ -567,6 +568,12 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                                                     </div>
                                                     {getSubStatusLabel(unit.sub_status) && (
                                                         <div className="text-xs text-muted-foreground">{getSubStatusLabel(unit.sub_status)}</div>
+                                                    )}
+                                                    {unit.allocation_status && (
+                                                        <div className="text-[11px] text-amber-700 flex items-center gap-1">
+                                                            <Lock className="h-3 w-3" />
+                                                            <span className="truncate">{unit.allocation_status}</span>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </TableCell>

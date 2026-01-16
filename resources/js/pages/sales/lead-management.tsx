@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Search, Plus, Eye, Edit, AlertTriangle, CheckCircle, Phone, MapPin, Star, Users, Mail, Globe, Trash2 } from 'lucide-react';
+import { UserPlus, Search, Plus, Eye, Edit, AlertTriangle, CheckCircle, Phone, MapPin, Star, Users, Mail, Globe, Trash2, Upload } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { type BreadcrumbItem, type PageProps } from '@/types';
 import { useState, FormEvent } from 'react';
 
@@ -78,6 +80,7 @@ interface Props extends PageProps {
         lead_score?: string;
     };
     branches: Branch[] | null;
+    import_failed?: { row: any; error: string }[] | null;
 }
 
 export default function LeadManagement({ leads, stats, filters, branches, auth }: Props) {
@@ -91,6 +94,12 @@ export default function LeadManagement({ leads, stats, filters, branches, auth }
     const canCreate = permissions.includes('sales.create');
     const canEdit = permissions.includes('sales.edit');
     const canDelete = permissions.includes('sales.delete');
+    const { props } = usePage() as any;
+    const importFailed = props?.import_failed as { row: any; error: string }[] | null;
+
+    const importForm = useForm<{ file: File | null }>({
+        file: null,
+    });
 
     const handleFilter = (e: FormEvent) => {
         e.preventDefault();
@@ -249,6 +258,71 @@ export default function LeadManagement({ leads, stats, filters, branches, auth }
                         )}
                     </div>
                 </div>
+
+                {canCreate && (
+                    <Card>
+                        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <CardTitle>Bulk Import Leads</CardTitle>
+                                <CardDescription>Upload a CSV and download the template to see required columns.</CardDescription>
+                            </div>
+                            <a
+                                href="/sales/lead-management/import-template"
+                                className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+                                download
+                            >
+                                Download Template
+                            </a>
+                        </CardHeader>
+                        <CardContent>
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline">
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        Upload CSV
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-xl">
+                                    <DialogHeader>
+                                        <DialogTitle>Upload Lead CSV</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-3">
+                                        <Label htmlFor="lead-import-file">Choose CSV file</Label>
+                                        <Input
+                                            id="lead-import-file"
+                                            type="file"
+                                            accept=".csv"
+                                            onChange={(e) => importForm.setData('file', e.target.files?.[0] ?? null)}
+                                        />
+                                        {importForm.errors.file && (
+                                            <p className="text-sm text-red-600">{importForm.errors.file}</p>
+                                        )}
+                                        <p className="text-xs text-muted-foreground">
+                                            Columns: name, email, phone, location, ip_address, source, status, priority, vehicle_interest, vehicle_model_code,
+                                            budget_min, budget_max, purchase_timeline, assigned_to_email, next_followup_at, contact_method, branch_code, notes,
+                                            tags (pipe-separated).
+                                        </p>
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                type="button"
+                                                disabled={importForm.processing || !importForm.data.file}
+                                                onClick={() => importForm.post('/sales/lead-management/import', { preserveScroll: true })}
+                                            >
+                                                <Upload className="h-4 w-4 mr-2" />
+                                                Import Leads
+                                            </Button>
+                                        </div>
+                                        {importFailed && importFailed.length > 0 && (
+                                            <p className="text-sm text-amber-700">
+                                                {importFailed.length} row(s) skipped. First issue: {importFailed[0].error}
+                                            </p>
+                                        )}
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

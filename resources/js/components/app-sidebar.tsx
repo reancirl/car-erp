@@ -21,6 +21,8 @@ import {
   Clock,
   UserCheck,
   ClipboardCheck,
+  Layers,
+  BarChart,
 } from "lucide-react";
 import AppLogo from './app-logo';
 
@@ -84,6 +86,11 @@ const operationsNavItems: NavItem[] = [
         href: '/service/warranty-claims',
         icon: FileText,
     },
+    {
+        title: 'Aftersales Reports',
+        href: '/service/aftersales-reports',
+        icon: BarChart,
+    },
 ];
 
 // Inventory Management
@@ -113,6 +120,11 @@ const salesNavItems: NavItem[] = [
         icon: UserPlus,
     },
     {
+        title: 'Reservations',
+        href: '/sales/reservations',
+        icon: Layers,
+    },
+    {
         title: 'Test Drives',
         href: '/sales/test-drives',
         icon: Car,
@@ -123,7 +135,7 @@ const salesNavItems: NavItem[] = [
         icon: TrendingUp,
     },
     {
-        title: 'Customer Experience',
+        title: 'Customer',
         href: '/sales/customer-experience',
         icon: MessageSquare,
     },
@@ -179,10 +191,12 @@ const navPermissions: Record<string, string> = {
     '/service/service-types': 'service-types.view',
     '/service/common-services': 'common-services.view',
     '/service/warranty-claims': 'warranty.view',
+    '/service/aftersales-reports': 'pms.view|reports.view|users.view',
     '/inventory/parts-inventory': 'inventory.view',
     '/inventory/models': 'vehicle_model.view',
     '/inventory/vehicles': 'inventory.view',
     '/sales/lead-management': 'sales.view',
+    '/sales/reservations': 'sales.view',
     '/sales/test-drives': 'sales.view',
     '/sales/pipeline': 'sales.view',
     '/sales/customer-experience': 'customer.view',
@@ -199,8 +213,13 @@ function filterNavItemsByPermissions(items: NavItem[], permissions: string[]): N
         const requiredPermission = navPermissions[item.href];
         if (!requiredPermission) return true; // Dashboard and other unprotected routes
 
-        const requiredAll = requiredPermission.split('&').map(p => p.trim()).filter(Boolean);
-        return requiredAll.every(permission => permissions.includes(permission));
+        // Support OR groups (|) with AND conditions inside (&)
+        const orGroups = requiredPermission.split('|').map(group => group.trim()).filter(Boolean);
+
+        return orGroups.some(group => {
+            const requiredAll = group.split('&').map(p => p.trim()).filter(Boolean);
+            return requiredAll.every(permission => permissions.includes(permission));
+        });
     });
 }
 

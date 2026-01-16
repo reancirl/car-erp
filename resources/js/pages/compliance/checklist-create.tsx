@@ -293,7 +293,7 @@ export default function ComplianceChecklistCreate({
                         <div>
                             <h1 className="text-2xl font-bold">Create Compliance Checklist</h1>
                             <p className="text-sm text-muted-foreground">
-                                Define the cadence, owners, and reminders for a compliance task.
+                                Define the schedule, owners, and reminders for a compliance task.
                             </p>
                         </div>
                     </div>

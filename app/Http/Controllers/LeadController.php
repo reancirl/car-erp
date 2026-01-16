@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateLeadRequest;
 use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -101,6 +102,204 @@ class LeadController extends Controller
             'salesReps' => $salesReps,
             'vehicleModels' => $vehicleModels,
         ]);
+    }
+
+    /**
+     * Download a CSV template for lead imports.
+     */
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="lead-import-template-test.csv"',
+        ];
+
+        $callback = function () {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, [
+                'name',
+                'email',
+                'phone',
+                'location',
+                'ip_address',
+                'source',
+                'status',
+                'priority',
+                'vehicle_interest',
+                'vehicle_model_code',
+                'budget_min',
+                'budget_max',
+                'purchase_timeline',
+                'assigned_to_email',
+                'next_followup_at',
+                'contact_method',
+                'branch_code',
+                'notes',
+                'tags (pipe-separated)',
+            ]);
+            fputcsv($file, [
+                'Juan Dela Cruz',
+                'juan@example.com',
+                '+639171234567',
+                'Cebu City',
+                '192.168.1.10',
+                'web_form',
+                'new',
+                'medium',
+                'Toyota Vios',
+                'Vios_2023_G',
+                '800000',
+                '1000000',
+                'soon',
+                'sales.rep@example.com',
+                '2025-02-10',
+                'phone',
+                'HQ (required for admins)',
+                'HQ',
+                'Met at auto show',
+                'hot_lead|financing_needed',
+            ]);
+            fputcsv($file, [
+                'Maria Santos',
+                'maria@example.com',
+                '+639181111111',
+                'Davao City',
+                '172.16.0.5',
+                'social_media',
+                'contacted',
+                'high',
+                'Honda Civic',
+                'Civic_2024_RS',
+                '1200000',
+                '1500000',
+                'immediate',
+                'sales.manager@example.com',
+                '2025-02-08',
+                'email',
+                'DVO',
+                'Requested brochure',
+                'urgent|trade_in',
+            ]);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Bulk import leads from CSV.
+     */
+    public function import(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt|max:5120',
+        ]);
+
+        $user = $request->user();
+        $path = $request->file('file')->getRealPath();
+        $handle = fopen($path, 'r');
+        if (! $handle) {
+            return back()->withErrors(['file' => 'Unable to read uploaded file.']);
+        }
+
+        $header = fgetcsv($handle);
+        if (! $header) {
+            fclose($handle);
+            return back()->withErrors(['file' => 'File is empty or invalid.']);
+        }
+
+        $header = array_map(fn($h) => strtolower(trim($h)), $header);
+
+        $created = 0;
+        $failed = [];
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if (count($row) === 1 && trim($row[0]) === '') {
+                continue; // skip empty lines
+            }
+
+            $data = array_combine($header, $row);
+            if ($data === false) {
+                $failed[] = ['row' => $row, 'error' => 'Column mismatch'];
+                continue;
+            }
+
+            $payload = [
+                'name' => $data['name'] ?? null,
+                'email' => $data['email'] ?? null,
+                'phone' => $data['phone'] ?? null,
+                'location' => $data['location'] ?? null,
+                'ip_address' => $data['ip_address'] ?? null,
+                'source' => $data['source'] ?? 'web_form',
+                'status' => $data['status'] ?? 'new',
+                'priority' => $data['priority'] ?? 'medium',
+                'purchase_timeline' => $data['purchase_timeline'] ?? 'exploring',
+                'vehicle_interest' => $data['vehicle_interest'] ?? null,
+                'vehicle_model_id' => isset($data['vehicle_model_code'])
+                    ? optional(\App\Models\VehicleModel::where('model_code', $data['vehicle_model_code'])->first())->id
+                    : null,
+                'budget_min' => $data['budget_min'] ?? null,
+                'budget_max' => $data['budget_max'] ?? null,
+                'assigned_to' => isset($data['assigned_to_email'])
+                    ? optional(User::where('email', $data['assigned_to_email'])->first())->id
+                    : null,
+                'next_followup_at' => $data['next_followup_at'] ?? null,
+                'contact_method' => $data['contact_method'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'tags' => isset($data['tags (pipe-separated)']) ? explode('|', $data['tags (pipe-separated)']) : null,
+                'branch_id' => $user->hasRole('admin')
+                    ? optional(Branch::where('code', $data['branch_code'] ?? null)->first())->id
+                    : $user->branch_id,
+            ];
+
+            $validator = Validator::make($payload, [
+                'name' => 'required|string|max:255',
+                'email' => 'nullable|email|max:255',
+                'phone' => 'nullable|string|max:50',
+                'location' => 'nullable|string|max:255',
+                'ip_address' => 'nullable|string|max:45',
+                'source' => 'required|string|max:100',
+                'status' => 'required|string|max:100',
+                'vehicle_interest' => 'nullable|string|max:255',
+                'notes' => 'nullable|string|max:1000',
+                'branch_id' => 'required|exists:branches,id',
+                'priority' => 'nullable|string|max:50',
+                'purchase_timeline' => 'nullable|string|max:50',
+                'vehicle_model_id' => 'nullable|exists:vehicle_models,id',
+                'budget_min' => 'nullable|numeric',
+                'budget_max' => 'nullable|numeric',
+                'assigned_to' => 'nullable|exists:users,id',
+                'next_followup_at' => 'nullable|date',
+                'contact_method' => 'nullable|string|max:100',
+                'tags' => 'nullable|array',
+            ]);
+
+            if ($validator->fails()) {
+                $failed[] = ['row' => $payload, 'error' => $validator->errors()->first()];
+                continue;
+            }
+
+            $dataForLead = $validator->validated();
+
+            // Calculate scores and flags
+            $dataForLead['lead_score'] = $this->calculateLeadScore($dataForLead);
+            $dataForLead['conversion_probability'] = $this->calculateConversionProbability($dataForLead);
+            [$dataForLead['fake_lead_score'], $dataForLead['duplicate_flags']] = $this->detectSuspiciousLead($dataForLead);
+
+            Lead::create($dataForLead);
+            $created++;
+        }
+
+        fclose($handle);
+
+        $message = "{$created} lead(s) imported successfully.";
+        if (! empty($failed)) {
+            $message .= ' Some rows were skipped.';
+        }
+
+        return redirect()->route('sales.lead-management')
+            ->with('success', $message)
+            ->with('import_failed', $failed);
     }
 
     /**

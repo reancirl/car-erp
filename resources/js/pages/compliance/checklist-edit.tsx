@@ -318,7 +318,7 @@ export default function ComplianceChecklistEdit({
                         <div>
                             <h1 className="text-2xl font-bold">Edit Checklist</h1>
                             <p className="text-sm text-muted-foreground">
-                                Update cadence, ownership, and automation for <span className="font-semibold">{checklist.title}</span>.
+                                Update schedule, ownership, and automation for <span className="font-semibold">{checklist.title}</span>.
                             </p>
                         </div>
                     </div>

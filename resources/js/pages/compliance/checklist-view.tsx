@@ -191,7 +191,7 @@ export default function ComplianceChecklistView({ checklist, can }: Props) {
                         <CardHeader>
                             <CardTitle>Overview</CardTitle>
                             <CardDescription>
-                                Key information about cadence, assignments, and scope.
+                                Key information about schedule, assignments, and scope.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">

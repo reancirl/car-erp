@@ -349,7 +349,7 @@ export default function ComplianceChecklists({
                         <div>
                             <h1 className="text-2xl font-bold">Compliance Checklists</h1>
                             <p className="text-sm text-muted-foreground">
-                                Monitor regulatory tasks, cadences, and assignments across branches.
+                                Monitor regulatory tasks, schedules, and assignments across branches.
                             </p>
                         </div>
                     </div>
@@ -549,7 +549,7 @@ export default function ComplianceChecklists({
                     <CardHeader className="pb-3">
                         <CardTitle>Checklist Library</CardTitle>
                         <CardDescription>
-                            Track compliance cadence, due dates, and ownership for each checklist.
+                            Track compliance schedule, due dates, and ownership for each checklist.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">

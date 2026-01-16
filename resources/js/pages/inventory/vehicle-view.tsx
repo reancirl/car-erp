@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Car, Edit, ArrowLeft, Share2, Printer, Download, MapPin, Calendar, User, DollarSign, Fuel, Gauge, Palette, Settings, History, Camera, FileText, CheckCircle, Clock, AlertTriangle, Star, TestTube, Globe, Upload } from 'lucide-react';
+import { Car, Edit, ArrowLeft, Share2, Printer, Download, MapPin, Calendar, User, DollarSign, Fuel, Gauge, Palette, Settings, History, Camera, FileText, CheckCircle, Clock, AlertTriangle, Star, TestTube, Globe, Upload, Lock } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 
@@ -20,6 +20,7 @@ interface VehicleUnit {
     sub_status?: string | null;
     location: string;
     is_locked?: boolean;
+    allocation_status?: string | null;
     variant?: string | null;
     variant_spec?: string | null;
     purchase_price: number;
@@ -277,6 +278,12 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                                     </div>
                                     {getSubStatusLabel(vehicle.sub_status) && (
                                         <div className="text-xs text-muted-foreground">{getSubStatusLabel(vehicle.sub_status)}</div>
+                                    )}
+                                    {vehicle.allocation_status && (
+                                        <div className="text-xs text-amber-700 flex items-center gap-1">
+                                            <Lock className="h-3 w-3" />
+                                            <span>{vehicle.allocation_status}</span>
+                                        </div>
                                     )}
                                 </div>
                                 <CheckCircle className="h-8 w-8 text-green-500" />

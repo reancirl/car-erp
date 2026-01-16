@@ -241,7 +241,7 @@ export default function CustomerExperience({ customers, stats, filters, branches
                     <div>
                         <h1 className="text-3xl font-bold flex items-center">
                             <Users className="h-8 w-8 mr-3 text-primary" />
-                            Customer Experience
+                            Customers
                         </h1>
                         <p className="text-muted-foreground mt-1">
                             Manage customer relationships and track satisfaction
