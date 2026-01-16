@@ -422,7 +422,7 @@ export default function CustomerExperience({ customers, stats, filters, branches
                 {/* Customers Table */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Customers ({customers.meta?.total || 0})</CardTitle>
+                        <CardTitle>Customers</CardTitle>
                         <CardDescription>View and manage all customer records</CardDescription>
                     </CardHeader>
                     <CardContent>

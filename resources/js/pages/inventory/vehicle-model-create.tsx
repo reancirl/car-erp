@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Car, Save, X, Plus, Minus, AlertCircle } from 'lucide-react';
+import { Car, Save, X, Plus, Minus, AlertCircle, Upload, FileText } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 
@@ -80,6 +80,7 @@ export default function VehicleModelCreate() {
         technology_features: [],
         available_colors: [],
         available_trims: [],
+        manual_documents: [] as File[],
         description: '',
         is_active: true as boolean,
         is_featured: false as boolean,
@@ -99,7 +100,21 @@ export default function VehicleModelCreate() {
             available_colors: colors.filter(c => c.trim()),
         };
 
-        post('/inventory/models');
+        post('/inventory/models', { forceFormData: true });
+    };
+
+    const manualFiles = (data.manual_documents as File[]) || [];
+
+    const handleManualUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+
+        setData('manual_documents', [...manualFiles, ...files]);
+        e.target.value = '';
+    };
+
+    const removeManual = (index: number) => {
+        setData('manual_documents', manualFiles.filter((_, i) => i !== index));
     };
 
     const addFeature = (type: 'standard' | 'optional') => {
@@ -465,6 +480,76 @@ export default function VehicleModelCreate() {
                                     onChange={(e) => setData('description', e.target.value)}
                                     rows={5}
                                 />
+                            </CardContent>
+                        </Card>
+
+                        {/* Manuals & Reference Documents */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Manuals & Guides</CardTitle>
+                                <CardDescription>Attach multiple manuals, brochures, or reference files for this model.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="manual-upload">Upload manuals</Label>
+                                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => document.getElementById('manual-upload')?.click()}
+                                        >
+                                            <Upload className="h-4 w-4 mr-2" />
+                                            Select files
+                                        </Button>
+                                        <p className="text-xs text-muted-foreground">
+                                            PDF, DOC, XLS, or PPT • up to 20 files, 20MB each
+                                        </p>
+                                    </div>
+                                    <input
+                                        id="manual-upload"
+                                        type="file"
+                                        multiple
+                                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                                        className="hidden"
+                                        onChange={handleManualUpload}
+                                    />
+                                    {errors.manual_documents && (
+                                        <p className="text-sm text-red-600">{errors.manual_documents}</p>
+                                    )}
+                                </div>
+
+                                {manualFiles.length > 0 && (
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium">Selected manuals ({manualFiles.length})</p>
+                                        <div className="space-y-2">
+                                            {manualFiles.map((file: File, index: number) => (
+                                                <div
+                                                    key={`${file.name}-${index}`}
+                                                    className="flex items-center justify-between rounded-md border p-2"
+                                                >
+                                                    <div className="flex items-center space-x-3">
+                                                        <FileText className="h-4 w-4 text-muted-foreground" />
+                                                        <div>
+                                                            <p className="text-sm font-medium">{file.name}</p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => removeManual(index)}
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>

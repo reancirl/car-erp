@@ -108,7 +108,14 @@ class VehicleModelController extends Controller
      */
     public function store(StoreVehicleModelRequest $request)
     {
-        $model = VehicleModel::create($request->validated());
+        $data = $request->validated();
+        $manualDocuments = $this->uploadManualDocuments($request);
+
+        if (!empty($manualDocuments)) {
+            $data['manual_documents'] = $manualDocuments;
+        }
+
+        $model = VehicleModel::create($data);
 
         $this->logCreated(
             'Inventory',
@@ -140,8 +147,17 @@ class VehicleModelController extends Controller
      */
     public function update(UpdateVehicleModelRequest $request, VehicleModel $vehicleModel)
     {
+        $data = $request->validated();
         $oldData = $vehicleModel->toArray();
-        $vehicleModel->update($request->validated());
+
+        $existingManuals = $vehicleModel->manual_documents ?? [];
+        $newManuals = $this->uploadManualDocuments($request);
+
+        if (!empty($newManuals)) {
+            $data['manual_documents'] = array_merge($existingManuals, $newManuals);
+        }
+
+        $vehicleModel->update($data);
 
         $this->logUpdated(
             'Inventory',
@@ -149,7 +165,7 @@ class VehicleModelController extends Controller
             "Vehicle model updated: {$vehicleModel->full_name}",
             [
                 'model_id' => $vehicleModel->id,
-                'changes' => array_diff_assoc($request->validated(), $oldData),
+                'changes' => array_diff_assoc($data, $oldData),
             ]
         );
 
@@ -203,5 +219,30 @@ class VehicleModelController extends Controller
 
         return redirect()->route('inventory.models.index')
             ->with('success', 'Vehicle model restored successfully.');
+    }
+
+    /**
+     * Handle manual document uploads for vehicle models.
+     */
+    private function uploadManualDocuments(Request $request): array
+    {
+        if (!$request->hasFile('manual_documents')) {
+            return [];
+        }
+
+        $uploaded = [];
+        foreach ($request->file('manual_documents') as $document) {
+            $path = $document->store('vehicle-models/manuals', 'public');
+            
+            $uploaded[] = [
+                'name' => $document->getClientOriginalName(),
+                'url' => '/storage/' . $path,
+                'mime_type' => $document->getClientMimeType(),
+                'size_kb' => round($document->getSize() / 1024, 2),
+                'uploaded_at' => now()->toISOString(),
+            ];
+        }
+
+        return $uploaded;
     }
 }

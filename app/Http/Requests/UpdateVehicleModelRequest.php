@@ -88,6 +88,8 @@ class UpdateVehicleModelRequest extends FormRequest
             'images' => ['nullable', 'array'],
             'description' => ['nullable', 'string'],
             'specifications_pdf' => ['nullable', 'string', 'max:500'],
+            'manual_documents' => ['nullable', 'array', 'max:30'],
+            'manual_documents.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx', 'max:20480'],
             
             // Status & Metadata
             'is_active' => ['nullable', 'boolean'],
