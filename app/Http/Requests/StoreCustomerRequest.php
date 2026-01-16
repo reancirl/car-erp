@@ -60,6 +60,7 @@ class StoreCustomerRequest extends FormRequest
             'last_name' => 'required|string|min:2|max:255',
             'email' => 'required|email:rfc,dns|max:255|unique:customers,email',
             'phone' => ['required', 'string', 'regex:/^(09|\+639)\d{9}$/'],
+            'prefers_viber' => ['boolean'],
             'alternate_phone' => ['nullable', 'string', 'regex:/^(09|\+639)\d{9}$/'],
             'date_of_birth' => 'nullable|date|before:today',
             'gender' => 'nullable|in:male,female,other,prefer_not_to_say',

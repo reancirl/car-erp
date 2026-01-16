@@ -26,6 +26,7 @@ class Customer extends Model
         'last_name',
         'email',
         'phone',
+        'prefers_viber',
         'alternate_phone',
         'date_of_birth',
         'gender',
@@ -83,6 +84,7 @@ class Customer extends Model
         'email_notifications' => 'boolean',
         'sms_notifications' => 'boolean',
         'marketing_consent' => 'boolean',
+        'prefers_viber' => 'boolean',
         'reservation_amount' => 'decimal:2',
         'reservation_date' => 'date',
     ];

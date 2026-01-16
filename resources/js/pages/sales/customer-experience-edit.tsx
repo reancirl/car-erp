@@ -75,6 +75,7 @@ interface Customer {
     last_name: string;
     email: string;
     phone: string;
+    prefers_viber?: boolean;
     alternate_phone: string | null;
     date_of_birth: string | null;
     gender: string | null;
@@ -149,6 +150,7 @@ export default function CustomerExperienceEdit({ customer, managers, existingCus
         last_name: customer.last_name || '',
         email: customer.email || '',
         phone: customer.phone || '',
+        prefers_viber: customer.prefers_viber ?? false,
         alternate_phone: customer.alternate_phone || '',
         date_of_birth: customer.date_of_birth || '',
         gender: customer.gender || '',
@@ -336,7 +338,7 @@ export default function CustomerExperienceEdit({ customer, managers, existingCus
                                         {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
                                     </div>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-3">
                                         <Label htmlFor="phone">Phone *</Label>
                                         <Input
                                             id="phone"
@@ -348,6 +350,21 @@ export default function CustomerExperienceEdit({ customer, managers, existingCus
                                             required
                                         />
                                         <p className="text-xs text-muted-foreground">Format: 09XXXXXXXXX or +639XXXXXXXXX</p>
+                                        <div className="flex items-start space-x-2">
+                                            <Checkbox
+                                                id="prefers_viber"
+                                                checked={data.prefers_viber}
+                                                onCheckedChange={(checked) => setData('prefers_viber', !!checked)}
+                                            />
+                                            <div className="space-y-0.5">
+                                                <Label htmlFor="prefers_viber" className="font-normal">
+                                                    Prefer Viber for this number
+                                                </Label>
+                                                <p className="text-xs text-muted-foreground">
+                                                    We’ll prioritize Viber for calls/messages to this contact.
+                                                </p>
+                                            </div>
+                                        </div>
                                         {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
                                     </div>
                                 </div>

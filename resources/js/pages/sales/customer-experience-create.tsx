@@ -99,6 +99,7 @@ export default function CustomerExperienceCreate({
         last_name: '',
         email: '',
         phone: '',
+        prefers_viber: false as boolean,
         alternate_phone: '',
         date_of_birth: '',
         gender: '',
@@ -297,7 +298,7 @@ export default function CustomerExperienceCreate({
                                         {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
                                     </div>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-3">
                                         <Label htmlFor="phone">Phone *</Label>
                                         <Input
                                             id="phone"
@@ -309,6 +310,21 @@ export default function CustomerExperienceCreate({
                                             required
                                         />
                                         <p className="text-xs text-muted-foreground">Format: 09XXXXXXXXX or +639XXXXXXXXX</p>
+                                        <div className="flex items-start space-x-2">
+                                            <Checkbox
+                                                id="prefers_viber"
+                                                checked={data.prefers_viber}
+                                                onCheckedChange={(checked) => setData('prefers_viber', !!checked)}
+                                            />
+                                            <div className="space-y-0.5">
+                                                <Label htmlFor="prefers_viber" className="font-normal">
+                                                    Prefer Viber for this number
+                                                </Label>
+                                                <p className="text-xs text-muted-foreground">
+                                                    We’ll prioritize Viber for calls/messages to this contact.
+                                                </p>
+                                            </div>
+                                        </div>
                                         {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
                                     </div>
                                 </div>
