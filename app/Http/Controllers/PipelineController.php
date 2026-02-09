@@ -218,6 +218,8 @@ class PipelineController extends Controller
 
         $pipeline->load(['branch', 'salesRep', 'lead']);
 
+        $canReassignBranch = $request->user()->hasRole('admin') || $request->user()->can('leads.reassign_branch');
+
         $salesReps = User::role('sales_rep')
             ->when(!$request->user()->hasRole('admin'), function ($q) use ($request) {
                 $q->where('branch_id', $request->user()->branch_id);
@@ -235,6 +237,8 @@ class PipelineController extends Controller
             'pipeline' => $pipeline,
             'salesReps' => $salesReps,
             'vehicleModels' => $vehicleModels,
+            'branches' => $canReassignBranch ? Branch::where('status', 'active')->get(['id', 'name', 'code']) : null,
+            'canReassignBranch' => $canReassignBranch,
         ]);
     }
 

@@ -134,6 +134,17 @@ export default function PMSWorkOrders({ workOrders, stats, missedPMS, filters, b
     );
     const [restoringId, setRestoringId] = useState<number | null>(null);
 
+    const exportParams = new URLSearchParams();
+    if (search) exportParams.set('search', search);
+    if (status !== 'all') exportParams.set('status', status);
+    if (priority !== 'all') exportParams.set('priority', priority);
+    if (verificationStatus !== 'all') exportParams.set('verification_status', verificationStatus);
+    if (branchId !== 'all') exportParams.set('branch_id', branchId);
+    if (hasFraudAlerts) exportParams.set('has_fraud_alerts', 'true');
+    if (isOverdue) exportParams.set('is_overdue', 'true');
+    if (includeDeleted) exportParams.set('include_deleted', '1');
+    const exportUrl = `/service/pms-work-orders-export${exportParams.toString() ? `?${exportParams.toString()}` : ''}`;
+
     const getStatusBadge = (workOrder: WorkOrder) => {
         if (workOrder.deleted_at) {
             return <Badge variant="outline" className="bg-red-100 text-red-800">Deleted</Badge>;
@@ -282,6 +293,12 @@ export default function PMSWorkOrders({ workOrders, stats, missedPMS, filters, b
                         <h1 className="text-2xl font-bold">PMS Work Orders</h1>
                     </div>
                     <div className="flex space-x-2">
+                        <a
+                            href={exportUrl}
+                            className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
+                        >
+                            Export CSV
+                        </a>
                         {can.create && (
                             <Link href="/service/pms-work-orders/create">
                                 <Button size="sm">

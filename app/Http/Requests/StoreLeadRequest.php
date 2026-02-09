@@ -39,6 +39,27 @@ class StoreLeadRequest extends FormRequest
                 'vehicle_model_id' => null,
             ]);
         }
+
+        // Normalize phone to +63 format
+        $normalize = function ($number) {
+            if (!$number) {
+                return $number;
+            }
+            $digits = preg_replace('/\\D+/', '', $number);
+            if (str_starts_with($digits, '09')) {
+                $digits = '639' . substr($digits, 2);
+            } elseif (str_starts_with($digits, '9') && strlen($digits) === 10) {
+                $digits = '63' . $digits;
+            }
+            if (!str_starts_with($digits, '63')) {
+                return $number;
+            }
+            return '+' . $digits;
+        };
+
+        $this->merge([
+            'phone' => $normalize($this->phone),
+        ]);
     }
 
     /**
@@ -51,7 +72,7 @@ class StoreLeadRequest extends FormRequest
         $rules = [
             'name' => 'required|string|min:2|max:255',
             'email' => 'required|email:rfc,dns|max:255',
-            'phone' => 'required|string|min:10|max:20',
+            'phone' => ['required', 'string', 'regex:/^\\+639\\d{9}$/'],
             'location' => 'nullable|string|max:255',
             'ip_address' => 'nullable|ip',
             'source' => 'required|in:web_form,phone,walk_in,referral,social_media',

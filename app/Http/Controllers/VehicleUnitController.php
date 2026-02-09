@@ -10,11 +10,14 @@ use App\Http\Requests\TransferVehicleRequest;
 use App\Http\Requests\UpdateVehicleStatusRequest;
 use App\Services\VehicleMovementService;
 use App\Traits\LogsActivity;
+use App\Models\Document;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class VehicleUnitController extends Controller
 {
@@ -25,6 +28,84 @@ class VehicleUnitController extends Controller
     public function __construct(VehicleMovementService $movementService)
     {
         $this->movementService = $movementService;
+    }
+
+    /**
+     * Finance-related fields guarded for non-accounting users.
+     */
+    private array $financeFields = [
+        'purchase_price',
+        'sale_price',
+        'msrp_price',
+        'srp_amount',
+        'discount_amount',
+        'net_selling_price',
+        'dp_amount',
+        'dp_date',
+        'balance_financed',
+        'financing_institution',
+        'financing_terms_months',
+        'financing_interest_rate',
+        'financing_monthly_amortization',
+        'chattel_mortgage_details',
+        'proof_of_payment_refs',
+        'freebies_total_cost',
+        'freebies_list',
+        'promo_freebies',
+    ];
+
+    /**
+     * Operational-only fields allowed for inventory users without sales/finance perms.
+     */
+    private array $inventoryOperationalFields = [
+        'status',
+        'sub_status',
+        'location',
+        'is_locked',
+    ];
+
+    private function applyWarrantyDefaults(array $data, ?VehicleUnit $unit = null): array
+    {
+        $termMonths = config('warranty.default_term_months', 36);
+
+        $startProvided = isset($data['warranty_start_date']) && $data['warranty_start_date'];
+        $endProvided = array_key_exists('warranty_end_date', $data) && $data['warranty_end_date'];
+
+        if ($startProvided && !$endProvided) {
+            $data['warranty_end_date'] = Carbon::parse($data['warranty_start_date'])->addMonths($termMonths)->toDateString();
+        }
+
+        return $data;
+    }
+
+    private function enforceFinancePermissions($request, array $validated, string $operation = 'update')
+    {
+        $user = $request->user();
+        $hasFinancePerm = $user->can('finance.edit_financials');
+
+        $financeTouched = collect($this->financeFields)
+            ->filter(fn($field) => array_key_exists($field, $validated))
+            ->isNotEmpty();
+
+        if ($financeTouched && ! $hasFinancePerm) {
+            abort(response()->json([
+                'message' => 'You are not allowed to modify financial fields.',
+            ], 403));
+        }
+
+        $isInventoryOnly = $operation === 'update'
+            && $user->can('inventory.edit')
+            && ! $user->can('sales.edit')
+            && ! $hasFinancePerm;
+
+        if ($isInventoryOnly) {
+            $disallowed = array_diff(array_keys($validated), $this->inventoryOperationalFields);
+            if (! empty($disallowed)) {
+                abort(response()->json([
+                    'message' => 'Inventory users can only update status, sub-status, location, or lock.',
+                ], 403));
+            }
+        }
     }
 
     /**
@@ -219,6 +300,9 @@ class VehicleUnitController extends Controller
     public function store(StoreVehicleUnitRequest $request)
     {
         $validated = $request->validated();
+
+        $this->enforceFinancePermissions($request, $validated, 'create');
+        $validated = $this->applyWarrantyDefaults($validated);
         
         // Handle photo uploads
         $imageUrls = [];
@@ -349,6 +433,8 @@ class VehicleUnitController extends Controller
         }
 
         $validated = $request->validated();
+        $this->enforceFinancePermissions($request, $validated);
+        $validated = $this->applyWarrantyDefaults($validated, $unit);
         $original = $unit->toArray();
         
         // Handle new photo uploads (append to existing)
@@ -398,6 +484,69 @@ class VehicleUnitController extends Controller
 
         return redirect()->route('inventory.vehicles.show', $unit->id)
             ->with('success', 'Vehicle unit updated successfully.');
+    }
+
+    public function approveRelease(Request $request, VehicleUnit $unit): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user->hasRole('admin') && !$user->can('sales.approve_release')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (!$user->hasRole(['admin', 'auditor']) && $unit->branch_id !== $user->branch_id) {
+            return response()->json(['message' => 'Unauthorized to approve this vehicle.'], 403);
+        }
+
+        $required = config('release.required_checklist', []);
+
+        $validated = $request->validate([
+            'release_checklist_status' => 'required|array',
+        ]);
+
+        $status = $validated['release_checklist_status'];
+
+        $missing = collect($required)->filter(fn($key) => !data_get($status, $key));
+        if ($missing->isNotEmpty()) {
+            return response()->json([
+                'message' => 'Checklist incomplete.',
+                'missing' => $missing->values(),
+            ], 422);
+        }
+
+        // Optional doc presence check for or_cr_ready
+        if (data_get($status, 'or_cr_ready')) {
+            $hasOrCrDoc = $unit->documents()
+                ->where('type', 'or_cr_scan')
+                ->exists();
+            if (!$hasOrCrDoc) {
+                return response()->json([
+                    'message' => 'OR/CR document required when OR/CR ready is checked.',
+                ], 422);
+            }
+        }
+
+        DB::transaction(function () use ($unit, $status, $user) {
+            $unit->update([
+                'release_checklist_status' => $status,
+                'release_approval_user_id' => $user->id,
+                'release_approved_at' => now(),
+            ]);
+        });
+
+        $this->logActivity(
+            action: 'release_approved',
+            module: 'Inventory',
+            description: "Release approved for vehicle: {$unit->stock_number}",
+            subject: $unit,
+            properties: ['approved_by' => $user->id],
+            status: 'success',
+            event: 'approved'
+        );
+
+        return response()->json([
+            'message' => 'Release approved.',
+            'data' => $unit->only(['release_checklist_status', 'release_approval_user_id', 'release_approved_at']),
+        ]);
     }
 
     /**
@@ -519,17 +668,48 @@ class VehicleUnitController extends Controller
             ], 403);
         }
 
-        if ($unit->is_locked && $request->status !== $unit->status) {
+        $allowLockedTransition = $unit->is_locked
+            && $unit->status === 'reserved'
+            && $request->status === 'sold';
+
+        if ($unit->is_locked && $request->status !== $unit->status && !$allowLockedTransition) {
             return response()->json([
                 'message' => 'Vehicle is locked. Unlock before changing status.',
             ], 422);
         }
 
         $oldStatus = $unit->status;
-        $unit->update([
+        $updateData = [
             'status' => $request->status,
             'sold_date' => $request->sold_date,
-        ]);
+        ];
+
+        // When marking as sold, ensure we have an owner and lock the record
+        if ($request->status === 'sold') {
+            $ownerId = $request->owner_id;
+
+            if (!$ownerId) {
+                $activeReservation = $unit->reservations()
+                    ->whereNotIn('status', ['cancelled'])
+                    ->latest()
+                    ->first();
+
+                if ($activeReservation) {
+                    $ownerId = $activeReservation->customer_id;
+                }
+            }
+
+            if (!$ownerId) {
+                return response()->json([
+                    'message' => 'Owner is required when marking a vehicle as sold.',
+                ], 422);
+            }
+
+            $updateData['owner_id'] = $ownerId;
+            $updateData['is_locked'] = true;
+        }
+
+        $unit->update($updateData);
 
         $this->logActivity(
             action: 'status_change',
@@ -540,6 +720,7 @@ class VehicleUnitController extends Controller
                 'changes' => [
                     'status' => ['old' => $oldStatus, 'new' => $request->status],
                     'sold_date' => $request->sold_date,
+                    'owner_id' => $unit->owner_id,
                 ],
             ],
             status: 'success',
@@ -654,105 +835,124 @@ class VehicleUnitController extends Controller
      */
     public function uploadDocuments(Request $request, $id): JsonResponse
     {
-        $unit = VehicleUnit::findOrFail($id);
-        
-        // Verify user has access to this unit's branch
+        // deprecated legacy route kept for backward compatibility
+        return $this->uploadDocument($request, VehicleUnit::findOrFail($id));
+    }
+
+    public function uploadDocument(Request $request, VehicleUnit $unit): JsonResponse
+    {
         $user = $request->user();
+
         if (!$user->hasRole(['admin', 'auditor']) && $unit->branch_id !== $user->branch_id) {
-            return response()->json([
-                'message' => 'Unauthorized to upload documents for this vehicle unit.',
-            ], 403);
+            abort(403, 'Unauthorized to upload documents for this vehicle unit.');
         }
 
-        $request->validate([
-            'documents' => 'required|array|max:10',
-            'documents.*' => 'required|file|mimes:pdf,doc,docx,xls,xlsx|max:10240', // 10MB max per document
+        if (!$user->hasRole('admin') && !$user->can('inventory.edit') && !$user->can('sales.edit')) {
+            return response()->json(['message' => 'Unauthorized to upload documents.'], 403);
+        }
+
+        $allowedTypes = config('documents.allowed_types');
+
+        $validated = $request->validate([
+            'type' => ['required', 'string', Rule::in($allowedTypes)],
+            'file' => ['required', 'file', 'max:' . config('documents.max_size_kb'), 'mimetypes:' . implode(',', config('documents.allowed_mimes'))],
         ]);
 
-        $specs = $unit->specs ?? [];
-        $existingDocuments = $specs['documents'] ?? [];
-        $uploadedDocuments = [];
+        $path = $request->file('file')->store("vehicles/{$unit->id}/documents", 'public');
 
-        foreach ($request->file('documents') as $document) {
-            $originalName = $document->getClientOriginalName();
-            $path = $document->store('vehicles/' . $unit->id . '/documents', 'public');
-            
-            $uploadedDocuments[] = [
-                'name' => $originalName,
-                'url' => '/storage/' . $path,
-                'uploaded_at' => now()->toISOString(),
-            ];
-        }
-
-        $specs['documents'] = array_merge($existingDocuments, $uploadedDocuments);
-        $unit->update(['specs' => $specs]);
+        $document = Document::create([
+            'documentable_type' => VehicleUnit::class,
+            'documentable_id' => $unit->id,
+            'type' => $validated['type'],
+            'path' => $path,
+            'filename' => $request->file('file')->getClientOriginalName(),
+            'mime' => $request->file('file')->getClientMimeType(),
+            'size' => $request->file('file')->getSize(),
+            'uploaded_by' => $user->id,
+        ]);
 
         $this->logActivity(
             action: 'documents_uploaded',
             module: 'Inventory',
-            description: "Uploaded " . count($uploadedDocuments) . " document(s) for vehicle: {$unit->stock_number}",
+            description: "Uploaded document ({$document->type}) for vehicle: {$unit->stock_number}",
             subject: $unit,
-            properties: ['uploaded_count' => count($uploadedDocuments)],
+            properties: ['document_id' => $document->id],
             status: 'success',
             event: 'updated'
         );
 
         return response()->json([
-            'message' => 'Documents uploaded successfully.',
-            'data' => [
-                'documents' => $specs['documents'],
-                'uploaded_count' => count($uploadedDocuments),
-            ],
-        ]);
+            'message' => 'Document uploaded successfully.',
+            'data' => $document,
+        ], 201);
+    }
+
+    public function listDocuments(VehicleUnit $unit): JsonResponse
+    {
+        $user = request()->user();
+
+        if (!$user->hasRole(['admin', 'auditor']) && $unit->branch_id !== $user->branch_id) {
+            abort(403, 'Unauthorized to view documents for this vehicle unit.');
+        }
+
+        $docs = $unit->documents()->get()->groupBy('type')->map(function ($items) {
+            return $items->map(function (Document $doc) {
+                return [
+                    'id' => $doc->id,
+                    'type' => $doc->type,
+                    'filename' => $doc->filename,
+                    'mime' => $doc->mime,
+                    'size' => $doc->size,
+                    'url' => \Storage::disk('public')->url($doc->path),
+                    'uploaded_at' => $doc->created_at->toIso8601String(),
+                    'uploaded_by' => $doc->uploader?->name,
+                ];
+            });
+        });
+
+        return response()->json(['data' => $docs]);
     }
 
     /**
-     * Delete a document from a vehicle unit.
+     * Delete a document from a vehicle unit (legacy route signature).
      */
     public function deleteDocument(Request $request, $id): JsonResponse
     {
         $unit = VehicleUnit::findOrFail($id);
-        
-        // Verify user has access to this unit's branch
+        $documentId = $request->input('document_id');
+        if (!$documentId) {
+            return response()->json(['message' => 'document_id is required'], 422);
+        }
+        $document = Document::findOrFail($documentId);
+        return $this->deleteDocumentForUnit($request, $unit, $document);
+    }
+
+    public function deleteDocumentForUnit(Request $request, VehicleUnit $unit, Document $document): JsonResponse
+    {
         $user = $request->user();
-        if (!$user->hasRole(['admin', 'auditor']) && $unit->branch_id !== $user->branch_id) {
-            return response()->json([
-                'message' => 'Unauthorized to delete documents for this vehicle unit.',
-            ], 403);
+
+        if (!$user->hasRole('admin')) {
+            return response()->json(['message' => 'Only admin can delete documents.'], 403);
         }
 
-        $request->validate([
-            'document_url' => 'required|string',
-        ]);
+        if ($document->documentable_id !== $unit->id || $document->documentable_type !== VehicleUnit::class) {
+            return response()->json(['message' => 'Document does not belong to this vehicle.'], 422);
+        }
 
-        $specs = $unit->specs ?? [];
-        $existingDocuments = $specs['documents'] ?? [];
-        $documentUrl = $request->document_url;
-        
-        // Remove from array
-        $updatedDocuments = array_values(array_filter($existingDocuments, fn($doc) => $doc['url'] !== $documentUrl));
-        
-        // Delete physical file
-        $path = str_replace('/storage/', '', $documentUrl);
-        \Storage::disk('public')->delete($path);
-
-        $specs['documents'] = $updatedDocuments;
-        $unit->update(['specs' => $specs]);
+        \Storage::disk('public')->delete($document->path);
+        $document->delete();
 
         $this->logActivity(
             action: 'document_deleted',
             module: 'Inventory',
-            description: "Deleted document from vehicle: {$unit->stock_number}",
+            description: "Deleted document ({$document->type}) from vehicle: {$unit->stock_number}",
             subject: $unit,
-            properties: ['deleted_document' => $documentUrl],
+            properties: ['document_id' => $document->id],
             status: 'success',
             event: 'updated'
         );
 
-        return response()->json([
-            'message' => 'Document deleted successfully.',
-            'data' => ['documents' => $specs['documents']],
-        ]);
+        return response()->json(['message' => 'Document deleted successfully.']);
     }
 
     /**

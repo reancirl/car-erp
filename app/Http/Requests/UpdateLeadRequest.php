@@ -12,14 +12,22 @@ class UpdateLeadRequest extends FormRequest
     public function authorize(): bool
     {
         $lead = $this->route('lead');
-        
+        $user = $this->user();
+
         // Check if user has permission to edit sales
-        if (!$this->user()->can('sales.edit')) {
+        if (!$user->can('sales.edit')) {
             return false;
         }
 
         // Non-admin can only edit leads from their own branch
-        if (!$this->user()->hasRole('admin') && $lead->branch_id !== $this->user()->branch_id) {
+        if (!$user->hasRole('admin') && $lead->branch_id !== $user->branch_id) {
+            return false;
+        }
+
+        // Branch reassignment: only admins (or users with explicit permission) may change branch
+        $requestedBranch = $this->input('branch_id');
+        $wantsBranchChange = $requestedBranch && (int) $requestedBranch !== (int) $lead->branch_id;
+        if ($wantsBranchChange && !$user->hasRole('admin') && !$user->can('leads.reassign_branch')) {
             return false;
         }
 
@@ -53,7 +61,7 @@ class UpdateLeadRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'name' => 'required|string|min:2|max:255',
             'email' => 'required|email:rfc,dns|max:255',
             'phone' => 'required|string|min:10|max:20',
@@ -75,8 +83,14 @@ class UpdateLeadRequest extends FormRequest
             'notes' => 'nullable|string|max:2000',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:100',
-            // Note: branch_id is NOT updatable after creation
         ];
+
+        // Only admins (or users with explicit permission) may reassign branches
+        if ($this->user()->hasRole('admin') || $this->user()->can('leads.reassign_branch')) {
+            $rules['branch_id'] = 'required|exists:branches,id';
+        }
+
+        return $rules;
     }
 
     /**

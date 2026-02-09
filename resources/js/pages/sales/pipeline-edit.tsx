@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Save, User, TrendingUp, AlertCircle } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { FormEvent } from 'react';
@@ -70,13 +71,21 @@ interface VehicleModel {
     base_price?: number;
 }
 
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
+}
+
 interface Props {
     pipeline: Pipeline;
     salesReps: SalesRep[];
     vehicleModels: VehicleModel[];
+    branches: Branch[] | null;
+    canReassignBranch: boolean;
 }
 
-export default function PipelineEdit({ pipeline, salesReps, vehicleModels }: Props) {
+export default function PipelineEdit({ pipeline, salesReps, vehicleModels, branches, canReassignBranch }: Props) {
     const { data, setData, put, processing, errors } = useForm({
         customer_name: pipeline.customer_name || '',
         customer_phone: pipeline.customer_phone || '',
@@ -94,6 +103,7 @@ export default function PipelineEdit({ pipeline, salesReps, vehicleModels }: Pro
         auto_loss_rule_enabled: pipeline.auto_loss_rule_enabled ?? true,
         follow_up_frequency: pipeline.follow_up_frequency || 'weekly',
         notes: pipeline.notes || '',
+        branch_id: canReassignBranch ? pipeline.branch.id.toString() : undefined,
     });
 
     const handleSubmit = (e: FormEvent) => {
@@ -181,6 +191,48 @@ export default function PipelineEdit({ pipeline, salesReps, vehicleModels }: Pro
                         </Button>
                     </div>
                 </div>
+                    {/* Branch Information */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Branch</CardTitle>
+                            <CardDescription>
+                                {canReassignBranch ? 'Admins can move this pipeline between branches.' : 'Branch is fixed for your access level.'}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {canReassignBranch && branches ? (
+                                <div className="space-y-2">
+                                    <Label htmlFor="branch_id">Branch *</Label>
+                                    <Select
+                                        value={data.branch_id}
+                                        onValueChange={(value) => setData('branch_id', value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select branch" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {branches.map((branch) => (
+                                                <SelectItem key={branch.id} value={branch.id.toString()}>
+                                                    {branch.name} ({branch.code})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.branch_id && (
+                                        <p className="text-sm text-red-600 flex items-center">
+                                            <AlertCircle className="h-4 w-4 mr-1" />
+                                            {errors.branch_id}
+                                        </p>
+                                    )}
+                                </div>
+                            ) : (
+                                <Badge variant="outline" className="text-base py-1 px-3">
+                                    {pipeline.branch.name} ({pipeline.branch.code})
+                                </Badge>
+                            )}
+                        </CardContent>
+                    </Card>
+
                     {/* Customer Information */}
                     <Card>
                         <CardHeader>

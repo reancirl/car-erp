@@ -112,6 +112,14 @@ export default function LeadManagement({ leads, stats, filters, branches, auth, 
         file: null,
     });
 
+    const exportParams = new URLSearchParams();
+    if (search) exportParams.set('search', search);
+    if (status !== 'all') exportParams.set('status', status);
+    if (source !== 'all') exportParams.set('source', source);
+    if (branchId !== 'all') exportParams.set('branch_id', branchId);
+    if (leadScore !== 'all') exportParams.set('lead_score', leadScore);
+    const exportUrl = `/sales/lead-management-export${exportParams.toString() ? `?${exportParams.toString()}` : ''}`;
+
     const handleFilter = (e: FormEvent) => {
         e.preventDefault();
         router.get('/sales/lead-management', {
@@ -259,6 +267,12 @@ export default function LeadManagement({ leads, stats, filters, branches, auth, 
                         <h1 className="text-2xl font-bold">Lead Management</h1>
                     </div>
                     <div className="flex space-x-2">
+                        <a
+                            href={exportUrl}
+                            className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
+                        >
+                            Export CSV
+                        </a>
                         {canCreate && (
                             <Link href="/sales/lead-management/create">
                                 <Button size="sm">

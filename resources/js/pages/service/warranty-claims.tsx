@@ -117,6 +117,15 @@ export default function WarrantyClaims({ claims, stats, filters, branches, auth 
     const canDelete = permissions.includes('warranty.delete');
     const canRestore = permissions.includes('warranty.create');
 
+    const exportParams = new URLSearchParams();
+    if (search) exportParams.set('search', search);
+    if (status !== 'all') exportParams.set('status', status);
+    if (claimType !== 'all') exportParams.set('claim_type', claimType);
+    if (warrantyType !== 'all') exportParams.set('warranty_type', warrantyType);
+    if (branchId !== 'all') exportParams.set('branch_id', branchId);
+    if (includeDeleted) exportParams.set('include_deleted', '1');
+    const exportUrl = `/service/warranty-claims-export${exportParams.toString() ? `?${exportParams.toString()}` : ''}`;
+
     const handleFilter = () => {
         router.get('/service/warranty-claims', {
             search: search || undefined,
@@ -251,10 +260,13 @@ export default function WarrantyClaims({ claims, stats, filters, branches, auth 
                         <h1 className="text-2xl font-bold">Warranty Claims</h1>
                     </div>
                     <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
+                        <a
+                            href={exportUrl}
+                            className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
+                        >
                             <Download className="h-4 w-4 mr-2" />
-                            Export Report
-                        </Button>
+                            Export CSV
+                        </a>
                         {canCreate && (
                             <Link href="/service/warranty-claims/create">
                                 <Button size="sm">

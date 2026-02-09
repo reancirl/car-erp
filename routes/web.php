@@ -154,6 +154,9 @@ Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->gr
     Route::get('/pms-work-orders', [\App\Http\Controllers\WorkOrderController::class, 'index'])
         ->name('pms-work-orders.index')
         ->middleware('permission:pms-work-orders.view');
+    Route::get('/pms-work-orders-export', [\App\Http\Controllers\WorkOrderController::class, 'export'])
+        ->name('pms-work-orders.export')
+        ->middleware('permission:pms-work-orders.view');
 
     // Create (show form)
     Route::get('/pms-work-orders/create', [\App\Http\Controllers\WorkOrderController::class, 'create'])
@@ -211,6 +214,9 @@ Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->gr
     Route::get('/warranty-claims', [\App\Http\Controllers\WarrantyClaimController::class, 'index'])
         ->name('warranty-claims.index')
         ->middleware('permission:warranty.view');
+    Route::get('/warranty-claims-export', [\App\Http\Controllers\WarrantyClaimController::class, 'export'])
+        ->name('warranty-claims.export')
+        ->middleware('permission:warranty.view');
 
     // Create (show form)
     Route::get('/warranty-claims/create', [\App\Http\Controllers\WarrantyClaimController::class, 'create'])
@@ -267,6 +273,7 @@ Route::middleware(['auth', 'verified'])->prefix('service')->name('service.')->gr
 Route::middleware(['auth', 'verified', 'permission:sales.view'])->prefix('sales')->name('sales.')->group(function () {
     // Lead Management Routes (Resource Controller)
     Route::get('/lead-management', [\App\Http\Controllers\LeadController::class, 'index'])->name('lead-management');
+    Route::get('/lead-management-export', [\App\Http\Controllers\LeadController::class, 'export'])->name('lead-management.export');
     Route::get('/lead-management/create', [\App\Http\Controllers\LeadController::class, 'create'])->name('lead-management.create')->middleware('permission:sales.create');
     Route::post('/lead-management', [\App\Http\Controllers\LeadController::class, 'store'])->name('lead-management.store')->middleware('permission:sales.create');
     Route::get('/lead-management/import-template', [\App\Http\Controllers\LeadController::class, 'downloadTemplate'])->name('lead-management.import-template')->middleware('permission:sales.create');
@@ -445,6 +452,9 @@ Route::middleware(['auth', 'verified'])->prefix('inventory')->group(function () 
     Route::get('/parts-inventory', [\App\Http\Controllers\PartInventoryController::class, 'index'])
         ->name('parts-inventory.index')
         ->middleware('permission:inventory.view');
+    Route::get('/parts-inventory-export', [\App\Http\Controllers\PartInventoryController::class, 'export'])
+        ->name('parts-inventory.export')
+        ->middleware('permission:inventory.view');
     
     Route::get('/parts-inventory/create', [\App\Http\Controllers\PartInventoryController::class, 'create'])
         ->name('parts-inventory.create')
@@ -530,8 +540,13 @@ Route::middleware(['auth', 'verified'])->prefix('inventory')->group(function () 
         // File uploads
         Route::post('/units/{id}/upload-photos', [\App\Http\Controllers\VehicleUnitController::class, 'uploadPhotos'])->name('inventory.units.upload-photos');
         Route::delete('/units/{id}/delete-photo', [\App\Http\Controllers\VehicleUnitController::class, 'deletePhoto'])->name('inventory.units.delete-photo');
-        Route::post('/units/{id}/upload-documents', [\App\Http\Controllers\VehicleUnitController::class, 'uploadDocuments'])->name('inventory.units.upload-documents');
-        Route::delete('/units/{id}/delete-document', [\App\Http\Controllers\VehicleUnitController::class, 'deleteDocument'])->name('inventory.units.delete-document');
+        Route::post('/units/{unit}/documents', [\App\Http\Controllers\VehicleUnitController::class, 'uploadDocument'])->name('inventory.units.documents.upload');
+        Route::delete('/units/{unit}/documents/{document}', [\App\Http\Controllers\VehicleUnitController::class, 'deleteDocumentForUnit'])->name('inventory.units.documents.delete');
+        Route::post('/units/{unit}/approve-release', [\App\Http\Controllers\VehicleUnitController::class, 'approveRelease'])->name('inventory.units.approve-release');
+    });
+
+    Route::middleware(['permission:inventory.view'])->group(function () {
+        Route::get('/units/{unit}/documents', [\App\Http\Controllers\VehicleUnitController::class, 'listDocuments'])->name('inventory.units.documents');
     });
     
     Route::middleware(['permission:inventory.delete'])->group(function () {

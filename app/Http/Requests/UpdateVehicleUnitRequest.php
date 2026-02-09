@@ -35,6 +35,27 @@ class UpdateVehicleUnitRequest extends FormRequest
             ]);
         }
 
+        // Normalize JSON payloads that can arrive as strings
+        $jsonFields = [
+            'gps_details',
+            'insurance_details',
+            'promo_freebies',
+            'chattel_mortgage_details',
+            'proof_of_payment_refs',
+            'or_numbers',
+            'release_checklist_status',
+            'freebies_list',
+        ];
+
+        foreach ($jsonFields as $field) {
+            if ($this->has($field) && is_string($this->{$field})) {
+                $decoded = json_decode($this->{$field}, true);
+                $this->merge([
+                    $field => $decoded ?? [],
+                ]);
+            }
+        }
+
         // Default location to branch if not provided
         if (!$this->has('location')) {
             $this->merge([

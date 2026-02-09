@@ -12,14 +12,22 @@ class UpdatePipelineRequest extends FormRequest
     public function authorize(): bool
     {
         $pipeline = $this->route('pipeline');
-        
+        $user = $this->user();
+
         // Check if user has permission to edit sales
-        if (!$this->user()->can('sales.edit')) {
+        if (!$user->can('sales.edit')) {
             return false;
         }
 
         // Non-admin can only edit pipelines from their own branch
-        if (!$this->user()->hasRole('admin') && $pipeline->branch_id !== $this->user()->branch_id) {
+        if (!$user->hasRole('admin') && $pipeline->branch_id !== $user->branch_id) {
+            return false;
+        }
+
+        // Branch reassignment only for admins or explicitly permitted users
+        $requestedBranch = $this->input('branch_id');
+        $wantsBranchChange = $requestedBranch && (int) $requestedBranch !== (int) $pipeline->branch_id;
+        if ($wantsBranchChange && !$user->hasRole('admin') && !$user->can('leads.reassign_branch')) {
             return false;
         }
 
@@ -53,7 +61,7 @@ class UpdatePipelineRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'customer_name' => 'required|string|min:2|max:255',
             'customer_phone' => 'required|string|regex:/^\+?63[-\s]?[0-9]{1,2}[-\s]?[0-9]{3,4}[-\s]?[0-9]{4}$/',
             'customer_email' => 'nullable|email:rfc,dns|max:255',
@@ -72,8 +80,13 @@ class UpdatePipelineRequest extends FormRequest
             'notes' => 'nullable|string|max:2000',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:100',
-            // Note: branch_id is NOT updatable after creation
         ];
+
+        if ($this->user()->hasRole('admin') || $this->user()->can('leads.reassign_branch')) {
+            $rules['branch_id'] = 'required|exists:branches,id';
+        }
+
+        return $rules;
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Http\Requests\StoreLeadRequest;
 use App\Http\Requests\UpdateLeadRequest;
 use App\Traits\LogsActivity;
+use App\Services\CsvExportService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Validator;
@@ -25,37 +26,7 @@ class LeadController extends Controller
         $user = $request->user();
 
         // Base query with branch filtering
-        $query = Lead::with(['branch', 'assignedUser'])
-            ->when($request->include_deleted, function ($q) {
-                $q->withTrashed();
-            })
-            ->when(!$user->hasRole('admin'), function ($q) use ($user) {
-                // Non-admin: Only see leads from their branch
-                $q->forUserBranch($user);
-            })
-            ->when($request->branch_id && $user->hasRole('admin'), function ($q) use ($request) {
-                // Admin: Can filter by branch
-                $q->where('branch_id', $request->branch_id);
-            })
-            ->when($request->search, function ($q, $search) {
-                $q->where(function ($query) use ($search) {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('lead_id', 'like', "%{$search}%");
-                });
-            })
-            ->when($request->status, fn($q, $status) => $q->where('status', $status))
-            ->when($request->source, fn($q, $source) => $q->where('source', $source))
-            ->when($request->lead_score, function ($q, $score) {
-                if ($score === 'high') {
-                    $q->where('lead_score', '>=', 80);
-                } elseif ($score === 'medium') {
-                    $q->whereBetween('lead_score', [60, 79]);
-                } elseif ($score === 'low') {
-                    $q->where('lead_score', '<', 60);
-                }
-            });
+        $query = $this->leadQuery($request);
 
         $leads = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
 
@@ -107,6 +78,67 @@ class LeadController extends Controller
             'branches' => $user->hasRole('admin') ? Branch::where('status', 'active')->get() : null,
             'upcomingFollowups' => $upcomingFollowups,
         ]);
+    }
+
+    /**
+     * Export leads to CSV (streamed).
+     */
+    public function export(Request $request, CsvExportService $csv)
+    {
+        $user = $request->user();
+        $query = $this->leadQuery($request)->orderBy('created_at', 'desc');
+
+        $columns = [
+            'Lead ID' => 'lead_id',
+            'Name' => 'name',
+            'Email' => 'email',
+            'Phone' => 'phone',
+            'Status' => 'status',
+            'Priority' => 'priority',
+            'Source' => 'source',
+            'Branch' => fn($lead) => $lead->branch?->name,
+            'Assigned To' => fn($lead) => $lead->assignedUser?->name,
+            'Next Follow Up' => fn($lead) => optional($lead->next_followup_at)->toIso8601String(),
+            'Created At' => fn($lead) => optional($lead->created_at)->toIso8601String(),
+        ];
+
+        return $csv->streamQuery(
+            $query,
+            $columns,
+            'leads_' . now()->format('Ymd_His') . '.csv'
+        );
+    }
+
+    /**
+     * Shared lead query with filters and branch scoping.
+     */
+    private function leadQuery(Request $request)
+    {
+        $user = $request->user();
+
+        return Lead::with(['branch', 'assignedUser'])
+            ->when($request->include_deleted, fn($q) => $q->withTrashed())
+            ->when(!$user->hasRole('admin'), fn($q) => $q->forUserBranch($user))
+            ->when($request->branch_id && $user->hasRole('admin'), fn($q) => $q->where('branch_id', $request->branch_id))
+            ->when($request->search, function ($q, $search) {
+                $q->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('lead_id', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->status, fn($q, $status) => $q->where('status', $status))
+            ->when($request->source, fn($q, $source) => $q->where('source', $source))
+            ->when($request->lead_score, function ($q, $score) {
+                if ($score === 'high') {
+                    $q->where('lead_score', '>=', 80);
+                } elseif ($score === 'medium') {
+                    $q->whereBetween('lead_score', [60, 79]);
+                } elseif ($score === 'low') {
+                    $q->where('lead_score', '<', 60);
+                }
+            });
     }
 
     /**
@@ -404,6 +436,8 @@ class LeadController extends Controller
 
         $lead->load(['branch', 'assignedUser']);
 
+        $canReassignBranch = $request->user()->hasRole('admin') || $request->user()->can('leads.reassign_branch');
+
         $salesReps = User::role('sales_rep')
             ->when(!$request->user()->hasRole('admin'), function ($q) use ($request) {
                 $q->where('branch_id', $request->user()->branch_id);
@@ -421,6 +455,8 @@ class LeadController extends Controller
             'lead' => $lead,
             'salesReps' => $salesReps,
             'vehicleModels' => $vehicleModels,
+            'branches' => $canReassignBranch ? Branch::where('status', 'active')->get(['id', 'name', 'code']) : null,
+            'canReassignBranch' => $canReassignBranch,
         ]);
     }
 

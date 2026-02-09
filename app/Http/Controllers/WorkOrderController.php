@@ -13,6 +13,7 @@ use App\Models\WorkOrder;
 use App\Models\WorkOrderPart;
 use App\Models\WorkOrderPhoto;
 use App\Services\OdometerService;
+use App\Services\CsvExportService;
 use App\Services\PhotoUploadService;
 use App\Traits\LogsActivity;
 use Illuminate\Http\JsonResponse;
@@ -127,6 +128,70 @@ class WorkOrderController extends Controller
         ]);
     }
 
+    /**
+     * Export work orders / PMS to CSV.
+     */
+    public function export(Request $request, CsvExportService $csv)
+    {
+        $query = $this->workOrderQuery($request)->orderBy('created_at', 'desc');
+
+        $columns = [
+            'Work Order #' => 'work_order_number',
+            'Status' => 'status',
+            'Priority' => 'priority',
+            'Service Type' => fn($wo) => $wo->serviceType?->name,
+            'Branch' => fn($wo) => $wo->branch?->name,
+            'Customer' => 'customer_name',
+            'Vehicle VIN' => 'vehicle_vin',
+            'Plate' => 'vehicle_plate_number',
+            'Scheduled At' => fn($wo) => optional($wo->scheduled_at)->toIso8601String(),
+            'Due Date' => fn($wo) => optional($wo->due_date)->toDateString(),
+            'Assigned To' => fn($wo) => $wo->assignedTechnician?->name,
+            'Estimated Hours' => 'estimated_hours',
+            'Actual Hours' => 'actual_hours',
+            'Estimated Cost' => 'estimated_cost',
+            'Actual Cost' => 'actual_cost',
+            'Created At' => fn($wo) => optional($wo->created_at)->toIso8601String(),
+        ];
+
+        return $csv->streamQuery(
+            $query,
+            $columns,
+            'work_orders_' . now()->format('Ymd_His') . '.csv'
+        );
+    }
+
+    private function workOrderQuery(Request $request)
+    {
+        $user = $request->user();
+        $isElevated = $user->hasAnyRole(['admin', 'auditor']);
+        $isTechnician = $user->hasRole('technician');
+
+        return WorkOrder::with(['branch', 'serviceType', 'assignedTechnician'])
+            ->when($request->include_deleted, fn($q) => $q->withTrashed())
+            ->when(!$isElevated, function ($q) use ($user, $isTechnician) {
+                $q->where('branch_id', $user->branch_id);
+                if ($isTechnician) {
+                    $q->where('assigned_to', $user->id);
+                }
+            })
+            ->when($isElevated && $request->branch_id,
+                fn($q, $branchId) => $q->where('branch_id', $branchId))
+            ->when($request->search, function ($q, $search) {
+                $q->where(function ($query) use ($search) {
+                    $query->where('work_order_number', 'like', "%{$search}%")
+                        ->orWhere('vehicle_vin', 'like', "%{$search}%")
+                        ->orWhere('vehicle_plate_number', 'like', "%{$search}%")
+                        ->orWhere('customer_name', 'like', "%{$search}%")
+                        ->orWhere('reference_number', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->status, fn($q, $status) => $q->where('status', $status))
+            ->when($request->priority, fn($q, $priority) => $q->where('priority', $priority))
+            ->when($request->verification_status, fn($q, $vs) => $q->where('verification_status', $vs))
+            ->when($request->has_fraud_alerts === 'true', fn($q) => $q->withFraudAlerts())
+            ->when($request->is_overdue === 'true', fn($q) => $q->overdue());
+    }
     /**
      * Show the form for creating a new work order.
      */

@@ -77,6 +77,7 @@ test('validates master specs with known keys and correct types', function () {
         'safety.airbags' => 6,
         'comfort.sunroof' => true,
         'dimension.ground_clearance' => 200.5,
+        'required.attribute' => 'value',
     ];
 
     $validated = $validator->validate($specs, 'master');
@@ -111,6 +112,7 @@ test('validates enum values correctly', function () {
 
     $specs = [
         'emissions.euro_class' => 'Euro 5',
+        'required.attribute' => 'value',
     ];
 
     $validated = $validator->validate($specs, 'master');
@@ -155,15 +157,20 @@ test('rejects master-only attributes when validating unit scope', function () {
 test('validates both-scoped attributes for any scope', function () {
     $validator = new AttributeSpecValidator();
 
-    $specs = [
+    $masterSpecs = [
+        'safety.airbags' => 6,
+        'required.attribute' => 'value',
+    ];
+
+    $unitSpecs = [
         'safety.airbags' => 6,
     ];
 
-    $masterValidated = $validator->validate($specs, 'master');
-    $unitValidated = $validator->validate($specs, 'unit');
+    $masterValidated = $validator->validate($masterSpecs, 'master');
+    $unitValidated = $validator->validate($unitSpecs, 'unit');
 
-    expect($masterValidated)->toBe($specs)
-        ->and($unitValidated)->toBe($specs);
+    expect($masterValidated)->toBe($masterSpecs)
+        ->and($unitValidated)->toBe($unitSpecs);
 });
 
 test('enforces required attributes', function () {
@@ -196,6 +203,7 @@ test('validates decimal types correctly', function () {
 
     $specs = [
         'dimension.ground_clearance' => 200.5,
+        'required.attribute' => 'value',
     ];
 
     $validated = $validator->validate($specs, 'master');
@@ -208,6 +216,7 @@ test('validates boolean types correctly', function () {
 
     $specs = [
         'comfort.sunroof' => true,
+        'required.attribute' => 'value',
     ];
 
     $validated = $validator->validate($specs, 'master');

@@ -25,6 +25,7 @@ class UpdateVehicleStatusRequest extends FormRequest
         return [
             'status' => ['required', Rule::in(['in_stock', 'reserved', 'sold', 'in_transit', 'transferred', 'disposed'])],
             'sold_date' => 'nullable|required_if:status,sold|date|before_or_equal:today',
+            'owner_id' => 'nullable|exists:customers,id',
         ];
     }
 

@@ -49,6 +49,16 @@ export default function PartsInventory({ parts, stats, filters, branches, auth }
     const canDelete = permissions.includes('inventory.delete');
     const canRestore = permissions.includes('inventory.create');
 
+    const exportParams = new URLSearchParams();
+    if (search) exportParams.set('search', search);
+    if (filters.category) exportParams.set('category', filters.category);
+    if (filters.status) exportParams.set('status', filters.status);
+    if (filters.condition) exportParams.set('condition', filters.condition);
+    if (filters.stock_status) exportParams.set('stock_status', filters.stock_status);
+    if (filters.branch_id) exportParams.set('branch_id', filters.branch_id.toString());
+    if (filters.include_deleted) exportParams.set('include_deleted', '1');
+    const exportUrl = `/inventory/parts-inventory-export${exportParams.toString() ? `?${exportParams.toString()}` : ''}`;
+
     const handleSearch = (value: string) => {
         setSearch(value);
         router.get(
@@ -186,6 +196,12 @@ export default function PartsInventory({ parts, stats, filters, branches, auth }
                         <h1 className="text-2xl font-bold">Parts Inventory</h1>
                     </div>
                     <div className="flex space-x-2">
+                        <a
+                            href={exportUrl}
+                            className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
+                        >
+                            Export CSV
+                        </a>
                         <a href={route('parts-inventory.scanner')} target="_blank" rel="noopener noreferrer">
                             <Button variant="outline">
                                 <Scan className="h-4 w-4 mr-2" />

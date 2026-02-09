@@ -48,6 +48,28 @@ class UpdateCustomerRequest extends FormRequest
         if ($this->assigned_to === '') {
             $this->merge(['assigned_to' => null]);
         }
+
+        // Normalize phones to +63 format
+        $normalize = function ($number) {
+            if (!$number) {
+                return $number;
+            }
+            $digits = preg_replace('/\D+/', '', $number);
+            if (str_starts_with($digits, '09')) {
+                $digits = '639' . substr($digits, 2);
+            } elseif (str_starts_with($digits, '9') && strlen($digits) === 10) {
+                $digits = '63' . $digits;
+            }
+            if (!str_starts_with($digits, '63')) {
+                return $number;
+            }
+            return '+' . $digits;
+        };
+
+        $this->merge([
+            'phone' => $normalize($this->phone),
+            'alternate_phone' => $normalize($this->alternate_phone),
+        ]);
     }
 
     /**
@@ -63,9 +85,9 @@ class UpdateCustomerRequest extends FormRequest
             'first_name' => 'required|string|min:2|max:255',
             'last_name' => 'required|string|min:2|max:255',
             'email' => 'required|email:rfc,dns|max:255|unique:customers,email,' . $customerId,
-            'phone' => ['required', 'string', 'regex:/^(09|\+639)\d{9}$/'],
+            'phone' => ['required', 'string', 'regex:/^\+639\d{9}$/'],
             'prefers_viber' => ['boolean'],
-            'alternate_phone' => ['nullable', 'string', 'regex:/^(09|\+639)\d{9}$/'],
+            'alternate_phone' => ['nullable', 'string', 'regex:/^\+639\d{9}$/'],
             'date_of_birth' => 'nullable|date|before:today',
             'gender' => 'nullable|in:male,female,other,prefer_not_to_say',
             'address' => 'nullable|string|max:500',
@@ -118,8 +140,8 @@ class UpdateCustomerRequest extends FormRequest
             'email.email' => 'Please enter a valid email address.',
             'email.unique' => 'This email is already registered.',
             'phone.required' => 'Phone number is required.',
-            'phone.regex' => 'Phone number must be a valid Philippine mobile number (e.g., 09171234567 or +639171234567).',
-            'alternate_phone.regex' => 'Alternate phone must be a valid Philippine mobile number (e.g., 09171234567 or +639171234567).',
+            'phone.regex' => 'Phone number must be in +63XXXXXXXXXX format (e.g., +639171234567).',
+            'alternate_phone.regex' => 'Alternate phone must be in +63XXXXXXXXXX format (e.g., +639171234567).',
             'postal_code.regex' => 'Postal code must be a valid 4-digit Philippine ZIP code (e.g., 1000).',
             'date_of_birth.before' => 'Date of birth must be in the past.',
             'customer_type.required' => 'Customer type is required.',

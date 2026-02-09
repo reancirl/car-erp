@@ -7,6 +7,7 @@ use App\Http\Requests\UpdatePartInventoryRequest;
 use App\Models\Branch;
 use App\Models\PartInventory;
 use App\Traits\LogsActivity;
+use App\Services\CsvExportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -85,6 +86,65 @@ class PartInventoryController extends Controller
                 ? Branch::where('status', 'active')->get() 
                 : null,
         ]);
+    }
+
+    /**
+     * Export parts inventory to CSV.
+     */
+    public function export(Request $request, CsvExportService $csv)
+    {
+        $query = $this->partsQuery($request)->orderBy('created_at', 'desc');
+
+        $columns = [
+            'Part Number' => 'part_number',
+            'Part Name' => 'part_name',
+            'Category' => 'category',
+            'Quantity On Hand' => 'quantity_on_hand',
+            'Quantity Reserved' => 'quantity_reserved',
+            'Status' => 'status',
+            'Condition' => 'condition',
+            'Branch' => fn($part) => $part->branch?->name,
+            'Unit Cost' => 'unit_cost',
+            'Selling Price' => 'selling_price',
+            'Is Fast Moving' => fn($part) => $part->is_fast_moving ? 'yes' : 'no',
+            'Last Received' => fn($part) => optional($part->last_received_date)->toDateString(),
+            'Updated At' => fn($part) => optional($part->updated_at)->toIso8601String(),
+        ];
+
+        return $csv->streamQuery(
+            $query,
+            $columns,
+            'parts_inventory_' . now()->format('Ymd_His') . '.csv'
+        );
+    }
+
+    private function partsQuery(Request $request)
+    {
+        $user = $request->user();
+
+        return PartInventory::with(['branch'])
+            ->when($request->include_deleted, fn($q) => $q->withTrashed())
+            ->when(!$user->hasRole('admin') && !$user->hasRole('auditor'),
+                fn($q) => $q->forUserBranch($user))
+            ->when($request->branch_id && ($user->hasRole('admin') || $user->hasRole('auditor')),
+                fn($q) => $q->where('branch_id', $request->branch_id))
+            ->when($request->search, function ($q, $search) {
+                $q->where(function ($query) use ($search) {
+                    $query->where('part_name', 'like', "%{$search}%")
+                        ->orWhere('part_number', 'like', "%{$search}%")
+                        ->orWhere('manufacturer', 'like', "%{$search}%")
+                        ->orWhere('manufacturer_part_number', 'like', "%{$search}%")
+                        ->orWhere('oem_part_number', 'like', "%{$search}%")
+                        ->orWhere('barcode', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->category, fn($q, $category) => $q->where('category', $category))
+            ->when($request->status, fn($q, $status) => $q->where('status', $status))
+            ->when($request->condition, fn($q, $condition) => $q->where('condition', $condition))
+            ->when($request->stock_status === 'low_stock', fn($q) => $q->lowStock())
+            ->when($request->stock_status === 'out_of_stock', fn($q) => $q->outOfStock())
+            ->when($request->stock_status === 'in_stock', fn($q) => $q->inStock());
     }
 
     /**

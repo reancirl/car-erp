@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Http\Requests\StoreWarrantyClaimRequest;
 use App\Http\Requests\UpdateWarrantyClaimRequest;
 use App\Traits\LogsActivity;
+use App\Services\CsvExportService;
 use App\Services\PhotoUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -86,6 +87,68 @@ class WarrantyClaimController extends Controller
             'filters' => $request->only(['search', 'status', 'claim_type', 'warranty_type', 'branch_id', 'include_deleted']),
             'branches' => $user->hasRole('admin') ? Branch::where('status', 'active')->get() : null,
         ]);
+    }
+
+    /**
+     * Export warranty claims to CSV.
+     */
+    public function export(Request $request, CsvExportService $csv)
+    {
+        $user = $request->user();
+        $query = $this->warrantyQuery($request);
+
+        $columns = [
+            'Claim ID' => 'claim_id',
+            'Status' => 'status',
+            'Claim Type' => 'claim_type',
+            'Warranty Type' => 'warranty_type',
+            'Warranty Number' => 'warranty_number',
+            'Customer' => fn($claim) => $claim->customer?->full_name ?? ($claim->customer?->first_name ? trim($claim->customer->first_name.' '.$claim->customer->last_name) : null),
+            'Vehicle VIN' => fn($claim) => $claim->vehicleUnit?->vin,
+            'Branch' => fn($claim) => $claim->branch?->name,
+            'Claim Date' => fn($claim) => optional($claim->claim_date)->toDateString(),
+            'Incident Date' => fn($claim) => optional($claim->incident_date)->toDateString(),
+            'Total Claimed' => fn($claim) => $claim->total_claimed_amount,
+            'Approved Amount' => fn($claim) => $claim->approved_amount,
+            'Created At' => fn($claim) => optional($claim->created_at)->toIso8601String(),
+        ];
+
+        return $csv->streamQuery(
+            $query,
+            $columns,
+            'warranty_claims_' . now()->format('Ymd_His') . '.csv'
+        );
+    }
+
+    private function warrantyQuery(Request $request)
+    {
+        $user = $request->user();
+
+        return WarrantyClaim::with(['branch', 'customer', 'vehicleUnit', 'assignedUser'])
+            ->when($request->include_deleted, function ($q) {
+                $q->withTrashed();
+            })
+            ->when(!$user->hasRole('admin'), function ($q) use ($user) {
+                $q->forUserBranch($user);
+            })
+            ->when($request->branch_id && $user->hasRole('admin'), function ($q) use ($request) {
+                $q->where('branch_id', $request->branch_id);
+            })
+            ->when($request->search, function ($q, $search) {
+                $q->where(function ($query) use ($search) {
+                    $query->where('claim_id', 'like', "%{$search}%")
+                        ->orWhere('failure_description', 'like', "%{$search}%")
+                        ->orWhere('warranty_number', 'like', "%{$search}%")
+                        ->orWhereHas('customer', function ($q) use ($search) {
+                            $q->where('first_name', 'like', "%{$search}%")
+                                ->orWhere('last_name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->when($request->status, fn($q, $status) => $q->where('status', $status))
+            ->when($request->claim_type, fn($q, $type) => $q->where('claim_type', $type))
+            ->when($request->warranty_type, fn($q, $type) => $q->where('warranty_type', $type));
     }
 
     /**

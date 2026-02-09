@@ -84,6 +84,8 @@ class VehicleUnit extends Model
         'freebies_payer',
         'warranty_start_date',
         'warranty_end_date',
+        'release_checklist_status',
+        'release_approved_at',
     ];
 
     /**
@@ -125,6 +127,8 @@ class VehicleUnit extends Model
         'freebies_total_cost' => 'decimal:2',
         'warranty_start_date' => 'date',
         'warranty_end_date' => 'date',
+        'release_checklist_status' => 'array',
+        'release_approved_at' => 'datetime',
     ];
 
     /**
@@ -172,6 +176,13 @@ class VehicleUnit extends Model
     public function movements(): HasMany
     {
         return $this->hasMany(VehicleMovement::class)->orderBy('transfer_date', 'desc');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(Document::class, 'documentable_id')
+            ->where('documentable_type', self::class)
+            ->orderBy('created_at', 'desc');
     }
 
     /**

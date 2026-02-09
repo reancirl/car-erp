@@ -77,13 +77,21 @@ interface VehicleModel {
     body_type: string;
 }
 
+interface Branch {
+    id: number;
+    name: string;
+    code: string;
+}
+
 interface Props {
     lead: Lead;
     salesReps: SalesRep[];
     vehicleModels: VehicleModel[];
+    branches: Branch[] | null;
+    canReassignBranch: boolean;
 }
 
-export default function LeadEdit({ lead, salesReps, vehicleModels }: Props) {
+export default function LeadEdit({ lead, salesReps, vehicleModels, branches, canReassignBranch }: Props) {
     const { data, setData, put, processing, errors } = useForm({
         name: lead.name || '',
         email: lead.email || '',
@@ -104,6 +112,7 @@ export default function LeadEdit({ lead, salesReps, vehicleModels }: Props) {
         contact_method: lead.contact_method || '',
         notes: lead.notes || '',
         tags: lead.tags || [],
+        branch_id: canReassignBranch ? lead.branch.id.toString() : undefined,
     });
 
     const availableTags = [
@@ -190,18 +199,42 @@ export default function LeadEdit({ lead, salesReps, vehicleModels }: Props) {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Main Form */}
                         <div className="lg:col-span-2 space-y-6">
-                            {/* Branch Info (Read-only) */}
+                            {/* Branch Info */}
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Branch Information</CardTitle>
-                                    <CardDescription>Branch assignment cannot be changed after creation</CardDescription>
+                                    <CardDescription>
+                                        {canReassignBranch ? 'Admins can reassign a lead to a different branch with audit log.' : 'Branch assignment is fixed for non-admin users.'}
+                                    </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="flex items-center space-x-2">
-                                        <Badge variant="outline" className="text-base py-1 px-3">
-                                            {lead.branch.name} ({lead.branch.code})
-                                        </Badge>
-                                    </div>
+                                    {canReassignBranch && branches ? (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="branch_id">Branch *</Label>
+                                            <Select
+                                                value={data.branch_id}
+                                                onValueChange={(value) => setData('branch_id', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select branch" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {branches.map((branch) => (
+                                                        <SelectItem key={branch.id} value={branch.id.toString()}>
+                                                            {branch.name} ({branch.code})
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.branch_id && <p className="text-sm text-red-600">{errors.branch_id}</p>}
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center space-x-2">
+                                            <Badge variant="outline" className="text-base py-1 px-3">
+                                                {lead.branch.name} ({lead.branch.code})
+                                            </Badge>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
 

@@ -17,10 +17,10 @@ class DatabaseSeeder extends Seeder
         // Seed roles, permissions, branches, and supporting data
         $this->call([
             RolePermissionSeeder::class,
-            BranchSeeder::class,
-            AttributeDefinitionsSeeder::class,
-            VehicleModelPermissionsSeeder::class,
-            TestUsersSeeder::class,
+            // BranchSeeder::class,
+            // AttributeDefinitionsSeeder::class,
+            // VehicleModelPermissionsSeeder::class,
+            // TestUsersSeeder::class,
         ]);
 
         // Ensure there is a default admin user we can reference in seed data

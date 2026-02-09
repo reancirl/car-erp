@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Car, Edit, ArrowLeft, Share2, Printer, Download, MapPin, Calendar, User, PhilippinePeso, Fuel, Gauge, Palette, Settings, History, Camera, FileText, CheckCircle, Clock, AlertTriangle, Star, TestTube, Globe, Upload, Lock } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useEffect } from 'react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 
@@ -148,8 +150,57 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
     const vehicleFeatures = vehicle.specs?.features || [];
     
     // Parse documents from vehicle specs
-    const vehicleDocuments = vehicle.specs?.documents || [];
+    const [documents, setDocuments] = useState<Record<string, any[]>>(vehicle.documents ?? {});
+    const [docType, setDocType] = useState<string>('');
+    const [file, setFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
 
+    const allowedDocTypes = [
+        'proof_of_payment',
+        'or_cr_scan',
+        'financing_contract',
+        'insurance_policy',
+        'delivery_receipt',
+        'lto_doc',
+        'doe_approval',
+        'spec_sheet',
+        'signature_photo',
+        'signed_letter',
+    ];
+
+    const fetchDocuments = async () => {
+        const res = await fetch(route('inventory.units.documents', vehicle.id));
+        if (res.ok) {
+            const json = await res.json();
+            setDocuments(json.data);
+        }
+    };
+
+    useEffect(() => {
+        fetchDocuments();
+    }, []);
+
+    const handleUpload = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!file || !docType) return;
+        setUploading(true);
+        const form = new FormData();
+        form.append('type', docType);
+        form.append('file', file);
+        const res = await fetch(route('inventory.units.documents.upload', vehicle.id), {
+            method: 'POST',
+            body: form,
+            headers: {
+                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+            },
+        });
+        setUploading(false);
+        if (res.ok) {
+            await fetchDocuments();
+            setDocType('');
+            setFile(null);
+        }
+    };
     const getStatusBadge = (status: string) => {
         const statusConfig = {
             in_stock: { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'In Stock' },
@@ -642,71 +693,73 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                             </CardContent>
                         </Card>
 
-                        {/* Registration & Compliance */}
+                        {/* Sales & Compliance Documents */}
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
                                     <FileText className="h-5 w-5" />
-                                    <span>Registration & Compliance</span>
+                                    <span>Sales & Compliance Documents</span>
                                 </CardTitle>
+                                <CardDescription>Upload proof of payment, OR/CR scans, and other sales documents.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-3 text-sm">
-                                {vehicle.lto_transaction_no && (
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">LTO Txn / CR No:</span>
-                                        <span className="font-medium">{vehicle.lto_transaction_no}{vehicle.cr_no ? ` / ${vehicle.cr_no}` : ''}</span>
+                            <CardContent className="space-y-4">
+                                <form onSubmit={handleUpload} className="flex flex-col md:flex-row gap-2 md:items-end">
+                                    <div className="w-full md:w-48">
+                                        <Select value={docType} onValueChange={setDocType}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {allowedDocTypes.map((type) => (
+                                                    <SelectItem key={type} value={type}>
+                                                        {type.replace(/_/g, ' ')}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
-                                )}
-                                {vehicle.or_cr_release_date && (
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">OR/CR Release:</span>
-                                        <span className="font-medium">{new Date(vehicle.or_cr_release_date).toLocaleDateString()}</span>
-                                    </div>
-                                )}
-                                {vehicle.emission_reference && (
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Emission/Inspection Ref:</span>
-                                        <span className="font-medium">{vehicle.emission_reference}</span>
-                                    </div>
-                                )}
-                                {!(vehicle.lto_transaction_no || vehicle.emission_reference || vehicle.or_cr_release_date) && (
-                                    <p className="text-muted-foreground">No registration details yet.</p>
-                                )}
-                            </CardContent>
-                        </Card>
+                                    <input
+                                        type="file"
+                                        accept=".pdf,image/jpeg,image/png"
+                                        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                                        className="text-sm"
+                                    />
+                                    <Button type="submit" disabled={uploading || !file || !docType}>
+                                        {uploading ? 'Uploading...' : 'Upload'}
+                                    </Button>
+                                </form>
 
-                        {/* Documents */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <FileText className="h-5 w-5" />
-                                    <span>Documents ({vehicleDocuments.length})</span>
-                                </CardTitle>
-                                <CardDescription>Vehicle-related documents and files</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {vehicleDocuments.length > 0 ? (
-                                    <div className="space-y-2">
-                                        {vehicleDocuments.map((doc: any, index: number) => (
-                                            <a 
-                                                key={index} 
-                                                href={doc.url} 
-                                                download 
-                                                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                                            >
-                                                <div className="flex items-center space-x-3">
-                                                    <FileText className="h-5 w-5 text-gray-400" />
-                                                    <span className="text-sm font-medium">{doc.name || `Document ${index + 1}`}</span>
-                                                </div>
-                                                <Download className="h-4 w-4 text-gray-400" />
-                                            </a>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground text-center py-4">
-                                        No documents available. Documents can be added when editing the vehicle.
-                                    </p>
-                                )}
+                                <div className="space-y-4">
+                                    {Object.entries(documents ?? {}).map(([type, items]) => (
+                                        <div key={type}>
+                                            <div className="font-semibold mb-2">{type.replace(/_/g, ' ')}</div>
+                                            <div className="space-y-2">
+                                                {(items as any[]).map((doc) => (
+                                                    <div key={doc.id} className="flex items-center justify-between rounded border px-3 py-2">
+                                                        <div className="space-y-1 text-sm">
+                                                            <div className="font-medium">{doc.filename}</div>
+                                                            <div className="text-muted-foreground text-xs">
+                                                                {doc.mime} · {(doc.size / 1024).toFixed(1)} KB · {doc.uploaded_by ?? 'Unknown'}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Button variant="outline" size="sm" asChild>
+                                                                <a href={doc.url} target="_blank" rel="noreferrer">
+                                                                    Download
+                                                                </a>
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {Object.keys(documents ?? {}).length === 0 && (
+                                        <p className="text-sm text-muted-foreground text-center py-4">
+                                            No documents available.
+                                        </p>
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
 

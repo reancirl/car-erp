@@ -35,6 +35,7 @@ class RolePermissionSeeder extends Seeder
             'inventory.return',
             'inventory.audit',
             'inventory.reorder',
+            'inventory.status_update',
         ];
 
         // Create permissions for Warranty Claims
@@ -77,6 +78,13 @@ class RolePermissionSeeder extends Seeder
             'reports.export',
             'reports.kpi_dashboard',
             'reports.financial',
+        ];
+
+        // Finance & accounting permissions
+        $financePermissions = [
+            'finance.view_financials',
+            'finance.edit_financials',
+            'finance.view_collections',
         ];
 
         // Create permissions for User Management
@@ -135,7 +143,8 @@ class RolePermissionSeeder extends Seeder
             $auditPermissions,
             $systemPermissions,
             $serviceTypesPermissions,
-            $commonServicesPermissions
+            $commonServicesPermissions,
+            $financePermissions
         );
 
         // Create permissions
@@ -148,6 +157,19 @@ class RolePermissionSeeder extends Seeder
         // Admin role - has all permissions
         $adminRole = Role::create(['name' => 'admin']);
         $adminRole->givePermissionTo($allPermissions);
+
+        // Accounting role - finance visibility and edits
+        $accountingRole = Role::create(['name' => 'accounting']);
+        $accountingRole->givePermissionTo([
+            'finance.view_financials',
+            'finance.edit_financials',
+            'finance.view_collections',
+            'reports.financial',
+            'reports.view',
+            // read inventory/sales for reconciliation
+            'inventory.view',
+            'sales.view',
+        ]);
 
         // Service Manager role
         $serviceManagerRole = Role::create(['name' => 'service_manager']);
