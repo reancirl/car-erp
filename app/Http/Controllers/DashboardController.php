@@ -199,8 +199,11 @@ class DashboardController extends Controller
             })
             ->filter(fn($event) => $event['date'] !== null);
 
-        return $testDriveEvents
-            ->merge($workOrderEvents)
+        // Cast to a base support collection to avoid Eloquent collection helpers
+        // calling model-specific methods on the mapped array payloads.
+        return collect()
+            ->concat($testDriveEvents)
+            ->concat($workOrderEvents)
             ->sortBy(fn($event) => $event['date'] . ' ' . ($event['time'] ?? ''))
             ->values()
             ->toArray();
