@@ -45,7 +45,7 @@ interface WorkOrder {
     vehicle_model: string;
     vehicle_year: number;
     customer_name: string;
-    current_mileage: number;
+    current_mileage: number | null;
     status: 'draft' | 'pending' | 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
     priority: 'low' | 'normal' | 'high' | 'urgent';
     verification_status: 'pending' | 'verified' | 'flagged' | 'rejected';
@@ -563,7 +563,7 @@ export default function PMSWorkOrders({ workOrders, stats, missedPMS, filters, b
                                             </TableCell>
                                             <TableCell>{workOrder.customer_name}</TableCell>
                                             <TableCell>
-                                                {workOrder.current_mileage.toLocaleString()} km
+                                                {workOrder.current_mileage != null ? `${workOrder.current_mileage.toLocaleString()} km` : '—'}
                                                 {workOrder.is_overdue && (
                                                     <Badge variant="outline" className="ml-2 bg-red-100 text-red-800 text-xs">
                                                         Overdue

@@ -102,7 +102,7 @@ interface WorkOrder {
     vehicle_make: string;
     vehicle_model: string;
     vehicle_year: number;
-    current_mileage: number;
+    current_mileage: number | null;
     customer_name: string;
     customer_phone: string;
     customer_email: string | null;
@@ -113,7 +113,7 @@ interface WorkOrder {
     is_overdue: boolean;
     has_fraud_alerts: boolean;
     fraud_alerts: FraudAlert[] | null;
-    pms_interval_km: number;
+    pms_interval_km: number | null;
     next_pms_due_mileage: number | null;
     next_pms_due_date: string | null;
     days_overdue: number | null;
@@ -512,7 +512,7 @@ export default function PMSWorkOrderShow({ workOrder, photoStats, odometerHistor
                                     </div>
                                     <div>
                                         <p className="text-sm text-muted-foreground">Current Mileage</p>
-                                        <p className="font-medium">{workOrder.current_mileage.toLocaleString()} km</p>
+                                        <p className="font-medium">{workOrder.current_mileage != null ? `${workOrder.current_mileage.toLocaleString()} km` : '—'}</p>
                                         {workOrder.odometer_verified ? (
                                             <Badge className="mt-1 bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Verified</Badge>
                                         ) : (
@@ -824,7 +824,7 @@ export default function PMSWorkOrderShow({ workOrder, photoStats, odometerHistor
                                 )}
                                 <div>
                                     <p className="text-sm text-muted-foreground">PMS Interval</p>
-                                    <p className="font-medium mt-1">{workOrder.pms_interval_km.toLocaleString()} km</p>
+                                    <p className="font-medium mt-1">{workOrder.pms_interval_km != null ? `${workOrder.pms_interval_km.toLocaleString()} km` : '—'}</p>
                                 </div>
                                 {workOrder.scheduled_at && (
                                     <div>
