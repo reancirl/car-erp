@@ -21,6 +21,10 @@ Route::get('/guide', function () {
     return Inertia::render('public/user-guide');
 })->name('guide');
 
+Route::get('/roadmap', function () {
+    return Inertia::render('public/roadmap');
+})->name('roadmap');
+
 // Public Survey Routes (No Authentication Required)
 Route::prefix('survey')->name('survey.')->group(function () {
     Route::get('/{token}', [\App\Http\Controllers\PublicSurveyController::class, 'show'])->name('show');

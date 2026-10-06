@@ -118,6 +118,10 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 <TextLink href={route('guide')} className="text-[#036635]">
                     Read the user guide
                 </TextLink>
+                <span className="mx-2">·</span>
+                <TextLink href={route('roadmap')} className="text-[#036635]">
+                    Rollout update
+                </TextLink>
             </p>
         </AuthTwoColumnLayout>
     );

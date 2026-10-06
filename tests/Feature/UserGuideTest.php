@@ -24,4 +24,19 @@ class UserGuideTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('public/user-guide'));
     }
+
+    public function test_anyone_can_open_the_rollout_update(): void
+    {
+        $this->get(route('roadmap'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('public/roadmap'));
+    }
+
+    public function test_a_signed_in_user_can_open_the_rollout_update(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->get(route('roadmap'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('public/roadmap'));
+    }
 }
