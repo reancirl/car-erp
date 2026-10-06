@@ -10,6 +10,7 @@ use App\Http\Controllers\ComplianceChecklistController;
 use App\Http\Controllers\ComplianceChecklistAssignmentController;
 use App\Http\Controllers\ComplianceReminderController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FeedbackController;
 
 // redirect to login
 Route::get('/', function () {
@@ -28,6 +29,8 @@ Route::prefix('survey')->name('survey.')->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::get('feedback', [FeedbackController::class, 'create'])->name('feedback.create');
+    Route::post('feedback', [FeedbackController::class, 'store'])->name('feedback.store');
     Route::get('dashboard/calendar', \App\Http\Controllers\DashboardCalendarController::class)
         ->name('dashboard.calendar');
     Route::post(

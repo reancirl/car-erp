@@ -24,6 +24,7 @@ import {
   Layers,
   BarChart,
   BookOpen,
+  MessageSquarePlus,
 } from "lucide-react";
 import AppLogo from './app-logo';
 
@@ -182,9 +183,15 @@ const complianceNavItems: NavItem[] = [
 
 const footerNavItems: NavItem[] = [
     {
+        title: 'Send feedback',
+        href: '/feedback',
+        icon: MessageSquarePlus,
+    },
+    {
         title: 'User guide',
         href: '/guide',
         icon: BookOpen,
+        external: true,
     },
 ];
 

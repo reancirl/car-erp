@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'swiftly' => [
+        'intake_url' => env(
+            'SWIFTLY_INTAKE_URL',
+            'https://api.swiftlyph.online/api/v1/intake/pk_AMHkzHpPpjgIUngkEbO7TzqqWL6TcKVS/feedback'
+        ),
+    ],
+
 ];
