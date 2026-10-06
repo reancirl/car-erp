@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\UserSession;
 use App\Models\SessionSetting;
+use App\Models\UserSession;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,7 +17,7 @@ class TrackUserActivity
     {
         if (auth()->check()) {
             $sessionId = session()->getId();
-            
+
             // Find active session for this user
             $session = UserSession::where('session_id', $sessionId)
                 ->where('user_id', auth()->id())
@@ -26,19 +26,22 @@ class TrackUserActivity
                 ->first();
 
             if ($session) {
-                // Update activity
-                $session->updateActivity();
-                
-                // Get idle timeout from database settings
-                $idleThreshold = SessionSetting::get('auto_logout_minutes', 30);
-                $minutesSinceLastActivity = $session->last_activity_at->diffInMinutes(now());
-                
+                $idleThreshold = (int) SessionSetting::get('auto_logout_minutes', 30);
+                $minutesSinceLastActivity = $session->last_activity_at
+                    ? (int) $session->last_activity_at->diffInMinutes(now(), true)
+                    : 0;
+
                 if ($minutesSinceLastActivity > $idleThreshold) {
-                    // Mark as idle timeout
+                    $session->calculateIdleTime();
                     $session->endSession('idle_timeout');
                     auth()->logout();
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+
                     return redirect()->route('login')->with('warning', 'Session expired due to inactivity');
                 }
+
+                $session->updateActivity();
             }
         }
 

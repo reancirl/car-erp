@@ -10,9 +10,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WorkOrder extends Model
 {
+    use BranchScoped;
     use HasFactory;
     use SoftDeletes;
-    use BranchScoped;
 
     /**
      * The attributes that are mass assignable.
@@ -209,11 +209,12 @@ class WorkOrder extends Model
      */
     public function hasRequiredPhotos(): bool
     {
-        if (!$this->requires_photo_verification) {
+        if (! $this->requires_photo_verification) {
             return true;
         }
 
         $photoCount = $this->photos()->count();
+
         return $photoCount >= $this->minimum_photos_required;
     }
 
@@ -224,6 +225,7 @@ class WorkOrder extends Model
     {
         $hasBefore = $this->photos()->where('photo_type', 'before')->exists();
         $hasAfter = $this->photos()->where('photo_type', 'after')->exists();
+
         return $hasBefore && $hasAfter;
     }
 
@@ -241,7 +243,7 @@ class WorkOrder extends Model
     public function isLocationVerified(): bool
     {
         // Check if any photo has GPS data near the service location
-        if (!$this->service_location_lat || !$this->service_location_lng) {
+        if (! $this->service_location_lat || ! $this->service_location_lng) {
             return false;
         }
 
@@ -337,7 +339,7 @@ class WorkOrder extends Model
         // Check date-based overdue
         if ($this->next_pms_due_date && now()->gt($this->next_pms_due_date)) {
             $isOverdue = true;
-            $daysOverdue = now()->diffInDays($this->next_pms_due_date);
+            $daysOverdue = (int) $this->next_pms_due_date->diffInDays(now(), true);
         }
 
         // Check mileage-based overdue

@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Pipeline;
 use App\Models\Lead;
+use App\Models\Pipeline;
 use Illuminate\Support\Facades\Log;
 
 class PipelineAutoProgressionService
@@ -22,11 +22,12 @@ class PipelineAutoProgressionService
         $existingPipeline = Pipeline::where('lead_id', $lead->id)->first();
         if ($existingPipeline) {
             Log::info("Pipeline already exists for lead {$lead->lead_id}");
+
             return $existingPipeline;
         }
 
         // Create new pipeline from lead
-        $pipeline = Pipeline::create([
+        $pipeline = new Pipeline([
             'branch_id' => $lead->branch_id,
             'lead_id' => $lead->id,
             'customer_name' => $lead->name,
@@ -40,6 +41,8 @@ class PipelineAutoProgressionService
             'auto_progression_enabled' => true,
             'auto_loss_rule_enabled' => true,
         ]);
+        $pipeline->suppressAutomaticStageLog = true;
+        $pipeline->save();
 
         // Log the auto-progression
         $pipeline->logStageChange(
@@ -66,20 +69,23 @@ class PipelineAutoProgressionService
      */
     public function advanceToQuoteSent(Pipeline $pipeline, array $quoteData = []): bool
     {
-        if (!$pipeline->auto_progression_enabled) {
+        if (! $pipeline->auto_progression_enabled) {
             return false;
         }
 
         if ($pipeline->current_stage !== 'qualified') {
             Log::warning("Cannot advance pipeline {$pipeline->pipeline_id} to quote_sent - current stage is {$pipeline->current_stage}");
+
             return false;
         }
 
+        $pipeline->suppressAutomaticStageLog = true;
         $pipeline->update([
             'current_stage' => 'quote_sent',
             'quote_amount' => $quoteData['quote_amount'] ?? $pipeline->quote_amount,
             'probability' => 60, // Increase probability when quote is sent
         ]);
+        $pipeline->suppressAutomaticStageLog = false;
 
         // Log the auto-progression
         $pipeline->logStageChange(
@@ -105,20 +111,23 @@ class PipelineAutoProgressionService
      */
     public function advanceToReservation(Pipeline $pipeline, array $reservationData = []): bool
     {
-        if (!$pipeline->auto_progression_enabled) {
+        if (! $pipeline->auto_progression_enabled) {
             return false;
         }
 
         // Can advance from test_drive_scheduled or test_drive_completed
-        if (!in_array($pipeline->current_stage, ['test_drive_scheduled', 'test_drive_completed'])) {
+        if (! in_array($pipeline->current_stage, ['test_drive_scheduled', 'test_drive_completed'])) {
             Log::warning("Cannot advance pipeline {$pipeline->pipeline_id} to reservation_made - current stage is {$pipeline->current_stage}");
+
             return false;
         }
 
+        $pipeline->suppressAutomaticStageLog = true;
         $pipeline->update([
             'current_stage' => 'reservation_made',
             'probability' => 85, // High probability when reservation is made
         ]);
+        $pipeline->suppressAutomaticStageLog = false;
 
         // Log the auto-progression
         $pipeline->logStageChange(
@@ -143,20 +152,23 @@ class PipelineAutoProgressionService
      */
     public function advanceToTestDriveScheduled(Pipeline $pipeline, array $testDriveData = []): bool
     {
-        if (!$pipeline->auto_progression_enabled) {
+        if (! $pipeline->auto_progression_enabled) {
             return false;
         }
 
         // Can advance from quote_sent or qualified
-        if (!in_array($pipeline->current_stage, ['quote_sent', 'qualified'])) {
+        if (! in_array($pipeline->current_stage, ['quote_sent', 'qualified'])) {
             Log::warning("Cannot advance pipeline {$pipeline->pipeline_id} to test_drive_scheduled - current stage is {$pipeline->current_stage}");
+
             return false;
         }
 
+        $pipeline->suppressAutomaticStageLog = true;
         $pipeline->update([
             'current_stage' => 'test_drive_scheduled',
             'probability' => 70, // Increase probability when test drive is scheduled
         ]);
+        $pipeline->suppressAutomaticStageLog = false;
 
         // Log the auto-progression
         $pipeline->logStageChange(
@@ -182,7 +194,7 @@ class PipelineAutoProgressionService
     public function detectAndMarkInactivePipelines(): array
     {
         $inactivityThreshold = now()->subDays(7);
-        
+
         $inactivePipelines = Pipeline::query()
             ->where('auto_loss_rule_enabled', true)
             ->whereNotIn('current_stage', ['lost', 'won'])
@@ -196,14 +208,15 @@ class PipelineAutoProgressionService
         $results = [];
 
         foreach ($inactivePipelines as $pipeline) {
-            $daysInactive = $pipeline->last_activity_at 
-                ? now()->diffInDays($pipeline->last_activity_at)
-                : now()->diffInDays($pipeline->created_at);
+            $activityAnchor = $pipeline->last_activity_at ?? $pipeline->created_at;
+            $daysInactive = (int) $activityAnchor->diffInDays(now(), true);
 
+            $pipeline->suppressAutomaticStageLog = true;
             $pipeline->update([
                 'current_stage' => 'lost',
                 'probability' => 0,
             ]);
+            $pipeline->suppressAutomaticStageLog = false;
 
             // Log the auto-loss detection
             $pipeline->logStageChange(
@@ -243,7 +256,7 @@ class PipelineAutoProgressionService
     public function getAutoLoggingStats(?int $branchId = null): array
     {
         $query = Pipeline::query()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId));
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId));
 
         $today = now()->startOfDay();
         $thisWeek = now()->startOfWeek();

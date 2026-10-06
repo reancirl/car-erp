@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class UserSession extends Model
 {
@@ -68,39 +67,39 @@ class UserSession extends Model
      */
     public function calculateDuration(): ?int
     {
-        if (!$this->logout_time) {
+        if (! $this->logout_time) {
             // Session still active - calculate from login to now
-            return $this->login_time->diffInMinutes(now());
+            return (int) $this->login_time->diffInMinutes(now(), true);
         }
-        
-        return $this->login_time->diffInMinutes($this->logout_time);
+
+        return (int) $this->login_time->diffInMinutes($this->logout_time, true);
     }
 
     public function getDurationFormatted(): string
     {
         $minutes = $this->calculateDuration();
-        
+
         if ($minutes === null) {
             return 'N/A';
         }
-        
+
         $hours = floor($minutes / 60);
         $mins = $minutes % 60;
-        
+
         return sprintf('%dh %dm', $hours, $mins);
     }
 
     public function getIdleTimeFormatted(): string
     {
         $minutes = $this->idle_time_minutes;
-        
+
         if ($minutes < 60) {
             return sprintf('%dm', $minutes);
         }
-        
+
         $hours = floor($minutes / 60);
         $mins = $minutes % 60;
-        
+
         return sprintf('%dh %dm', $hours, $mins);
     }
 
@@ -113,16 +112,32 @@ class UserSession extends Model
     public function calculateIdleTime(): void
     {
         if ($this->last_activity_at) {
-            $idleMinutes = $this->last_activity_at->diffInMinutes(now());
+            $idleMinutes = (int) $this->last_activity_at->diffInMinutes(now(), true);
             $this->update(['idle_time_minutes' => $idleMinutes]);
         }
+    }
+
+    /**
+     * Point the open tracking row at the session id created by session regeneration.
+     */
+    public static function rebindSessionId(string $previousSessionId, string $newSessionId, int $userId): void
+    {
+        if ($previousSessionId === $newSessionId) {
+            return;
+        }
+
+        static::query()
+            ->where('session_id', $previousSessionId)
+            ->where('user_id', $userId)
+            ->where('status', 'active')
+            ->update(['session_id' => $newSessionId]);
     }
 
     public function endSession(string $reason = 'normal_logout'): void
     {
         $this->update([
             'logout_time' => now(),
-            'status' => $reason === 'idle_timeout' ? 'idle_timeout' : 
+            'status' => $reason === 'idle_timeout' ? 'idle_timeout' :
                        ($reason === 'forced_logout' ? 'forced_logout' : 'completed'),
             'logout_reason' => $reason,
         ]);

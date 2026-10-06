@@ -16,6 +16,10 @@ Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
+Route::get('/guide', function () {
+    return Inertia::render('public/user-guide');
+})->name('guide');
+
 // Public Survey Routes (No Authentication Required)
 Route::prefix('survey')->name('survey.')->group(function () {
     Route::get('/{token}', [\App\Http\Controllers\PublicSurveyController::class, 'show'])->name('show');
@@ -358,22 +362,23 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         ->name('branch-management.restore');
 });
 
-// PMS Work Orders Routes
+// Legacy PMS URLs pointed at pages filled with sample work orders.
+// Send them to the live service module instead.
 Route::middleware(['auth', 'verified'])->prefix('pms')->name('pms.')->group(function () {
     Route::get('/work-orders', function () {
-        return Inertia::render('pms/work-orders');
+        return redirect()->route('service.pms-work-orders.index');
     })->name('work-orders');
-    
+
     Route::get('/work-orders/create', function () {
-        return Inertia::render('pms/work-order-create');
+        return redirect()->route('service.pms-work-orders.create');
     })->name('work-orders.create');
-    
+
     Route::get('/work-orders/{id}/edit', function ($id) {
-        return Inertia::render('pms/work-order-edit', ['workOrderId' => $id]);
+        return redirect()->route('service.pms-work-orders.edit', $id);
     })->name('work-orders.edit');
-    
+
     Route::get('/work-orders/{id}', function ($id) {
-        return Inertia::render('pms/work-order-view', ['workOrderId' => $id]);
+        return redirect()->route('service.pms-work-orders.show', $id);
     })->name('work-orders.view');
 });
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\UserSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,7 +14,6 @@ use Inertia\Response;
 
 class AuthenticatedSessionController extends Controller
 {
-
     /**
      * Show the login page.
      */
@@ -31,9 +31,18 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-        
+
+        $previousSessionId = $request->session()->getId();
         $request->session()->regenerate();
-        
+
+        if ($request->user()) {
+            UserSession::rebindSessionId(
+                $previousSessionId,
+                $request->session()->getId(),
+                $request->user()->id,
+            );
+        }
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 

@@ -113,6 +113,12 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                     </Button>
                 </div>
             </form>
+
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+                <TextLink href={route('guide')} className="text-[#036635]">
+                    Read the user guide
+                </TextLink>
+            </p>
         </AuthTwoColumnLayout>
     );
 }

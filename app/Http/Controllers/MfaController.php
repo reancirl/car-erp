@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\UserSession;
 use App\Services\MfaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -89,7 +90,7 @@ class MfaController extends Controller
         // Verify OTP
         $result = $this->mfaService->verifyOtp($user, $code, $purpose, $action);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json([
                 'success' => false,
                 'message' => $result['message'],
@@ -102,7 +103,13 @@ class MfaController extends Controller
 
         // For login MFA, complete the session regeneration that was deferred
         if ($purpose === MfaService::PURPOSE_LOGIN) {
+            $previousSessionId = $request->session()->getId();
             $request->session()->regenerate();
+            UserSession::rebindSessionId(
+                $previousSessionId,
+                $request->session()->getId(),
+                $user->id,
+            );
         }
 
         // Get intended URL and clean up session
@@ -123,15 +130,16 @@ class MfaController extends Controller
     {
         $action = $request->input('action');
         $sessionKey = $action ? "mfa_verified_{$action}" : 'mfa_verified_login';
-        
+
         $verifiedAt = $request->session()->get($sessionKey);
         $isVerified = false;
         $expiresAt = null;
 
         if ($verifiedAt) {
+            $verifiedAt = \Carbon\Carbon::parse($verifiedAt);
             $validDuration = $action ? 30 : 1440; // minutes
-            $expiresAt = $verifiedAt->addMinutes($validDuration);
-            $isVerified = now()->isBefore($expiresAt);
+            $expiresAt = $verifiedAt->copy()->addMinutes($validDuration);
+            $isVerified = now()->lte($expiresAt);
         }
 
         return response()->json([
@@ -148,7 +156,7 @@ class MfaController extends Controller
     public function revoke(Request $request)
     {
         $action = $request->input('action');
-        
+
         if ($action) {
             $request->session()->forget("mfa_verified_{$action}");
         } else {

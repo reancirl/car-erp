@@ -23,6 +23,7 @@ import {
   ClipboardCheck,
   Layers,
   BarChart,
+  BookOpen,
 } from "lucide-react";
 import AppLogo from './app-logo';
 
@@ -179,7 +180,13 @@ const complianceNavItems: NavItem[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [];
+const footerNavItems: NavItem[] = [
+    {
+        title: 'User guide',
+        href: '/guide',
+        icon: BookOpen,
+    },
+];
 
 // Permission mapping for navigation items
 const navPermissions: Record<string, string> = {

@@ -75,7 +75,7 @@ class OdometerReading extends Model
 
                 // Calculate differences
                 $reading->distance_diff = $reading->reading - $previous->reading;
-                $reading->days_diff = $reading->reading_date->diffInDays($previous->reading_date);
+                $reading->days_diff = (int) $previous->reading_date->diffInDays($reading->reading_date, true);
 
                 // Calculate average daily distance
                 if ($reading->days_diff > 0) {
@@ -87,12 +87,12 @@ class OdometerReading extends Model
             }
 
             // Set recorded_by if authenticated
-            if (auth()->check() && !$reading->recorded_by) {
+            if (auth()->check() && ! $reading->recorded_by) {
                 $reading->recorded_by = auth()->id();
             }
 
             // Capture IP address
-            if (!$reading->recorded_ip_address && request()) {
+            if (! $reading->recorded_ip_address && request()) {
                 $reading->recorded_ip_address = request()->ip();
             }
         });
@@ -103,9 +103,10 @@ class OdometerReading extends Model
      */
     public function detectAnomaly(): void
     {
-        if (!$this->previous_reading) {
+        if (! $this->previous_reading) {
             $this->is_anomaly = false;
             $this->anomaly_type = 'none';
+
             return;
         }
 
@@ -113,7 +114,8 @@ class OdometerReading extends Model
         if ($this->distance_diff < 0) {
             $this->is_anomaly = true;
             $this->anomaly_type = 'rollback';
-            $this->anomaly_notes = "Odometer reading decreased by " . abs($this->distance_diff) . " km";
+            $this->anomaly_notes = 'Odometer reading decreased by '.abs($this->distance_diff).' km';
+
             return;
         }
 
@@ -121,7 +123,8 @@ class OdometerReading extends Model
         if ($this->distance_diff === 0) {
             $this->is_anomaly = true;
             $this->anomaly_type = 'duplicate';
-            $this->anomaly_notes = "Same reading as previous entry";
+            $this->anomaly_notes = 'Same reading as previous entry';
+
             return;
         }
 
@@ -129,7 +132,8 @@ class OdometerReading extends Model
         if ($this->avg_daily_distance > 500) {
             $this->is_anomaly = true;
             $this->anomaly_type = 'excessive_increase';
-            $this->anomaly_notes = "Unusually high daily average: " . number_format($this->avg_daily_distance, 2) . " km/day";
+            $this->anomaly_notes = 'Unusually high daily average: '.number_format($this->avg_daily_distance, 2).' km/day';
+
             return;
         }
 
@@ -138,6 +142,7 @@ class OdometerReading extends Model
             $this->is_anomaly = true;
             $this->anomaly_type = 'missed_interval';
             $this->anomaly_notes = "Missed PMS interval: {$this->distance_diff} km / {$this->days_diff} days since last service";
+
             return;
         }
 
@@ -213,7 +218,7 @@ class OdometerReading extends Model
     /**
      * Mark reading as verified.
      */
-    public function markAsVerified(int $userId = null): void
+    public function markAsVerified(?int $userId = null): void
     {
         $this->is_verified = true;
         $this->verified_by = $userId ?? auth()->id();

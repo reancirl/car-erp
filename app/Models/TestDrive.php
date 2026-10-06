@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TestDrive extends Model
 {
-    use HasFactory, SoftDeletes, BranchScoped;
+    use BranchScoped, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'reservation_id',
@@ -71,10 +71,10 @@ class TestDrive extends Model
         static::created(function ($testDrive) {
             // Auto-advance pipeline when test drive is created (scheduled)
             if ($testDrive->status === 'confirmed') {
-                $pipeline = Pipeline::where('customer_phone', $testDrive->customer_phone)
-                    ->orWhere('customer_email', $testDrive->customer_email)
-                    ->whereNotIn('current_stage', ['lost', 'won'])
-                    ->first();
+                $pipeline = self::findOpenPipelineForContact(
+                    $testDrive->customer_phone,
+                    $testDrive->customer_email,
+                );
 
                 if ($pipeline) {
                     $service = app(\App\Services\PipelineAutoProgressionService::class);
@@ -90,10 +90,10 @@ class TestDrive extends Model
         static::updated(function ($testDrive) {
             // Auto-create or advance pipeline when test drive status changes to confirmed
             if ($testDrive->wasChanged('status') && $testDrive->status === 'confirmed') {
-                $pipeline = Pipeline::where('customer_phone', $testDrive->customer_phone)
-                    ->orWhere('customer_email', $testDrive->customer_email)
-                    ->whereNotIn('current_stage', ['lost', 'won'])
-                    ->first();
+                $pipeline = self::findOpenPipelineForContact(
+                    $testDrive->customer_phone,
+                    $testDrive->customer_email,
+                );
 
                 if ($pipeline) {
                     // Pipeline exists - advance it to reservation_made
@@ -104,7 +104,7 @@ class TestDrive extends Model
                     ]);
                 } else {
                     // No pipeline exists - create one directly in reservation_made stage
-                    $pipeline = Pipeline::create([
+                    $pipeline = new Pipeline([
                         'branch_id' => $testDrive->branch_id,
                         'customer_name' => $testDrive->customer_name,
                         'customer_phone' => $testDrive->customer_phone,
@@ -118,6 +118,9 @@ class TestDrive extends Model
                         'auto_progression_enabled' => true,
                         'auto_loss_rule_enabled' => true,
                     ]);
+                    $pipeline->suppressAutomaticStageLog = true;
+                    $pipeline->save();
+                    $pipeline->suppressAutomaticStageLog = false;
 
                     // Log the auto-creation
                     $pipeline->logStageChange(
@@ -136,6 +139,32 @@ class TestDrive extends Model
                 }
             }
         });
+    }
+
+    /**
+     * Find an open pipeline for this customer.
+     *
+     * Phone and email are grouped so a lost or won deal with the same phone
+     * is not treated as a match ahead of the stage filter.
+     */
+    public static function findOpenPipelineForContact(?string $phone, ?string $email): ?Pipeline
+    {
+        if (! $phone && ! $email) {
+            return null;
+        }
+
+        return Pipeline::query()
+            ->where(function ($query) use ($phone, $email) {
+                if ($phone) {
+                    $query->orWhere('customer_phone', $phone);
+                }
+
+                if ($email) {
+                    $query->orWhere('customer_email', $email);
+                }
+            })
+            ->whereNotIn('current_stage', ['lost', 'won'])
+            ->first();
     }
 
     /**
@@ -260,7 +289,7 @@ class TestDrive extends Model
      */
     public function hasGPSTracking(): bool
     {
-        return !is_null($this->gps_start_coords) && !is_null($this->gps_end_coords);
+        return ! is_null($this->gps_start_coords) && ! is_null($this->gps_end_coords);
     }
 
     /**
@@ -276,6 +305,6 @@ class TestDrive extends Model
      */
     public function getScheduledDatetimeAttribute(): string
     {
-        return $this->scheduled_date->format('Y-m-d') . ' ' . $this->scheduled_time;
+        return $this->scheduled_date->format('Y-m-d').' '.$this->scheduled_time;
     }
 }

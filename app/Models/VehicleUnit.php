@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class VehicleUnit extends Model
 {
-    use HasFactory, SoftDeletes, BranchScoped;
+    use BranchScoped, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -294,12 +294,13 @@ class VehicleUnit extends Model
      */
     public function getDaysInInventoryAttribute(): ?int
     {
-        if (!$this->acquisition_date) {
+        if (! $this->acquisition_date) {
             return null;
         }
 
         $endDate = $this->sold_date ?? now();
-        return $this->acquisition_date->diffInDays($endDate);
+
+        return (int) $this->acquisition_date->diffInDays($endDate, true);
     }
 
     /**
@@ -307,7 +308,7 @@ class VehicleUnit extends Model
      */
     public function getProfitMarginAttribute(): ?float
     {
-        if (!$this->isSold() || !$this->purchase_price || !$this->sale_price) {
+        if (! $this->isSold() || ! $this->purchase_price || ! $this->sale_price) {
             return null;
         }
 
@@ -319,7 +320,7 @@ class VehicleUnit extends Model
      */
     public function getProfitPercentageAttribute(): ?float
     {
-        if (!$this->profit_margin || !$this->purchase_price) {
+        if (! $this->profit_margin || ! $this->purchase_price) {
             return null;
         }
 

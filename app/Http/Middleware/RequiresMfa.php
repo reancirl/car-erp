@@ -3,10 +3,10 @@
 namespace App\Http\Middleware;
 
 use App\Services\MfaService;
+use Carbon\Carbon;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class RequiresMfa
@@ -21,29 +21,30 @@ class RequiresMfa
     public function handle(Request $request, Closure $next, ?string $action = null): Response
     {
         $user = Auth::user();
-        
-        if (!$user) {
+
+        if (! $user) {
             return redirect()->route('login');
         }
 
         // Check if MFA is required for this action
-        if ($action && !$this->mfaService->requiresMfaForAction($action, $user)) {
+        if ($action && ! $this->mfaService->requiresMfaForAction($action, $user)) {
             return $next($request);
         }
 
         // Check if user has valid MFA session for this action
         $sessionKey = $action ? "mfa_verified_{$action}" : 'mfa_verified_login';
-        
+
         if ($request->session()->has($sessionKey)) {
             $verifiedAt = $request->session()->get($sessionKey);
-            
+
             // MFA session is valid for 30 minutes for sensitive actions, 24 hours for login
             $validDuration = $action ? 30 : 1440; // minutes
-            
-            if (now()->diffInMinutes($verifiedAt) <= $validDuration) {
+            $elapsedMinutes = Carbon::parse($verifiedAt)->diffInMinutes(now(), true);
+
+            if ($elapsedMinutes <= $validDuration) {
                 return $next($request);
             }
-            
+
             // Remove expired session
             $request->session()->forget($sessionKey);
         }

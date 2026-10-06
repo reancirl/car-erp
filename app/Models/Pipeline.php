@@ -10,6 +10,12 @@ class Pipeline extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * Callers that write their own stage log should set this before save/update
+     * so the model does not record a second "manual" entry.
+     */
+    public bool $suppressAutomaticStageLog = false;
+
     protected $fillable = [
         'pipeline_id',
         'branch_id',
@@ -106,20 +112,24 @@ class Pipeline extends Model
         parent::boot();
 
         static::creating(function ($pipeline) {
-            if (!$pipeline->pipeline_id) {
+            if (! $pipeline->pipeline_id) {
                 $pipeline->pipeline_id = self::generatePipelineId();
             }
-            
+
             // Set initial stage entry timestamp
-            if (!$pipeline->stage_entry_timestamp) {
+            if (! $pipeline->stage_entry_timestamp) {
                 $pipeline->stage_entry_timestamp = now();
             }
-            
+
             // Set initial last activity
             $pipeline->last_activity_at = now();
         });
 
         static::created(function ($pipeline) {
+            if ($pipeline->suppressAutomaticStageLog) {
+                return;
+            }
+
             // Create initial stage log
             $pipeline->logStageChange(
                 $pipeline->current_stage,
@@ -135,24 +145,28 @@ class Pipeline extends Model
             if ($pipeline->isDirty('current_stage')) {
                 $oldStage = $pipeline->getOriginal('current_stage');
                 $newStage = $pipeline->current_stage;
-                
+
                 // Calculate duration in previous stage
                 $stageEntryTime = $pipeline->getOriginal('stage_entry_timestamp');
                 if ($stageEntryTime) {
                     $duration = now()->diffInHours($stageEntryTime, true);
                     $pipeline->stage_duration_hours = round($duration, 2);
                 }
-                
+
                 // Update previous stage and entry timestamp
                 $pipeline->previous_stage = $oldStage;
                 $pipeline->stage_entry_timestamp = now();
             }
-            
+
             // Update last activity timestamp
             $pipeline->last_activity_at = now();
         });
 
         static::updated(function ($pipeline) {
+            if ($pipeline->suppressAutomaticStageLog) {
+                return;
+            }
+
             // Log stage change if stage was updated
             if ($pipeline->wasChanged('current_stage')) {
                 $pipeline->logStageChange(
@@ -178,6 +192,7 @@ class Pipeline extends Model
             ->first();
 
         $number = $lastPipeline ? intval(substr($lastPipeline->pipeline_id, -3)) + 1 : 1;
+
         return sprintf('PL-%s-%03d', $year, $number);
     }
 
@@ -198,7 +213,7 @@ class Pipeline extends Model
             ->where('stage', $previousStage ?? $this->getOriginal('current_stage'))
             ->whereNull('exit_timestamp')
             ->first();
-            
+
         if ($lastLog) {
             $duration = now()->diffInHours($lastLog->entry_timestamp, true);
             $lastLog->update([
@@ -235,13 +250,23 @@ class Pipeline extends Model
         $score = 0;
 
         // Contact information completeness
-        if ($this->customer_name) $score += 10;
-        if ($this->customer_phone) $score += 15;
-        if ($this->customer_email) $score += 15;
+        if ($this->customer_name) {
+            $score += 10;
+        }
+        if ($this->customer_phone) {
+            $score += 15;
+        }
+        if ($this->customer_email) {
+            $score += 15;
+        }
 
         // Vehicle interest specificity
-        if ($this->vehicle_make && $this->vehicle_model) $score += 15;
-        if ($this->quote_amount && $this->quote_amount > 0) $score += 20;
+        if ($this->vehicle_make && $this->vehicle_model) {
+            $score += 15;
+        }
+        if ($this->quote_amount && $this->quote_amount > 0) {
+            $score += 20;
+        }
 
         // Priority
         $priorityScores = [
@@ -253,7 +278,9 @@ class Pipeline extends Model
         $score += $priorityScores[$this->priority] ?? 0;
 
         // Next action defined
-        if ($this->next_action) $score += 5;
+        if ($this->next_action) {
+            $score += 5;
+        }
 
         // Lead source from related lead
         if ($this->lead) {
@@ -277,9 +304,11 @@ class Pipeline extends Model
     {
         $stages = ['lead', 'qualified', 'quote_sent', 'test_drive_scheduled', 'test_drive_completed', 'reservation_made'];
         $currentIndex = array_search($this->current_stage, $stages);
-        
-        if ($currentIndex === false) return 0;
-        
+
+        if ($currentIndex === false) {
+            return 0;
+        }
+
         return (int) round((($currentIndex + 1) / count($stages)) * 100);
     }
 }

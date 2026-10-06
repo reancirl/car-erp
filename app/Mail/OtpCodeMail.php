@@ -5,7 +5,6 @@ namespace App\Mail;
 use App\Models\User;
 use App\Models\UserOtpCode;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -16,6 +15,7 @@ class OtpCodeMail extends Mailable
     use Queueable, SerializesModels;
 
     public User $user;
+
     public UserOtpCode $otpCode;
 
     /**
@@ -54,7 +54,7 @@ class OtpCodeMail extends Mailable
             with: [
                 'user' => $this->user,
                 'otpCode' => $this->otpCode,
-                'expiresInMinutes' => $this->otpCode->expires_at->diffInMinutes(now()),
+                'expiresInMinutes' => max(0, (int) now()->diffInMinutes($this->otpCode->expires_at)),
                 'purposeText' => $this->getPurposeText(),
                 'actionText' => $this->getActionText(),
             ],
@@ -79,7 +79,7 @@ class OtpCodeMail extends Mailable
      */
     private function getActionText(): ?string
     {
-        if (!$this->otpCode->action) {
+        if (! $this->otpCode->action) {
             return null;
         }
 

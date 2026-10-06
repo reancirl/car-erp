@@ -9,11 +9,6 @@ class OdometerService
 {
     /**
      * Record an odometer reading and detect anomalies.
-     *
-     * @param WorkOrder $workOrder
-     * @param int $reading
-     * @param string|null $photoPath
-     * @return OdometerReading
      */
     public function recordReading(
         WorkOrder $workOrder,
@@ -64,10 +59,6 @@ class OdometerService
 
     /**
      * Check if PMS interval was missed.
-     *
-     * @param WorkOrder $workOrder
-     * @param OdometerReading $reading
-     * @return void
      */
     private function checkMissedInterval(WorkOrder $workOrder, OdometerReading $reading): void
     {
@@ -108,8 +99,6 @@ class OdometerService
     /**
      * Get odometer reading history for a VIN.
      *
-     * @param string $vin
-     * @param int $limit
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getReadingHistory(string $vin, int $limit = 10)
@@ -124,7 +113,6 @@ class OdometerService
     /**
      * Detect all anomalies for a specific VIN.
      *
-     * @param string $vin
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getAnomaliesForVin(string $vin)
@@ -139,7 +127,6 @@ class OdometerService
     /**
      * Get vehicles that have missed PMS intervals.
      *
-     * @param int|null $branchId
      * @return \Illuminate\Support\Collection
      */
     public function getMissedPMSVehicles(?int $branchId = null)
@@ -181,10 +168,6 @@ class OdometerService
 
     /**
      * Validate odometer reading against history.
-     *
-     * @param string $vin
-     * @param int $newReading
-     * @return array
      */
     public function validateReading(string $vin, int $newReading): array
     {
@@ -192,7 +175,7 @@ class OdometerService
             ->orderBy('reading_date', 'desc')
             ->first();
 
-        if (!$lastReading) {
+        if (! $lastReading) {
             return [
                 'valid' => true,
                 'message' => 'First reading for this vehicle',
@@ -221,7 +204,7 @@ class OdometerService
         }
 
         // Check for excessive increase
-        $daysDiff = now()->diffInDays($lastReading->reading_date);
+        $daysDiff = (int) $lastReading->reading_date->diffInDays(now(), true);
         if ($daysDiff > 0) {
             $avgDaily = ($newReading - $lastReading->reading) / $daysDiff;
             if ($avgDaily > 500) {
