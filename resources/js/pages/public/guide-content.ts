@@ -88,7 +88,7 @@ export const guideArticles: GuideArticle[] = [
                     { type: 'p', text: 'Use the search box for a word you see on screen, such as reservation, odometer, OR/CR, or warranty. Or open a module on the left and pick the article that matches the menu name.' },
                     { type: 'steps', items: [
                         'Search, or choose a module in the left panel.',
-                        'Read **Where to go** so you open the same menu in MIKARO.',
+                        'Read **Where to go** so you open the same menu in Wuling.',
                         'Follow the numbered steps. Field names in bold match the labels on the form.',
                         'Check the status table before you change a record, so you pick the status the rest of the team expects.',
                     ] },

@@ -36,11 +36,11 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     };
 
     return (
-        <AuthTwoColumnLayout title="Log in to your account" description="Enter your email and password below to log in">
+        <AuthTwoColumnLayout title="Sign in" description="Enter the email and password issued for your account.">
             <Head title="Log in" />
 
             {status && (
-                <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-800 border border-green-200">
+                <div className="mb-4 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200">
                     {status}
                 </div>
             )}
@@ -67,10 +67,9 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                         <div className="flex items-center">
                             <Label htmlFor="password">Password</Label>
                             {canResetPassword && (
-                                <TextLink 
-                                    href={route('password.request')} 
-                                    className="ml-auto text-sm" 
-                                    style={{ color: '#036635' }}
+                                <TextLink
+                                    href={route('password.request')}
+                                    className="ml-auto text-sm text-[#EE2C1E] decoration-[#EE2C1E]/40"
                                     tabIndex={5}
                                 >
                                     Forgot password?
@@ -101,11 +100,10 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                         <Label htmlFor="remember">Remember me</Label>
                     </div>
 
-                    <Button 
-                        type="submit" 
-                        className="mt-4 w-full hover:opacity-90 transition-opacity" 
-                        style={{ backgroundColor: '#036635' }}
-                        tabIndex={4} 
+                    <Button
+                        type="submit"
+                        className="mt-2 h-10 w-full bg-[#EE2C1E] text-white hover:bg-[#d12518]"
+                        tabIndex={4}
                         disabled={processing}
                     >
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
@@ -114,13 +112,13 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 </div>
             </form>
 
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-                <TextLink href={route('guide')} className="text-[#036635]">
-                    Read the user guide
+            <p className="mt-8 text-center text-sm text-muted-foreground">
+                <TextLink href={route('guide')} className="text-[#EE2C1E] decoration-[#EE2C1E]/40">
+                    Staff guide
                 </TextLink>
-                <span className="mx-2">·</span>
-                <TextLink href={route('roadmap')} className="text-[#036635]">
-                    Rollout update
+                <span className="mx-2 text-muted-foreground/60">·</span>
+                <TextLink href={route('roadmap')} className="text-[#EE2C1E] decoration-[#EE2C1E]/40">
+                    Rollout notes
                 </TextLink>
             </p>
         </AuthTwoColumnLayout>

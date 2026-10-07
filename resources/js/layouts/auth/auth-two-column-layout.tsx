@@ -1,6 +1,6 @@
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Link } from '@inertiajs/react';
-import { Bell, Car, Shield, TrendingUp } from 'lucide-react';
+import { CarFront, ClipboardList, Wrench } from 'lucide-react';
 import { type PropsWithChildren } from 'react';
 
 interface AuthTwoColumnLayoutProps {
@@ -8,118 +8,83 @@ interface AuthTwoColumnLayoutProps {
     description?: string;
 }
 
-export default function AuthTwoColumnLayout({ 
-    children, 
-    title, 
-    description 
-}: PropsWithChildren<AuthTwoColumnLayoutProps>) {
-    const announcements = [
-        {
-            icon: TrendingUp,
-            title: "System Update",
-            description: "Enhanced reporting features now available",
-            date: "Oct 15, 2025"
-        },
-        {
-            icon: Shield,
-            title: "Security Enhancement",
-            description: "Multi-factor authentication is now enabled for all users",
-            date: "Oct 10, 2025"
-        },
-        {
-            icon: Car,
-            title: "New Feature",
-            description: "Real-time inventory tracking with automated alerts",
-            date: "Oct 5, 2025"
-        }
-    ];
+const capabilities = [
+    {
+        icon: ClipboardList,
+        title: 'Sales floor',
+        description: 'Leads, the pipeline, test drives, and a reservation on a specific unit.',
+    },
+    {
+        icon: CarFront,
+        title: 'Yard and documents',
+        description: 'Models, stock, location, and the release checklist before a unit leaves.',
+    },
+    {
+        icon: Wrench,
+        title: 'Aftersales',
+        description: 'Work orders and warranty claims stay with the same vehicle.',
+    },
+];
 
+export default function AuthTwoColumnLayout({ children, title, description }: PropsWithChildren<AuthTwoColumnLayoutProps>) {
     return (
-        <div className="flex min-h-screen">
-            {/* Left Column - Login Form */}
-            <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-20">
-                <div className="mx-auto w-full max-w-md">
-                    {/* Logo */}
-                    <div className="mb-8">
-                        <Link href={route('home')} className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#036635]">
-                                <Car className="h-6 w-6 text-white" />
-                            </div>
+        <div className="flex min-h-screen bg-background">
+            <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-[46%] lg:px-16 xl:px-24">
+                <div className="mx-auto w-full max-w-[26rem]">
+                    <div className="mb-10">
+                        <Link href={route('home')} className="inline-flex items-center gap-3">
+                            <AppLogoIcon className="h-9 w-auto" />
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900">MIKARO ERP</h1>
-                                <p className="text-sm text-gray-500">Dealership Management</p>
+                                <h1 className="text-xl font-semibold tracking-tight text-foreground">Wuling</h1>
+                                <p className="text-xs tracking-wide text-muted-foreground uppercase">Dealership system</p>
                             </div>
                         </Link>
                     </div>
 
-                    {/* Title & Description */}
                     <div className="mb-8">
-                        <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-                        <p className="mt-2 text-sm text-gray-600">{description}</p>
+                        <h2 className="text-[1.75rem] leading-tight font-semibold tracking-tight text-foreground">{title}</h2>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
                     </div>
 
-                    {/* Form Content */}
                     {children}
                 </div>
             </div>
 
-            {/* Right Column - Announcements */}
-            <div 
-                className="hidden lg:flex lg:w-1/2 lg:flex-col lg:justify-center lg:px-16"
-                style={{ backgroundColor: '#036635' }}
-            >
-                <div className="max-w-xl">
-                    {/* Header */}
-                    <div className="mb-12">
-                        <div className="flex items-center gap-3 mb-4">
-                            <Bell className="h-8 w-8 text-white" />
-                            <h2 className="text-3xl font-bold text-white">
-                                Latest Updates
-                            </h2>
-                        </div>
-                        <p className="text-lg text-white/90">
-                            Stay informed with the latest features and system announcements
-                        </p>
-                    </div>
+            <aside className="relative hidden flex-1 flex-col justify-between bg-[#141414] px-14 py-16 text-white lg:flex xl:px-20">
+                <div className="absolute inset-y-0 left-0 w-1 bg-[#EE2C1E]" aria-hidden="true" />
 
-                    {/* Announcements List */}
-                    <div className="space-y-6">
-                        {announcements.map((announcement, index) => {
-                            const Icon = announcement.icon;
-                            return (
-                                <div 
-                                    key={index}
-                                    className="rounded-xl bg-white/10 p-6 backdrop-blur-sm transition-all hover:bg-white/15"
-                                >
-                                    <div className="flex items-start gap-4">
-                                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-white/20">
-                                            <Icon className="h-6 w-6 text-white" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="text-lg font-semibold text-white">
-                                                {announcement.title}
-                                            </h3>
-                                            <p className="mt-1 text-sm text-white/80">
-                                                {announcement.description}
-                                            </p>
-                                            <p className="mt-2 text-xs text-white/60">
-                                                {announcement.date}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {/* Footer Info */}
-                    <div className="mt-12 rounded-xl border border-white/20 bg-white/5 p-6 backdrop-blur-sm">
-                        <p className="text-sm text-white/90">
-                            <span className="font-semibold">Need help?</span> Contact your system administrator or IT support team for assistance.
-                        </p>
-                    </div>
+                <div>
+                    <p className="text-xs font-medium tracking-[0.18em] text-[#EE2C1E] uppercase">Wuling</p>
+                    <h2 className="mt-4 max-w-md text-4xl leading-[1.15] font-semibold tracking-tight">
+                        The daily work of the dealership, in one place.
+                    </h2>
+                    <p className="mt-5 max-w-md text-[15px] leading-7 text-white/70">
+                        Staff follow a customer and a unit from the first visit through delivery and service. Each step stays on the same record.
+                    </p>
                 </div>
-            </div>
+
+                <ul className="my-12 max-w-lg divide-y divide-white/10 border-y border-white/10">
+                    {capabilities.map((item) => {
+                        const Icon = item.icon;
+
+                        return (
+                            <li key={item.title} className="flex gap-4 py-5">
+                                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md bg-white/8 text-[#EE2C1E]">
+                                    <Icon className="size-4" />
+                                </span>
+                                <span>
+                                    <span className="block text-sm font-medium">{item.title}</span>
+                                    <span className="mt-1 block text-sm leading-6 text-white/65">{item.description}</span>
+                                </span>
+                            </li>
+                        );
+                    })}
+                </ul>
+
+                <p className="max-w-md text-sm leading-6 text-white/55">
+                    Access is issued by your administrator. The staff guide is available before you sign in.
+                </p>
+            </aside>
         </div>
     );
 }

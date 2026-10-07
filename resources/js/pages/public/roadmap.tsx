@@ -1,5 +1,6 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import AppLogoIcon from '@/components/app-logo-icon';
 import { type SharedData } from '@/types';
+import { Head, Link, usePage } from '@inertiajs/react';
 
 const sections = [
     { id: 'immediate', label: 'Immediate' },
@@ -54,9 +55,9 @@ export default function Roadmap() {
                 <header className="border-b border-[#e5e5e5] bg-white print:hidden">
                     <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3">
                         <div className="flex items-center gap-3">
-                            <span className="flex size-8 items-center justify-center rounded-md bg-[#036635] text-xs font-semibold text-white">M</span>
+                            <AppLogoIcon className="h-8 w-auto" />
                             <div>
-                                <p className="text-sm font-semibold">MIKARO ERP</p>
+                                <p className="text-sm font-semibold">Wuling</p>
                                 <p className="text-xs text-[#706e6b]">Rollout update</p>
                             </div>
                         </div>
@@ -80,7 +81,7 @@ export default function Roadmap() {
                     <p className="text-xs font-semibold tracking-wide text-[#036635] uppercase">October 2026</p>
                     <h1 className="mt-2 max-w-3xl text-3xl font-semibold tracking-tight">What can go live, and what waits</h1>
                     <p className="mt-4 max-w-3xl text-[15px] leading-7 text-[#3e3e3c]">
-                        Staff can run a dealership day in MIKARO ERP now: a lead, the pipeline, a test drive, a reservation, the vehicle itself, then service. The note below groups that work the way it was requested. Google Forms stay with the team for this round.
+                        Staff can run a dealership day in Wuling now: a lead, the pipeline, a test drive, a reservation, the vehicle itself, then service. The note below groups that work the way it was requested. Google Forms stay with the team for this round.
                     </p>
 
                     <div className="mt-8 grid gap-3 sm:grid-cols-3">

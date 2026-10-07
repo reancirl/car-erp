@@ -3,12 +3,13 @@ import AppLogoIcon from './app-logo-icon';
 export default function AppLogo() {
     return (
         <>
-            <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-[#036635] text-sidebar-primary-foreground">
-                {/* <AppLogoIcon className="size-5 fill-current text-white dark:text-black" /> */}
-            </div>
-            <div className="ml-1 grid flex-1 text-left text-sm">
-                <span className="mb-0.5 truncate leading-tight font-semibold">MIKARO ERP</span>
-            </div>
+            <span className="flex h-8 w-14 shrink-0 items-center justify-center group-data-[collapsible=icon]:w-8">
+                <AppLogoIcon className="h-7 w-auto group-data-[collapsible=icon]:h-4" />
+            </span>
+            <span className="sr-only">Wuling</span>
+            <span className="truncate leading-tight font-semibold group-data-[collapsible=icon]:hidden" aria-hidden="true">
+                Wuling
+            </span>
         </>
     );
 }

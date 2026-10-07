@@ -1,8 +1,9 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { BookOpen, ChevronRight, Copy, Printer, Search } from 'lucide-react';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import AppLogoIcon from '@/components/app-logo-icon';
 import { type SharedData } from '@/types';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { ChevronRight, Copy, Printer, Search } from 'lucide-react';
 import { findArticle, groupForArticle, guideArticles, guideGroups, type Block, type GuideArticle } from '@/pages/public/guide-content';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 function RichText({ text }: { text: string }) {
     const parts = text.split(/(\*\*[^*]+\*\*)/g);
@@ -182,11 +183,9 @@ export default function UserGuide() {
             <div className="flex h-screen flex-col bg-[#f3f3f3] text-[#181818]">
                 <header className="flex h-14 shrink-0 items-center gap-4 border-b border-[#e5e5e5] bg-white px-4 print:hidden">
                     <button type="button" onClick={showHome} className="flex items-center gap-2">
-                        <span className="flex size-8 items-center justify-center rounded bg-[#036635] text-white">
-                            <BookOpen className="size-4" />
-                        </span>
+                        <AppLogoIcon className="h-8 w-auto" />
                         <span className="hidden text-left sm:block">
-                            <span className="block text-sm leading-tight font-semibold">MIKARO Help</span>
+                            <span className="block text-sm leading-tight font-semibold">Wuling Help</span>
                             <span className="block text-[11px] text-[#706e6b]">Staff reference</span>
                         </span>
                     </button>
@@ -397,7 +396,7 @@ export default function UserGuide() {
                             </article>
                         ) : (
                             <div className="mx-auto max-w-5xl px-5 py-8">
-                                <p className="text-xs font-semibold tracking-wide text-[#036635] uppercase">MIKARO ERP</p>
+                                <p className="text-xs font-semibold tracking-wide text-[#036635] uppercase">Wuling</p>
                                 <h1 className="mt-1 text-3xl font-semibold tracking-tight">How can we help?</h1>
                                 <p className="mt-2 max-w-2xl text-[15px] leading-7 text-[#3e3e3c]">
                                     Look up the screen you have open. Each article tells you who it is for, which menu to use, and the exact steps and statuses.
