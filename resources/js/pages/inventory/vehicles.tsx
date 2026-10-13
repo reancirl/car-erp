@@ -98,7 +98,10 @@ interface Props extends PageProps {
     records: {
         data: VehicleUnit[];
         links: any;
-        meta: any;
+        last_page: number;
+        from: number | null;
+        to: number | null;
+        total: number;
     };
     stats: Stats;
     filters: {
@@ -631,10 +634,10 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                 </Card>
 
                 {/* Pagination */}
-                {records?.meta?.last_page > 1 && (
+                {records.last_page > 1 && (
                     <div className="flex items-center justify-between">
                         <div className="text-sm text-muted-foreground">
-                            Showing {records.meta.from} to {records.meta.to} of {records.meta.total} results
+                            Showing {records.from} to {records.to} of {records.total} results
                         </div>
                         <div className="flex gap-2">
                             {records.links?.map((link: any, index: number) => (

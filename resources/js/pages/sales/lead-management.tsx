@@ -69,7 +69,10 @@ interface Props extends PageProps {
     leads: {
         data: Lead[];
         links: any;
-        meta: any;
+        last_page: number;
+        from: number | null;
+        to: number | null;
+        total: number;
     };
     stats: Stats;
     filters: {
@@ -651,10 +654,10 @@ export default function LeadManagement({ leads, stats, filters, branches, auth, 
                 </Card>
 
                 {/* Pagination */}
-                {leads.meta && leads.meta.last_page > 1 && (
+                {leads.last_page > 1 && (
                     <div className="flex items-center justify-between">
                         <div className="text-sm text-muted-foreground">
-                            Showing {leads.meta.from} to {leads.meta.to} of {leads.meta.total} leads
+                            Showing {leads.from} to {leads.to} of {leads.total} leads
                         </div>
                         <div className="flex space-x-2">
                             {leads.links.map((link: any, index: number) => (

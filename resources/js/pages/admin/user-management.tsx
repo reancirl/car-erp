@@ -43,7 +43,10 @@ interface Props {
     users: {
         data: User[];
         links: any[];
-        meta: any;
+        last_page: number;
+        from: number | null;
+        to: number | null;
+        total: number;
     };
     branches: Branch[];
     roles: Role[];
@@ -144,7 +147,7 @@ export default function UserManagement({ users, branches, roles, filters, can }:
         );
     };
 
-    const totalUsers = users.meta?.total || users.data.length;
+    const totalUsers = users.total;
     const usersByBranch = new Set(users.data.map(u => u.branch_id)).size;
     const usersByRole = new Set(users.data.map(u => u.roles[0]?.name)).size;
 

@@ -86,7 +86,10 @@ interface Props extends PageProps {
     pipelines: {
         data: Pipeline[];
         links: any;
-        meta: any;
+        last_page: number;
+        from: number | null;
+        to: number | null;
+        total: number;
     };
     stats: Stats;
     autoLoggingStats: AutoLoggingStats;
@@ -660,10 +663,10 @@ export default function Pipeline({ pipelines, stats, autoLoggingStats, filters, 
                 </Card>
 
                 {/* Pagination */}
-                {pipelines.meta && pipelines.meta.last_page > 1 && (
+                {pipelines.last_page > 1 && (
                     <div className="flex items-center justify-between">
                         <div className="text-sm text-muted-foreground">
-                            Showing {pipelines.meta.from} to {pipelines.meta.to} of {pipelines.meta.total} opportunities
+                            Showing {pipelines.from} to {pipelines.to} of {pipelines.total} opportunities
                         </div>
                         <div className="flex space-x-2">
                             {pipelines.links.map((link: any, index: number) => (

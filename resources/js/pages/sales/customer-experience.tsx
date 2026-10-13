@@ -72,7 +72,10 @@ interface Props extends PageProps {
     customers: {
         data: Customer[];
         links: any;
-        meta: any;
+        last_page: number;
+        from: number | null;
+        to: number | null;
+        total: number;
     };
     stats: Stats;
     filters: {
@@ -572,10 +575,10 @@ export default function CustomerExperience({ customers, stats, filters, branches
                                 </Table>
 
                                 {/* Pagination */}
-                                {customers.meta?.last_page > 1 && (
+                                {customers.last_page > 1 && (
                                     <div className="flex items-center justify-between mt-4">
                                         <div className="text-sm text-muted-foreground">
-                                            Showing {customers.meta.from} to {customers.meta.to} of {customers.meta.total} customers
+                                            Showing {customers.from} to {customers.to} of {customers.total} customers
                                         </div>
                                         <div className="flex space-x-2">
                                             {customers.links?.map((link: any, index: number) => (
