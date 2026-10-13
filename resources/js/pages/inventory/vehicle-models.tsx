@@ -52,7 +52,10 @@ interface Props extends PageProps {
     records: {
         data: VehicleModel[];
         links: any;
-        meta: any;
+        last_page: number;
+        from: number | null;
+        to: number | null;
+        total: number;
     };
     stats: Stats;
     filters: {
@@ -412,10 +415,10 @@ export default function VehicleModels({ records, stats, filters, auth }: Props) 
                         </Table>
 
                         {/* Pagination */}
-                        {records?.meta && records.meta.last_page > 1 && (
+                        {records.last_page > 1 && (
                             <div className="flex items-center justify-between mt-4">
                                 <div className="text-sm text-muted-foreground">
-                                    Showing {records.meta.from} to {records.meta.to} of {records.meta.total} models
+                                    Showing {records.from} to {records.to} of {records.total} models
                                 </div>
                                 <div className="flex space-x-2">
                                     {records.links.map((link: any, index: number) => (

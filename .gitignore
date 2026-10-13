@@ -25,3 +25,6 @@ yarn-error.log
 /playwright-report
 /test-results
 /.playwright
+
+# Real inventory workbooks contain customer data
+/docs/*.xlsx
