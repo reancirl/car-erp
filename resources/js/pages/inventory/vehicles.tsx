@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Car, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, MapPin, User, Fuel, Trash2, RotateCcw, ArrowRightLeft, Lock } from 'lucide-react';
+import { Car, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, MapPin, User, Fuel, Trash2, RotateCcw, ArrowRightLeft, Lock, Upload } from 'lucide-react';
 import { type BreadcrumbItem, type PageProps } from '@/types';
 import { useState, FormEvent } from 'react';
 
@@ -257,6 +257,14 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                             <Download className="h-4 w-4 mr-2" />
                             Export Report
                         </Button>
+                        {canCreate && (
+                            <Link href="/inventory/vehicle-import">
+                                <Button variant="outline" size="sm">
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Import
+                                </Button>
+                            </Link>
+                        )}
                         {canCreate && (
                             <Link href="/inventory/vehicles/create">
                                 <Button size="sm">

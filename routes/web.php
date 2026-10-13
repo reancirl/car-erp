@@ -528,6 +528,13 @@ Route::middleware(['auth', 'verified'])->prefix('inventory')->group(function () 
 
     Route::get('/vehicles/create', [\App\Http\Controllers\VehicleUnitController::class, 'create'])->name('inventory.vehicles.create')->middleware('permission:inventory.create');
 
+    Route::middleware(['permission:inventory.create'])->controller(\App\Http\Controllers\VehicleImportController::class)->group(function () {
+        Route::get('/vehicle-import', 'create')->name('inventory.vehicle-import');
+        Route::post('/vehicle-import/preview', 'preview')->name('inventory.vehicle-import.preview');
+        Route::post('/vehicle-import', 'store')->name('inventory.vehicle-import.store');
+        Route::delete('/vehicle-import', 'cancel')->name('inventory.vehicle-import.cancel');
+    });
+
     Route::get('/vehicles/{id}/edit', [\App\Http\Controllers\VehicleUnitController::class, 'edit'])->name('inventory.vehicles.edit')->middleware('permission:inventory.edit');
 
     Route::get('/vehicles/{id}', [\App\Http\Controllers\VehicleUnitController::class, 'showPage'])->name('inventory.vehicles.show')->middleware('permission:inventory.view');

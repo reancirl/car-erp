@@ -25,6 +25,7 @@ import {
   BarChart,
   BookOpen,
   MessageSquarePlus,
+  Upload,
 } from "lucide-react";
 import AppLogo from './app-logo';
 
@@ -111,6 +112,11 @@ const inventoryNavItems: NavItem[] = [
         title: 'Vehicle Inventory',
         href: '/inventory/vehicles',
         icon: Car,
+    },
+    {
+        title: 'Import Vehicles',
+        href: '/inventory/vehicle-import',
+        icon: Upload,
     },
 ];
 
@@ -209,6 +215,7 @@ const navPermissions: Record<string, string> = {
     '/inventory/parts-inventory': 'inventory.view',
     '/inventory/models': 'vehicle_model.view',
     '/inventory/vehicles': 'inventory.view',
+    '/inventory/vehicle-import': 'inventory.create',
     '/sales/lead-management': 'sales.view',
     '/sales/reservations': 'sales.view',
     '/sales/test-drives': 'sales.view',
