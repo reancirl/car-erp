@@ -546,7 +546,8 @@ export default function Dashboard({
             }));
         } finally {
             setSavingItems((prev) => {
-                const { [key]: _unused, ...rest } = prev;
+                const rest = { ...prev };
+                delete rest[key];
                 return rest;
             });
         }
@@ -1003,7 +1004,7 @@ interface AdminExecutiveInsightsProps {
     formatCurrency: CurrencyFormatter;
 }
 
-function AdminExecutiveInsights({ branches, kpis, alerts, formatCurrency }: AdminExecutiveInsightsProps) {
+function AdminExecutiveInsights({ branches, kpis, alerts }: AdminExecutiveInsightsProps) {
     const criticalAlerts = alerts.filter((alert) => alert.priority === 'high');
 
     return (
@@ -1063,7 +1064,7 @@ function AdminExecutiveInsights({ branches, kpis, alerts, formatCurrency }: Admi
     );
 }
 
-interface SalesLeadershipGridProps extends KPIGridProps {}
+type SalesLeadershipGridProps = KPIGridProps;
 
 function SalesLeadershipGrid({ kpis, formatCurrency, renderChangeIndicator }: SalesLeadershipGridProps) {
     const pipelineValue = kpis.sales.avg_deal_value.current * kpis.pipeline.total_leads;
@@ -1114,7 +1115,7 @@ function SalesLeadershipGrid({ kpis, formatCurrency, renderChangeIndicator }: Sa
     );
 }
 
-interface SalesRepScorecardProps extends KPIGridProps {}
+type SalesRepScorecardProps = KPIGridProps;
 
 function SalesRepScorecard({ kpis, formatCurrency, renderChangeIndicator }: SalesRepScorecardProps) {
     return (
@@ -1163,7 +1164,7 @@ function SalesRepScorecard({ kpis, formatCurrency, renderChangeIndicator }: Sale
     );
 }
 
-interface ServiceKpiGridProps extends KPIGridProps {}
+type ServiceKpiGridProps = KPIGridProps;
 
 function ServiceKpiGrid({ kpis, formatCurrency, renderChangeIndicator }: ServiceKpiGridProps) {
     return (

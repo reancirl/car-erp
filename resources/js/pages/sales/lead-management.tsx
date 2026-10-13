@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { UserPlus, Search, Plus, Eye, Edit, AlertTriangle, CheckCircle, Phone, MapPin, Star, Users, Mail, Globe, Trash2, Upload } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { type BreadcrumbItem, type PageProps } from '@/types';
+import { type BreadcrumbItem, type PageProps, type PaginationLink, type SharedData } from '@/types';
 import { useState, FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -68,7 +68,7 @@ interface Stats {
 interface Props extends PageProps {
     leads: {
         data: Lead[];
-        links: any;
+        links: PaginationLink[];
         last_page: number;
         from: number | null;
         to: number | null;
@@ -83,7 +83,7 @@ interface Props extends PageProps {
         lead_score?: string;
     };
     branches: Branch[] | null;
-    import_failed?: { row: any; error: string }[] | null;
+    import_failed?: { row: Record<string, unknown>; error: string }[] | null;
     upcomingFollowups: {
         id: number;
         lead_id: string;
@@ -108,8 +108,8 @@ export default function LeadManagement({ leads, stats, filters, branches, auth, 
     const canCreate = permissions.includes('sales.create');
     const canEdit = permissions.includes('sales.edit');
     const canDelete = permissions.includes('sales.delete');
-    const { props } = usePage() as any;
-    const importFailed = props?.import_failed as { row: any; error: string }[] | null;
+    const { props } = usePage<SharedData>();
+    const importFailed = props?.import_failed as { row: Record<string, unknown>; error: string }[] | null;
 
     const importForm = useForm<{ file: File | null }>({
         file: null,
@@ -660,7 +660,7 @@ export default function LeadManagement({ leads, stats, filters, branches, auth, 
                             Showing {leads.from} to {leads.to} of {leads.total} leads
                         </div>
                         <div className="flex space-x-2">
-                            {leads.links.map((link: any, index: number) => (
+                            {leads.links.map((link, index) => (
                                 <Button
                                     key={index}
                                     variant={link.active ? "default" : "outline"}

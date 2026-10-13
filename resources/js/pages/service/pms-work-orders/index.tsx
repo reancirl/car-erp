@@ -121,7 +121,7 @@ interface Props {
 export default function PMSWorkOrders({ workOrders, stats, missedPMS, filters, branches, can }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || 'all');
-    const [priority, setPriority] = useState(filters.priority || 'all');
+    const [priority] = useState(filters.priority || 'all');
     const [verificationStatus, setVerificationStatus] = useState(filters.verification_status || 'all');
     const [branchId, setBranchId] = useState(filters.branch_id || 'all');
     const [hasFraudAlerts, setHasFraudAlerts] = useState(filters.has_fraud_alerts === 'true');
@@ -181,21 +181,6 @@ export default function PMSWorkOrders({ workOrders, stats, missedPMS, filters, b
                 );
             default:
                 return <Badge variant="outline">{workOrder.status}</Badge>;
-        }
-    };
-
-    const getPriorityBadge = (priority: string) => {
-        switch (priority) {
-            case 'urgent':
-                return <Badge className="bg-red-500">Urgent</Badge>;
-            case 'high':
-                return <Badge className="bg-orange-500">High</Badge>;
-            case 'normal':
-                return <Badge variant="secondary">Normal</Badge>;
-            case 'low':
-                return <Badge variant="outline">Low</Badge>;
-            default:
-                return <Badge variant="secondary">{priority}</Badge>;
         }
     };
 

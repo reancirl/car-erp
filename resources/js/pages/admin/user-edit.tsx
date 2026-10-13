@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Users, Save, User, Mail, Shield, Building2, Key, Loader2 } from 'lucide-react';
+import { ArrowLeft, Users, Save, User, Shield, Building2, Key, Loader2 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { FormEvent } from 'react';
 

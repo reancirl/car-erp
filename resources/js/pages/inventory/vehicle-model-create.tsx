@@ -7,10 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { Car, Save, X, Plus, Minus, AlertCircle, Upload, FileText } from 'lucide-react';
+import { Car, Save, X, AlertCircle, Upload, FileText } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
-import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -27,17 +25,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-interface Feature {
-    title: string;
-    value: string;
-}
-
 export default function VehicleModelCreate() {
-    const [standardFeatures, setStandardFeatures] = useState<Feature[]>([{ title: '', value: '' }]);
-    const [optionalFeatures, setOptionalFeatures] = useState<Feature[]>([{ title: '', value: '' }]);
-    const [safetyFeatures, setSafetyFeatures] = useState<string[]>(['']);
-    const [colors, setColors] = useState<string[]>(['']);
-
     const { data, setData, post, processing, errors } = useForm({
         make: 'WULING',
         model: '',
@@ -90,15 +78,6 @@ export default function VehicleModelCreate() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
-        // Format features
-        const formattedData = {
-            ...data,
-            standard_features: standardFeatures.filter(f => f.title || f.value),
-            optional_features: optionalFeatures.filter(f => f.title || f.value),
-            safety_features: safetyFeatures.filter(f => f.trim()),
-            available_colors: colors.filter(c => c.trim()),
-        };
 
         post('/inventory/models', { forceFormData: true });
     };
@@ -115,34 +94,6 @@ export default function VehicleModelCreate() {
 
     const removeManual = (index: number) => {
         setData('manual_documents', manualFiles.filter((_, i) => i !== index));
-    };
-
-    const addFeature = (type: 'standard' | 'optional') => {
-        if (type === 'standard') {
-            setStandardFeatures([...standardFeatures, { title: '', value: '' }]);
-        } else {
-            setOptionalFeatures([...optionalFeatures, { title: '', value: '' }]);
-        }
-    };
-
-    const removeFeature = (type: 'standard' | 'optional', index: number) => {
-        if (type === 'standard') {
-            setStandardFeatures(standardFeatures.filter((_, i) => i !== index));
-        } else {
-            setOptionalFeatures(optionalFeatures.filter((_, i) => i !== index));
-        }
-    };
-
-    const updateFeature = (type: 'standard' | 'optional', index: number, field: 'title' | 'value', value: string) => {
-        if (type === 'standard') {
-            const updated = [...standardFeatures];
-            updated[index][field] = value;
-            setStandardFeatures(updated);
-        } else {
-            const updated = [...optionalFeatures];
-            updated[index][field] = value;
-            setOptionalFeatures(updated);
-        }
     };
 
     return (

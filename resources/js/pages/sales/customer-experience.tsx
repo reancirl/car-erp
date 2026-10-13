@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, Search, Plus, Eye, Edit, Trash2, Star, Building2, Mail, Phone, TrendingUp, CheckCircle, AlertTriangle, XCircle, Crown } from 'lucide-react';
-import { type BreadcrumbItem, type PageProps } from '@/types';
+import { type BreadcrumbItem, type PageProps, type PaginationLink } from '@/types';
 import { useState, FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -71,7 +71,7 @@ interface Stats {
 interface Props extends PageProps {
     customers: {
         data: Customer[];
-        links: any;
+        links: PaginationLink[];
         last_page: number;
         from: number | null;
         to: number | null;
@@ -581,7 +581,7 @@ export default function CustomerExperience({ customers, stats, filters, branches
                                             Showing {customers.from} to {customers.to} of {customers.total} customers
                                         </div>
                                         <div className="flex space-x-2">
-                                            {customers.links?.map((link: any, index: number) => (
+                                            {customers.links?.map((link, index) => (
                                                 <Button
                                                     key={index}
                                                     variant={link.active ? 'default' : 'outline'}

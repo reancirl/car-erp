@@ -1,7 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Car, Save, X, Upload, Plus, Minus, AlertCircle, CheckCircle, Camera, FileText, PhilippinePeso, MapPin, Calendar, Fuel, Gauge, Palette, Settings, Lock } from 'lucide-react';
+import { Car, Save, X, Upload, Plus, AlertCircle, Camera, FileText, PhilippinePeso, MapPin, Calendar, Gauge, Palette, Lock } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 

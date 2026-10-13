@@ -111,7 +111,7 @@ interface Props extends PageProps {
     users: User[];
 }
 
-export default function WarrantyClaimCreate({ branches, customers, vehicleUnits, partsInventory, serviceTypes, users, auth, errors }: Props) {
+export default function WarrantyClaimCreate({ branches, customers, vehicleUnits, partsInventory, serviceTypes, users, errors }: Props) {
     const { data, setData, post, processing } = useForm({
         branch_id: branches && branches.length > 0 ? branches[0].id : null,
         customer_id: '',
@@ -136,7 +136,7 @@ export default function WarrantyClaimCreate({ branches, customers, vehicleUnits,
         currency: 'PHP',
     });
 
-    const [selectedVehicle, setSelectedVehicle] = useState<VehicleUnit | null>(null);
+    const [, setSelectedVehicle] = useState<VehicleUnit | null>(null);
     const fieldError = (field: string): string | undefined => {
         return (errors as Record<string, string | undefined>)[field];
     };
@@ -165,7 +165,7 @@ export default function WarrantyClaimCreate({ branches, customers, vehicleUnits,
         setData('parts', updatedParts);
     };
 
-    const updatePart = (index: number, field: keyof Part, value: any) => {
+    const updatePart = <K extends keyof Part>(index: number, field: K, value: Part[K]) => {
         const updatedParts = [...data.parts];
         updatedParts[index] = { ...updatedParts[index], [field]: value };
         setData('parts', updatedParts);
@@ -200,7 +200,7 @@ export default function WarrantyClaimCreate({ branches, customers, vehicleUnits,
         setData('services', updatedServices);
     };
 
-    const updateService = (index: number, field: keyof Service, value: any) => {
+    const updateService = <K extends keyof Service>(index: number, field: K, value: Service[K]) => {
         const updatedServices = [...data.services];
         updatedServices[index] = { ...updatedServices[index], [field]: value };
         setData('services', updatedServices);

@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -158,7 +158,7 @@ interface Props extends PageProps {
     };
 }
 
-export default function WarrantyClaimView({ claim, can, auth }: Props) {
+export default function WarrantyClaimView({ claim, can }: Props) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     const handleDelete = () => {

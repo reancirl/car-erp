@@ -215,7 +215,8 @@ const ChecklistReminderCenter = ({ assignedChecklists, assignedReminders, auth }
             }));
         } finally {
             setSavingItems((prev) => {
-                const { [key]: _omit, ...rest } = prev;
+                const rest = { ...prev };
+                delete rest[key];
                 return rest;
             });
         }

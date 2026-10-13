@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserCheck, Search, Filter, Download, Clock, CheckCircle, XCircle, AlertTriangle, Eye } from 'lucide-react';
+import { UserCheck, Search, Filter, Download, Clock, CheckCircle, XCircle, Eye } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [

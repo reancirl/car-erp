@@ -64,7 +64,7 @@ export default function AftersalesReports({ filters, pmsCompliance, repeatRepair
         );
     };
 
-    const metricCard = (title: string, value: string | number, description: string, icon: React.ComponentType<any>) => {
+    const metricCard = (title: string, value: string | number, description: string, icon: React.ComponentType<{ className?: string }>) => {
         const Icon = icon;
         return (
             <Card>

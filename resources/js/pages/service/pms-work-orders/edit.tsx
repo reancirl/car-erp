@@ -162,20 +162,20 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
     });
 
     const updatePart = (index: number, field: string, value: string) => {
-        const updated = [...(data.parts as any[] || [])];
+        const updated = [...data.parts];
         updated[index] = { ...updated[index], [field]: value };
         setData('parts', updated);
     };
 
     const addPartRow = () => {
         setData('parts', [
-            ...(data.parts as any[] || []),
+            ...data.parts,
             { part_number: '', description: '', quantity: '', unit_cost: '', unit_price: '' },
         ]);
     };
 
     const removePartRow = (index: number) => {
-        const updated = [...(data.parts as any[] || [])];
+        const updated = [...data.parts];
         updated.splice(index, 1);
         setData('parts', updated.length ? updated : [{ part_number: '', description: '', quantity: '', unit_cost: '', unit_price: '' }]);
     };
@@ -375,7 +375,7 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
                                 <CardDescription>Snapshot of the serviced unit</CardDescription>
                             </CardHeader>
                             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {[
+                                {([
                                     ['VIN', 'vehicle_vin'],
                                     ['Plate Number', 'vehicle_plate_number'],
                                     ['Make', 'vehicle_make'],
@@ -383,11 +383,11 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
                                     ['Year', 'vehicle_year'],
                                     ['Current Mileage', 'current_mileage'],
                                     ['Last Service Mileage', 'last_service_mileage'],
-                                ].map(([label, field]) => (
+                                ] as const).map(([label, field]) => (
                                     <div key={field} className="space-y-2">
                                         <Label className="text-xs text-muted-foreground">{label}</Label>
                                         <Input
-                                            value={(data as any)[field] || ''}
+                                            value={data[field] || ''}
                                             onChange={(e) => setData(field as keyof typeof data, e.target.value)}
                                             readOnly={['vehicle_vin', 'vehicle_make', 'vehicle_model', 'vehicle_year'].includes(field)}
                                         />
@@ -616,7 +616,7 @@ export default function PMSWorkOrderEdit({ workOrder, serviceTypes, technicians 
                                 <CardDescription>Track replaced parts with quantities and pricing</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                {(data.parts as any[] || []).map((part, index) => (
+                                {data.parts.map((part, index) => (
                                     <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 items-end border rounded-md p-3">
                                         <div className="md:col-span-2 space-y-1">
                                             <Label className="text-xs">Part No.</Label>

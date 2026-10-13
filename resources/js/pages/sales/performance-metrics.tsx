@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart3, Search, Filter, Download, TrendingUp, TrendingDown, Users, PhilippinePeso, Clock, Target, Calendar, Award, AlertTriangle } from 'lucide-react';
+import { BarChart3, Search, Filter, TrendingUp, TrendingDown, Users, PhilippinePeso, Clock, Target, Calendar, Award, AlertTriangle } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 interface KPI {

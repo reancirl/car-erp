@@ -21,11 +21,8 @@ import {
     AlertTriangle,
     CheckCircle,
     Clock,
-    Calendar,
     TrendingUp,
-    XCircle,
-    Eye,
-    Download
+    XCircle
 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { FormEvent, useEffect, useState } from 'react';
@@ -78,7 +75,7 @@ interface OdometerReading {
 interface FraudAlert {
     type: string;
     message: string;
-    data: any;
+    data: Record<string, unknown>;
     detected_at: string;
 }
 
@@ -144,9 +141,21 @@ interface WorkOrder {
     odometer_readings: OdometerReading[];
 }
 
+interface PhotoStats {
+    total_count: number;
+    before_count: number;
+    after_count: number;
+    during_count: number;
+    with_gps_count: number;
+    with_exif_count: number;
+    verified_count: number;
+    has_required_minimum: boolean;
+    has_before_after: boolean;
+}
+
 interface Props {
     workOrder: WorkOrder;
-    photoStats: any;
+    photoStats: PhotoStats;
     odometerHistory: OdometerReading[];
     can: {
         edit: boolean;

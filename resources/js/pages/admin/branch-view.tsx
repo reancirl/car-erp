@@ -10,19 +10,15 @@ import {
     MapPin, 
     Phone, 
     Mail, 
-    User, 
     Calendar,
     CheckCircle,
     AlertTriangle,
     Clock,
-    Crown,
     Building,
     Users,
     Settings,
     Activity,
-    Star,
-    Navigation,
-    Clock3
+    Navigation
 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { formatOperatingHoursInput, type BusinessHours } from '@/utils/business-hours';
@@ -114,27 +110,6 @@ export default function BranchView({ branch }: BranchViewProps) {
                 );
             default:
                 return <Badge variant="secondary">{status}</Badge>;
-        }
-    };
-
-    const getTypeBadge = (type: string) => {
-        switch (type) {
-            case 'headquarters':
-                return (
-                    <Badge variant="outline" className="bg-purple-100 text-purple-800">
-                        <Crown className="h-3 w-3 mr-1" />
-                        Headquarters
-                    </Badge>
-                );
-            case 'branch':
-                return (
-                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                        <Building className="h-3 w-3 mr-1" />
-                        Branch
-                    </Badge>
-                );
-            default:
-                return <Badge variant="secondary">{type}</Badge>;
         }
     };
 

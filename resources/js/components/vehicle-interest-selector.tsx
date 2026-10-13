@@ -21,7 +21,7 @@ interface VehicleInterestData {
 
 interface VehicleInterestSelectorProps {
     data: VehicleInterestData;
-    setData: (key: keyof VehicleInterestData | Partial<VehicleInterestData>, value?: any) => void;
+    setData: (key: keyof VehicleInterestData | Partial<VehicleInterestData>, value?: string) => void;
     errors?: Partial<Record<keyof VehicleInterestData, string>>;
     vehicleModels?: VehicleModel[];
     disabled?: boolean;

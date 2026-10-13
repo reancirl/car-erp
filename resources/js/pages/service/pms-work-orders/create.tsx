@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Save, X, AlertCircle, Wrench, Car, User, Calendar, Camera, MapPin } from 'lucide-react';
+import { ArrowLeft, Save, X, AlertCircle, Wrench, Car, User, Calendar, Camera } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { FormEvent, useState } from 'react';
 
@@ -171,24 +171,24 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
         ],
     });
 
-    const [odometerValidation, setOdometerValidation] = useState<any>(null);
+    const [odometerValidation, setOdometerValidation] = useState<{ valid: boolean; message?: string } | null>(null);
     const [validatingOdometer, setValidatingOdometer] = useState(false);
 
     const updatePart = (index: number, field: string, value: string) => {
-        const updated = [...(data.parts as any[])];
+        const updated = [...data.parts];
         updated[index] = { ...updated[index], [field]: value };
         setData('parts', updated);
     };
 
     const addPartRow = () => {
         setData('parts', [
-            ...(data.parts as any[]),
+            ...data.parts,
             { part_number: '', description: '', quantity: '', unit_cost: '', unit_price: '' },
         ]);
     };
 
     const removePartRow = (index: number) => {
-        const updated = [...(data.parts as any[])];
+        const updated = [...data.parts];
         updated.splice(index, 1);
         setData('parts', updated.length ? updated : [{ part_number: '', description: '', quantity: '', unit_cost: '', unit_price: '' }]);
     };
@@ -620,7 +620,7 @@ export default function PMSWorkOrderCreate({ branches, serviceTypes, technicians
                                 <CardDescription>Track replaced parts with quantities and pricing</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
-                                {(data.parts as any[]).map((part, index) => (
+                                {data.parts.map((part, index) => (
                                     <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 items-end border rounded-md p-3">
                                         <div className="md:col-span-2 space-y-1">
                                             <Label className="text-xs">Part No.</Label>

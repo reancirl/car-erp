@@ -165,14 +165,6 @@ export default function PMSWorkOrders() {
         }
     };
 
-    const isOverdue = (dueDate: string, currentOdometer: number, lastServiceKm: number) => {
-        const due = new Date(dueDate);
-        const now = new Date();
-        const kmDiff = currentOdometer - lastServiceKm;
-        
-        return due < now || kmDiff >= 10000;
-    };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="PMS Work Orders" />

@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Package, Edit, Trash2, ArrowLeft, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Package, Edit, Trash2, ArrowLeft, CheckCircle, XCircle, AlertTriangle, type LucideIcon } from 'lucide-react';
 import { type BreadcrumbItem, type PartInventory } from '@/types';
 
 interface Props {
@@ -26,7 +26,7 @@ export default function PartsInventoryView({ part, can_edit, can_delete }: Props
     };
 
     const getStatusBadge = (status: string) => {
-        const badges: Record<string, { icon: any; className: string }> = {
+        const badges: Record<string, { icon: LucideIcon; className: string }> = {
             active: { icon: CheckCircle, className: 'bg-green-100 text-green-800' },
             inactive: { icon: XCircle, className: 'bg-gray-100 text-gray-800' },
             discontinued: { icon: AlertTriangle, className: 'bg-red-100 text-red-800' },
