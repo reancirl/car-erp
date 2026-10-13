@@ -15,11 +15,8 @@ import {
     Save,
     Clock,
     PhilippinePeso,
-    Calendar,
-    Gauge,
     AlertCircle,
     CheckCircle,
-    Plus,
     X
 } from 'lucide-react';
 import { type BreadcrumbItem, type Branch, type CommonService } from '@/types';

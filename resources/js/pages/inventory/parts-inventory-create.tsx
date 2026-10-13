@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Package, Save, X, AlertCircle, Info, PhilippinePeso, MapPin, Truck, Wrench } from 'lucide-react';
+import { Package, Save, X, AlertCircle, Info, PhilippinePeso, MapPin, Truck } from 'lucide-react';
 import { type BreadcrumbItem, type Branch } from '@/types';
 import { PART_CATEGORIES, PART_CONDITIONS, PART_STATUSES, type PartCategory, type PartCondition, type PartStatus } from '@/constants/parts';
 import { FormEvent } from 'react';

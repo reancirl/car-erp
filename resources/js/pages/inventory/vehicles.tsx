@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Car, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, MapPin, User, Fuel, Trash2, RotateCcw, ArrowRightLeft, Lock, Upload } from 'lucide-react';
-import { type BreadcrumbItem, type PageProps } from '@/types';
+import { type BreadcrumbItem, type PageProps, type PaginationLink } from '@/types';
 import { useState, FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -97,7 +97,7 @@ interface Stats {
 interface Props extends PageProps {
     records: {
         data: VehicleUnit[];
-        links: any;
+        links: PaginationLink[];
         last_page: number;
         from: number | null;
         to: number | null;
@@ -113,7 +113,6 @@ interface Props extends PageProps {
         include_deleted?: boolean;
     };
     branches: Branch[] | null;
-    customers?: any;
 }
 
 export default function VehicleInventory({ records, stats, filters, branches, auth }: Props) {
@@ -196,25 +195,6 @@ export default function VehicleInventory({ records, stats, filters, branches, au
         );
     };
 
-    const getVehicleTypeBadge = (type: string) => {
-        const colors = {
-            new: 'bg-green-100 text-green-800',
-            used: 'bg-blue-100 text-blue-800',
-            demo: 'bg-purple-100 text-purple-800',
-            certified: 'bg-yellow-100 text-yellow-800',
-        };
-        return <Badge className={colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>{type.toUpperCase()}</Badge>;
-    };
-
-    const getPriorityBadge = (priority: string) => {
-        const colors = {
-            low: 'bg-gray-100 text-gray-800',
-            medium: 'bg-blue-100 text-blue-800',
-            high: 'bg-red-100 text-red-800',
-        };
-        return <Badge variant="outline" className={colors[priority as keyof typeof colors]}>{priority.toUpperCase()}</Badge>;
-    };
-
     const getLocationBadge = (location: string) => {
         const labels: Record<string, { label: string; color: string }> = {
             warehouse: { label: 'Warehouse', color: 'bg-slate-100 text-slate-800' },
@@ -241,8 +221,6 @@ export default function VehicleInventory({ records, stats, filters, branches, au
 
     // Use real stats from API
     const totalInventoryValue = stats.total_value;
-    const availableVehicles = stats.in_stock;
-    const soldVehicles = stats.sold;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -640,7 +618,7 @@ export default function VehicleInventory({ records, stats, filters, branches, au
                             Showing {records.from} to {records.to} of {records.total} results
                         </div>
                         <div className="flex gap-2">
-                            {records.links?.map((link: any, index: number) => (
+                            {records.links?.map((link, index: number) => (
                                 <Button
                                     key={index}
                                     variant={link.active ? 'default' : 'outline'}

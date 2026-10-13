@@ -6,8 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Car, Search, Filter, Plus, Eye, Edit, CheckCircle, Clock, MapPin, FileSignature, Calendar, Smartphone, Navigation, User, Trash2 } from 'lucide-react';
-import { type BreadcrumbItem, type PageProps } from '@/types';
+import { Car, Search, Plus, Eye, Edit, CheckCircle, Clock, MapPin, FileSignature, Calendar, Smartphone, Navigation, User, Trash2 } from 'lucide-react';
+import { type BreadcrumbItem, type PageProps, type PaginationLink } from '@/types';
 import { useState } from 'react';
 
 interface TestDrive {
@@ -56,8 +56,7 @@ interface Branch {
 interface Props extends PageProps {
     testDrives: {
         data: TestDrive[];
-        links: any[];
-        meta: any;
+        links: PaginationLink[];
     };
     stats: {
         total: number;
@@ -167,7 +166,6 @@ export default function TestDrives({ testDrives, stats, filters, branches, auth 
 
     const permissions = auth?.permissions ?? [];
     const canCreate = permissions.includes('sales.create');
-    const canEdit = permissions.includes('sales.edit');
     const canDelete = permissions.includes('sales.delete');
 
     const handleDelete = (id: number, reservationId: string) => {

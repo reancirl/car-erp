@@ -4,8 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Car, Edit, ArrowLeft, Share2, Printer, Download, MapPin, Calendar, User, PhilippinePeso, Fuel, Gauge, Palette, Settings, History, Camera, FileText, CheckCircle, Clock, AlertTriangle, Star, TestTube, Globe, Upload, Lock } from 'lucide-react';
+import { Car, Edit, ArrowLeft, MapPin, Calendar, PhilippinePeso, Fuel, Gauge, Palette, History, Camera, FileText, CheckCircle, Clock, AlertTriangle, Star, TestTube, Globe, Lock } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useEffect } from 'react';
 import { type BreadcrumbItem } from '@/types';
@@ -52,7 +51,7 @@ interface VehicleUnit {
             name: string;
             url: string;
         }>;
-        [key: string]: any;
+        [key: string]: unknown;
     } | null;
     created_at: string;
     deleted_at: string | null;
@@ -84,6 +83,17 @@ interface VehicleUnit {
         display_name?: string;
         email: string;
     } | null;
+}
+
+interface VehicleDocument {
+    id: number;
+    type: string;
+    filename: string;
+    mime: string;
+    size: number;
+    url: string;
+    uploaded_at: string;
+    uploaded_by: string | null;
 }
 
 interface ActivityLog {
@@ -150,7 +160,7 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
     const vehicleFeatures = vehicle.specs?.features || [];
     
     // Parse documents from vehicle specs
-    const [documents, setDocuments] = useState<Record<string, any[]>>(vehicle.documents ?? {});
+    const [documents, setDocuments] = useState<Record<string, VehicleDocument[]>>(vehicle.documents ?? {});
     const [docType, setDocType] = useState<string>('');
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -734,7 +744,7 @@ export default function VehicleView({ vehicle, activityLogs }: Props) {
                                         <div key={type}>
                                             <div className="font-semibold mb-2">{type.replace(/_/g, ' ')}</div>
                                             <div className="space-y-2">
-                                                {(items as any[]).map((doc) => (
+                                                {(items as VehicleDocument[]).map((doc) => (
                                                     <div key={doc.id} className="flex items-center justify-between rounded border px-3 py-2">
                                                         <div className="space-y-1 text-sm">
                                                             <div className="font-medium">{doc.filename}</div>

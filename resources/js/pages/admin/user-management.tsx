@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, Search, Plus, Eye, Edit, Shield, Trash2, Mail, Building2 } from 'lucide-react';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type PaginationLink } from '@/types';
 import { useState } from 'react';
 
 interface User {
@@ -42,7 +42,7 @@ interface Role {
 interface Props {
     users: {
         data: User[];
-        links: any[];
+        links: PaginationLink[];
         last_page: number;
         from: number | null;
         to: number | null;

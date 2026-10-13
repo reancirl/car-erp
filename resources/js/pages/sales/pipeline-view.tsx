@@ -17,10 +17,8 @@ import {
     FileText,
     CheckCircle,
     AlertTriangle,
-    Download,
     Copy,
     ExternalLink,
-    ArrowRight,
     Activity
 } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';

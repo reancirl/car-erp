@@ -34,7 +34,6 @@ export function formatPhoneNumberPH(phone: string | null | undefined): string {
     // Handle different formats
     if (cleaned.startsWith('63')) {
         // Already has country code
-        cleaned = cleaned;
     } else if (cleaned.startsWith('0')) {
         // Remove leading 0 and add country code
         cleaned = '63' + cleaned.substring(1);

@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Wrench, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, Camera, MapPin, User, Calendar, PlayCircle, PauseCircle, XCircle } from 'lucide-react';
+import { Wrench, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, Camera, User, Calendar, PlayCircle, PauseCircle, XCircle } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -261,7 +261,6 @@ export default function WorkOrders() {
     const totalWorkOrders = mockWorkOrders.length;
     const overdueCount = mockWorkOrders.filter(wo => wo.status === 'overdue').length;
     const inProgressCount = mockWorkOrders.filter(wo => wo.status === 'in_progress').length;
-    const completedCount = mockWorkOrders.filter(wo => wo.status === 'completed').length;
     const avgCompletionTime = mockWorkOrders
         .filter(wo => wo.actual_hours)
         .reduce((sum, wo) => sum + (wo.actual_hours || 0), 0) / 

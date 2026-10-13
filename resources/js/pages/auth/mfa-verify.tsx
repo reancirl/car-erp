@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Head, router } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { Shield, Mail, Clock, RefreshCw, AlertTriangle } from 'lucide-react';
 import { FormEventHandler, useState, useEffect } from 'react';
 import axios from 'axios';
@@ -18,7 +18,7 @@ interface Props {
     message?: string;
 }
 
-export default function MfaVerify({ action, actionText, purpose, canResend = true, otp_sent = false, expires_at, message }: Props) {
+export default function MfaVerify({ action, actionText, purpose, canResend = true, otp_sent = false, message }: Props) {
     const [code, setCode] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
     const [isSending, setIsSending] = useState(false);
@@ -92,12 +92,13 @@ export default function MfaVerify({ action, actionText, purpose, canResend = tru
                 setCanResendCode(false);
                 setResendCooldown(60); // 1 minute cooldown
             }
-        } catch (err: any) {
-            const message = err.response?.data?.message || 'Failed to send verification code.';
+        } catch (err) {
+            const data = axios.isAxiosError<{ message?: string; retry_after?: string }>(err) ? err.response?.data : undefined;
+            const message = data?.message || 'Failed to send verification code.';
             setError(message);
             
-            if (err.response?.data?.retry_after) {
-                const retryAfter = new Date(err.response.data.retry_after);
+            if (data?.retry_after) {
+                const retryAfter = new Date(data.retry_after);
                 const secondsUntilRetry = Math.ceil((retryAfter.getTime() - Date.now()) / 1000);
                 setResendCooldown(Math.max(secondsUntilRetry, 60));
             }
@@ -129,8 +130,8 @@ export default function MfaVerify({ action, actionText, purpose, canResend = tru
                     window.location.href = response.data.redirect_url;
                 }, 1000);
             }
-        } catch (err: any) {
-            const message = err.response?.data?.message || 'Verification failed. Please try again.';
+        } catch (err) {
+            const message = (axios.isAxiosError<{ message?: string }>(err) && err.response?.data?.message) || 'Verification failed. Please try again.';
             setError(message);
             setCode(''); // Clear the code on error
         } finally {

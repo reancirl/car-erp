@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Car, Search, Filter, Plus, Edit, RotateCcw, CheckCircle, XCircle, Star, Zap } from 'lucide-react';
-import { type BreadcrumbItem, type PageProps } from '@/types';
+import { type BreadcrumbItem, type PageProps, type PaginationLink } from '@/types';
 import { useState, FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -51,7 +51,7 @@ interface Stats {
 interface Props extends PageProps {
     records: {
         data: VehicleModel[];
-        links: any;
+        links: PaginationLink[];
         last_page: number;
         from: number | null;
         to: number | null;
@@ -421,7 +421,7 @@ export default function VehicleModels({ records, stats, filters, auth }: Props) 
                                     Showing {records.from} to {records.to} of {records.total} models
                                 </div>
                                 <div className="flex space-x-2">
-                                    {records.links.map((link: any, index: number) => (
+                                    {records.links.map((link, index: number) => (
                                         <Button
                                             key={index}
                                             variant={link.active ? 'default' : 'outline'}

@@ -8,9 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, User, Building2, MapPin, Star, Phone, Mail, X, AlertCircle, Users, Crown, Calendar } from 'lucide-react';
+import { ArrowLeft, Save, User, Building2, MapPin, Star, Mail, X, AlertCircle, Users } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
-import { FormEvent, useState } from 'react';
+import { FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -26,12 +26,6 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '#',
     },
 ];
-
-interface Branch {
-    id: number;
-    name: string;
-    code: string;
-}
 
 interface Manager {
     id: number;
@@ -142,9 +136,7 @@ interface Props {
     errors: Record<string, string>;
 }
 
-export default function CustomerExperienceEdit({ customer, managers, existingCustomers, vehicleModels, vehicleUnits, auth, errors }: Props) {
-    const isAdmin = auth.user.roles?.some(role => role.name === 'admin');
-    
+export default function CustomerExperienceEdit({ customer, managers, existingCustomers, vehicleModels, vehicleUnits, errors }: Props) {
     const { data, setData, put, processing } = useForm({
         first_name: customer.first_name || '',
         last_name: customer.last_name || '',

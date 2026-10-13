@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FileText, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, Camera, Trash2, RefreshCw } from 'lucide-react';
-import { type BreadcrumbItem, type PageProps } from '@/types';
+import { FileText, Search, Filter, Download, Plus, Eye, Edit, AlertTriangle, CheckCircle, Clock, Trash2, RefreshCw } from 'lucide-react';
+import { type BreadcrumbItem, type PageProps, type PaginationLink } from '@/types';
 import { useState } from 'react';
 import {
     AlertDialog,
@@ -84,7 +84,7 @@ interface Stats {
 interface Props extends PageProps {
     claims: {
         data: WarrantyClaim[];
-        links: any[];
+        links: PaginationLink[];
         current_page: number;
         per_page: number;
         total: number;
@@ -540,7 +540,7 @@ export default function WarrantyClaims({ claims, stats, filters, branches, auth 
                                                     key={index}
                                                     variant={link.active ? "default" : "outline"}
                                                     size="sm"
-                                                    onClick={() => router.visit(link.url)}
+                                                    onClick={() => link.url && router.visit(link.url)}
                                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                                 />
                                             ) : (

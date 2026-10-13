@@ -8,7 +8,6 @@ import {
     ArrowLeft, 
     ChevronLeft, 
     ChevronRight, 
-    Calendar as CalendarIcon,
     List,
     Plus,
     Clock,
@@ -17,7 +16,6 @@ import {
     CheckCircle,
     FileSignature,
     AlertTriangle,
-    MapPin,
     Filter
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

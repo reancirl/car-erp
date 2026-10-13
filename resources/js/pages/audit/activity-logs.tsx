@@ -20,7 +20,7 @@ interface ActivityLog {
     ip_address: string;
     details: string;
     status: string;
-    properties?: Record<string, any>;
+    properties?: Record<string, unknown>;
     subject_type?: string;
     subject_id?: number;
     subject_deleted?: boolean;

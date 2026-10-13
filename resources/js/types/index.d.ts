@@ -330,6 +330,12 @@ export interface ComplianceReminder {
     events?: ComplianceReminderEvent[];
 }
 
+export interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
 export interface PaginatedResponse<T> {
     data: T[];
     current_page: number;
@@ -338,9 +344,5 @@ export interface PaginatedResponse<T> {
     last_page: number;
     from: number;
     to: number;
-    links: {
-        url: string | null;
-        label: string;
-        active: boolean;
-    }[];
+    links: PaginationLink[];
 }

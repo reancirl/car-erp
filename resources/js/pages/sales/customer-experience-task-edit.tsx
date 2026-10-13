@@ -19,7 +19,6 @@ import {
     CheckCircle,
     AlertTriangle,
     Download,
-    Copy,
     ExternalLink,
     Activity,
     FileText,

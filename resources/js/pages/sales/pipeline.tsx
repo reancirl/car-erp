@@ -6,8 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, Search, Filter, Download, Plus, Eye, Edit, ArrowRight, CheckCircle, Clock, PhilippinePeso, User, Calendar, FileText, Trash2, AlertTriangle, Play, ChevronDown, ChevronUp } from 'lucide-react';
-import { type BreadcrumbItem, type PageProps } from '@/types';
+import { TrendingUp, Search, Filter, Download, Plus, Eye, Edit, CheckCircle, PhilippinePeso, User, Calendar, FileText, Trash2, AlertTriangle, Play, ChevronDown, ChevronUp } from 'lucide-react';
+import { type BreadcrumbItem, type PageProps, type PaginationLink } from '@/types';
 import { useState, FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -85,7 +85,7 @@ interface AutoLoggingStats {
 interface Props extends PageProps {
     pipelines: {
         data: Pipeline[];
-        links: any;
+        links: PaginationLink[];
         last_page: number;
         from: number | null;
         to: number | null;
@@ -108,7 +108,7 @@ interface Props extends PageProps {
 export default function Pipeline({ pipelines, stats, autoLoggingStats, filters, branches, salesReps, auth }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [currentStage, setCurrentStage] = useState(filters.current_stage || 'all');
-    const [priority, setPriority] = useState(filters.priority || 'all');
+    const [priority] = useState(filters.priority || 'all');
     const [salesRepId, setSalesRepId] = useState<string>(filters.sales_rep_id?.toString() || 'all');
     const [branchId, setBranchId] = useState<string>(filters.branch_id?.toString() || 'all');
     const [probabilityFilter, setProbabilityFilter] = useState(filters.probability || 'all');
@@ -669,7 +669,7 @@ export default function Pipeline({ pipelines, stats, autoLoggingStats, filters, 
                             Showing {pipelines.from} to {pipelines.to} of {pipelines.total} opportunities
                         </div>
                         <div className="flex space-x-2">
-                            {pipelines.links.map((link: any, index: number) => (
+                            {pipelines.links.map((link, index) => (
                                 <Button
                                     key={index}
                                     variant={link.active ? "default" : "outline"}

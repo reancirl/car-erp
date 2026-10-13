@@ -104,11 +104,11 @@ export default function TestDriveEdit({ testDrive, branches, salesReps, vehicleM
     };
 
     const handleInsuranceChange = () => {
-        setData('insurance_verified', !data.insurance_verified as any);
+        setData('insurance_verified', !data.insurance_verified);
     };
 
     const handleLicenseChange = () => {
-        setData('license_verified', !data.license_verified as any);
+        setData('license_verified', !data.license_verified);
     };
 
     const timeSlots = [

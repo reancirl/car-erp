@@ -66,8 +66,8 @@ export default function TestDriveCreate({ branches, salesReps, vehicleModels }: 
         branch_id: branches && branches.length > 0 ? String(branches[0].id) : '',
         assigned_user_id: '',
         reservation_type: 'scheduled',
-        insurance_verified: false,
-        license_verified: false,
+        insurance_verified: false as boolean,
+        license_verified: false as boolean,
         deposit_amount: 0,
         notes: '',
     });
@@ -80,11 +80,11 @@ export default function TestDriveCreate({ branches, salesReps, vehicleModels }: 
     };
 
     const handleInsuranceChange = () => {
-        setData('insurance_verified', !data.insurance_verified as any);
+        setData('insurance_verified', !data.insurance_verified);
     };
 
     const handleLicenseChange = () => {
-        setData('license_verified', !data.license_verified as any);
+        setData('license_verified', !data.license_verified);
     };
 
     const timeSlots = [

@@ -20,7 +20,6 @@ import {
     Shield,
     CreditCard,
     CheckCircle,
-    AlertTriangle,
     Download,
     Copy,
     ExternalLink

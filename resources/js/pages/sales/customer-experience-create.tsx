@@ -8,9 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, User, Building2, MapPin, Star, Phone, Mail, X, AlertCircle, Users, Crown, Calendar } from 'lucide-react';
+import { ArrowLeft, Save, User, Building2, MapPin, Star, Mail, X, AlertCircle, Users } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
-import { FormEvent, useState } from 'react';
+import { FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

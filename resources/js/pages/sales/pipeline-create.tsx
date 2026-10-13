@@ -65,7 +65,7 @@ interface Props {
     vehicleModels: VehicleModel[];
 }
 
-export default function PipelineCreate({ branches, salesReps, leads, vehicleModels }: Props) {
+export default function PipelineCreate({ salesReps, leads, vehicleModels }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         branch_id: '',
         lead_id: '',

@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Save, User, Globe, Target, Star, Calendar, X, AlertCircle } from 'lucide-react';
 import { type BreadcrumbItem } from '@/types';
 import { FormEvent } from 'react';
-import { formatPHP, formatPhoneNumberPH, isValidPhoneNumberPH, PH_REGIONS } from '@/utils/formatters';
+import { formatPHP, isValidPhoneNumberPH, PH_REGIONS } from '@/utils/formatters';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

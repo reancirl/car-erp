@@ -10,8 +10,6 @@ import {
     Camera,
     Search,
     Package,
-    Plus,
-    Minus,
     MapPin,
     AlertCircle,
     CheckCircle,
@@ -20,7 +18,7 @@ import {
     History,
     X,
     ArrowLeft,
-    Maximize2,
+    type LucideIcon,
 } from 'lucide-react';
 import { type PartInventory } from '@/types';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -93,7 +91,7 @@ export default function PartsInventoryScanner() {
                             handleScan(decodedText);
                             stopCameraScanner();
                         },
-                        (errorMessage) => {
+                        () => {
                             // Ignore frequent errors when no QR detected
                         }
                     );
@@ -185,7 +183,7 @@ export default function PartsInventoryScanner() {
     };
 
     const playBeep = () => {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioContext = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
 
@@ -203,7 +201,7 @@ export default function PartsInventoryScanner() {
     };
 
     const playErrorBeep = () => {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioContext = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
 
@@ -312,7 +310,7 @@ export default function PartsInventoryScanner() {
     };
 
     const getStatusBadge = (status: string) => {
-        const badges: Record<string, { icon: any; className: string }> = {
+        const badges: Record<string, { icon: LucideIcon; className: string }> = {
             active: { icon: CheckCircle, className: 'bg-green-100 text-green-800' },
             inactive: { icon: XCircle, className: 'bg-gray-100 text-gray-800' },
             discontinued: { icon: AlertCircle, className: 'bg-red-100 text-red-800' },

@@ -6,29 +6,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { 
     Building2, 
     Search, 
-    Filter, 
-    Download, 
     Plus, 
     Eye, 
     Edit, 
     MapPin, 
-    Users, 
     Phone, 
     Mail, 
-    Calendar,
     CheckCircle,
     AlertTriangle,
-    Clock,
-    Crown,
-    Building,
-    UserPlus,
     Trash2
 } from 'lucide-react';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type PaginationLink } from '@/types';
 import { useState } from 'react';
 
 interface Branch {
@@ -43,7 +34,7 @@ interface Branch {
     phone?: string;
     email?: string;
     status: 'active' | 'inactive';
-    business_hours?: any;
+    business_hours?: Record<string, unknown>;
     latitude?: number;
     longitude?: number;
     notes?: string;
@@ -54,8 +45,7 @@ interface Branch {
 interface Props {
     branches: {
         data: Branch[];
-        links: any[];
-        meta: any;
+        links: PaginationLink[];
     };
     filters: {
         search?: string;
