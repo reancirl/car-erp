@@ -104,26 +104,32 @@ interface Props {
     };
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Inventory Management',
-        href: '/inventory',
-    },
-    {
-        title: 'Vehicle Inventory',
-        href: '/inventory/vehicles',
-    },
-    {
-        title: '2024 Honda Civic Sport',
-        href: '/inventory/vehicles/1',
-    },
-    {
-        title: 'Edit',
-        href: '/inventory/vehicles/1/edit',
-    },
-];
+const STATUS_INFO: Record<string, { label: string; description: string }> = {
+    in_stock: { label: 'In Stock', description: 'This vehicle is currently in stock and available for sale.' },
+    reserved: { label: 'Reserved', description: 'This vehicle is currently reserved for a customer.' },
+    sold: { label: 'Sold', description: 'This vehicle has been sold.' },
+    in_transit: { label: 'In Transit', description: 'This vehicle is currently in transit.' },
+    transferred: { label: 'Transferred', description: 'This vehicle has been transferred.' },
+    disposed: { label: 'Disposed', description: 'This vehicle has been disposed.' },
+};
 
 export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, customers = [], auth }: Props) {
+    const unitModel = vehicleModels.find((m) => m.id === unit.vehicle_model_id);
+    const vehicleTitle = unitModel
+        ? [unitModel.year, unitModel.make, unitModel.model, unit.trim || unit.variant].filter(Boolean).join(' ')
+        : `Stock ${unit.stock_number}`;
+    const statusInfo = STATUS_INFO[unit.status] ?? {
+        label: unit.status ? unit.status.replace(/_/g, ' ') : 'Unknown',
+        description: 'Current status of this vehicle.',
+    };
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'Inventory Management', href: '/inventory' },
+        { title: 'Vehicle Inventory', href: '/inventory/vehicles' },
+        { title: vehicleTitle, href: `/inventory/vehicles/${unit.id}` },
+        { title: 'Edit', href: `/inventory/vehicles/${unit.id}/edit` },
+    ];
+
     const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
     const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
     const [isDraggingDoc, setIsDraggingDoc] = useState(false);
@@ -347,7 +353,7 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Edit Vehicle - 2024 Honda Civic Sport" />
+            <Head title={`Edit Vehicle - ${vehicleTitle}`} />
             
             <div className="space-y-6 p-6">
                 {/* Header */}
@@ -384,8 +390,8 @@ export default function VehicleEdit({ unit, branches, salesReps, vehicleModels, 
                     <div className="flex items-center space-x-2">
                         <AlertCircle className="h-5 w-5 text-blue-600" />
                         <div>
-                            <div className="font-medium text-blue-900">Vehicle Status: Available</div>
-                            <div className="text-sm text-blue-700">This vehicle is currently available for sale and visible online.</div>
+                            <div className="font-medium text-blue-900">Vehicle Status: {statusInfo.label}</div>
+                            <div className="text-sm text-blue-700">{statusInfo.description}</div>
                         </div>
                     </div>
                 </div>
